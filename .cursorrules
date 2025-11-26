@@ -1,0 +1,1313 @@
+# === МЕТАДАННЫЕ ПРОЕКТА ===
+название: Mluv.Me - Language Tutor Bot
+описание: Telegram-бот и WebApp для практики разговорного чешского и английского через голосовые сообщения с AI-репетитором
+язык: Python
+версия: 1.0.0
+минимальная_версия_python: 3.11
+
+# === ТЕХНОЛОГИЧЕСКИЙ СТЕК ===
+
+## Backend
+framework: FastAPI
+orm: SQLAlchemy 2.0+ / SQLModel
+миграции: Alembic
+валидация: Pydantic 2.9+
+база_данных: PostgreSQL
+кеш: Redis (опционально)
+
+## Telegram Bot
+bot_framework: aiogram 3.x
+архитектура: Максимально тонкие handlers, вся логика в backend
+
+## AI/ML Сервисы
+llm: OpenAI GPT-4o / GPT-4.1
+stt: OpenAI Whisper
+tts: OpenAI TTS
+голоса: alex, emily, и другие (настраиваемые)
+
+## WebApp
+framework: Next.js 14+ (App Router)
+язык: TypeScript
+стиль: Tailwind CSS / CSS Modules
+ui: React Server Components + Client Components
+авторизация: Telegram WebApp initData с проверкой подписи на backend
+
+## Инфраструктура
+контейнеризация: Docker + docker-compose
+мониторинг: structlog для логирования, Sentry для ошибок (опционально)
+тестирование: pytest с pytest-asyncio
+линтинг: ruff для Python, ESLint для TypeScript
+типизация: mypy для Python, TypeScript strict mode
+
+# === АРХИТЕКТУРА ПРОЕКТА ===
+
+## Структура монорепозитория
+```
+language-tutor-bot/
+├── backend/              # FastAPI приложение
+│   ├── main.py          # Точка входа
+│   ├── config.py        # Pydantic Settings
+│   ├── routers/         # HTTP endpoints
+│   │   ├── auth.py      # Валидация Telegram WebApp initData
+│   │   ├── users.py     # CRUD пользователя, настройки
+│   │   ├── lesson.py    # Обработка голосовых (STT→LLM→TTS)
+│   │   ├── stats.py     # Streak, статистика, прогресс
+│   │   ├── words.py     # Сохранённые слова, карточки
+│   │   └── topics.py    # Темы, квесты, сценарии
+│   ├── services/        # Бизнес-логика
+│   │   ├── openai_client.py      # Обёртка OpenAI API
+│   │   ├── speech_analyzer.py    # Анализ произношения
+│   │   ├── correction_engine.py  # Генерация исправлений
+│   │   └── gamification.py       # Звёзды, ачивки, streak
+│   ├── models/          # SQLAlchemy модели
+│   │   ├── user.py
+│   │   ├── message.py
+│   │   ├── word.py
+│   │   ├── stats.py
+│   │   └── subscription.py
+│   ├── schemas/         # Pydantic схемы для API
+│   ├── db/              # Database utilities
+│   │   ├── database.py  # Подключение, сессии
+│   │   └── repositories.py  # Repository pattern
+│   └── utils/           # Вспомогательные функции
+│
+├── bot/                 # Telegram бот (aiogram)
+│   ├── main.py         # Запуск бота
+│   ├── handlers/       # Обработчики команд и сообщений
+│   │   ├── start.py    # /start, первая настройка
+│   │   ├── voice.py    # Обработка голосовых
+│   │   ├── commands.py # /help, /stats, /saved, /reset
+│   │   └── settings.py # /voice, /level, /voice_speed, /topics
+│   ├── keyboards/      # Inline клавиатуры
+│   ├── services/       # Клиенты к backend
+│   │   └── api_client.py
+│   └── config.py       # Конфигурация бота
+│
+├── webapp/             # Next.js Telegram WebApp
+│   ├── app/           # App Router
+│   │   ├── page.tsx          # Профиль (streak, прогресс)
+│   │   ├── saved/page.tsx    # Сохранённые слова
+│   │   ├── stars/page.tsx    # Звёзды, достижения
+│   │   └── settings/page.tsx # Настройки
+│   ├── components/    # React компоненты
+│   ├── lib/          # Утилиты, API клиент
+│   └── public/       # Статические ресурсы
+│
+├── infra/            # Инфраструктура (будущее)
+│   ├── docker-compose.yml
+│   └── migrations/   # Alembic миграции
+│
+├── docs/             # Документация
+│   ├── README.md
+│   ├── api.md
+│   └── architecture.md
+│
+└── .cursorrules      # Этот файл
+```
+
+## Разделение на слои (Clean Architecture)
+
+### Backend
+1. **Presentation Layer** (routers/) - HTTP endpoints, валидация запросов
+2. **Business Logic Layer** (services/) - Вся логика приложения
+3. **Data Access Layer** (repositories/) - Абстракция работы с БД
+4. **Infrastructure Layer** (db/, utils/) - Технические детали
+
+### Bot
+- **Handlers** - Минимальная логика, только прием и отправка
+- **Services** - HTTP клиент к backend API
+- Вся бизнес-логика находится в backend!
+
+### WebApp
+- **Pages** - Server Components для SEO и производительности
+- **Components** - Переиспользуемые UI компоненты
+- **Lib** - API клиент, утилиты, хуки
+
+# === ОСНОВНЫЕ ПРИНЦИПЫ ===
+
+правила:
+  - Ты senior Python/TypeScript разработчик с экспертизой в AI и Telegram ботах
+  - Ты senior UX/UI разработчик и понимаешь принципы современного веб-дизайна
+  - Использовать async/await для всех I/O операций
+  - Все функции должны иметь type hints (Python) / типы (TypeScript)
+  - Использовать Pydantic для валидации данных
+  - Следовать Clean Architecture - разделение на слои
+  - Бот должен быть максимально тонким - вся логика в backend
+  - Обязательное логирование критических операций
+  - Graceful error handling с понятными сообщениями пользователю
+  - Тесты обязательны для бизнес-логики
+  - Документация в формате docstrings (Google style для Python, JSDoc для TypeScript)
+  - Поддержка нескольких языков (русский, чешский, английский)
+
+# === ПАТТЕРНЫ ПРОЕКТИРОВАНИЯ ===
+
+## Backend Patterns
+- **Repository Pattern** - Абстракция доступа к данным
+- **Service Layer Pattern** - Инкапсуляция бизнес-логики
+- **Dependency Injection** - Через FastAPI Depends
+- **Factory Pattern** - Для создания клиентов (OpenAI, и т.д.)
+- **Strategy Pattern** - Для разных режимов обучения (tutor, listener, psychologist)
+
+## Frontend Patterns
+- **Server Components First** - Использовать RSC где возможно
+- **Client Components** - Только для интерактивности
+- **Custom Hooks** - Для переиспользуемой логики
+- **Compound Components** - Для сложных UI элементов
+
+# === СТИЛЬ КОДА ===
+
+## Python (Backend + Bot)
+- PEP8 стандарт
+- Длина строки: 100 символов
+- Современный синтаксис типов: `list[str]` вместо `List[str]`
+- `Optional[T]` или `T | None` для nullable
+- Async функции с явным `async def`
+- Google-style docstrings
+
+## TypeScript (WebApp)
+- Strict mode включен
+- Functional components с TypeScript
+- Именованные экспорты предпочтительнее default
+- Использовать `const` по умолчанию
+- Destructuring для props
+
+## Соглашения об именовании
+
+### Python
+- Классы: `PascalCase` (UserRepository, OpenAIClient)
+- Функции/методы: `snake_case` (get_user_stats, process_voice_message)
+- Константы: `UPPER_SNAKE_CASE` (MAX_VOICE_DURATION, DEFAULT_LEVEL)
+- Приватные: `_leading_underscore` (_validate_audio, _calculate_score)
+
+### TypeScript
+- Компоненты: `PascalCase` (ProfilePage, StreakCalendar)
+- Функции: `camelCase` (getUserStats, processMessage)
+- Константы: `UPPER_SNAKE_CASE` (API_BASE_URL, MAX_RETRIES)
+- Типы/Интерфейсы: `PascalCase` (User, MessageResponse)
+
+# === СХЕМА БАЗЫ ДАННЫХ ===
+
+## Основные таблицы
+
+### users
+- id (PK)
+- telegram_id (unique, indexed)
+- username
+- first_name
+- native_language (ru, uk, en)
+- target_language (cs, en, de)
+- level (beginner|intermediate|advanced|native)
+- created_at
+- updated_at
+
+### user_settings
+- id (PK)
+- user_id (FK → users)
+- mode (chatty|elon_musk|listener|psychologist|translator|custom)
+- voice (alex|eric|henry|james|chatty|emily|turn_off)
+- voice_speed (very_slow|slow|normal|native)
+- topics (JSONB: список id тем)
+- timezone
+- notifications_enabled (bool)
+
+### messages
+- id (PK)
+- user_id (FK → users)
+- role (user|assistant)
+- text (текст сообщения)
+- transcript_raw (оригинальная транскрипция STT)
+- transcript_normalized (нормализованный текст)
+- audio_file_path (путь к аудио файлу)
+- correctness_score (0-100)
+- words_total (количество слов)
+- words_correct (правильных слов)
+- created_at
+
+### saved_words
+- id (PK)
+- user_id (FK → users)
+- word (слово)
+- translation (перевод)
+- context_sentence (предложение-контекст)
+- phonetics (фонетическая транскрипция)
+- times_reviewed (сколько раз повторялось)
+- created_at
+- last_reviewed_at
+
+### daily_stats
+- id (PK)
+- user_id (FK → users)
+- date (дата)
+- messages_count (количество сообщений)
+- words_said (слов сказано)
+- correct_percent (процент правильных)
+- streak_day (день streak подряд)
+
+### stars
+- id (PK)
+- user_id (FK → users)
+- total (всего заработано)
+- available (доступно для обмена)
+- lifetime (за все время)
+- updated_at
+
+### subscriptions (на будущее)
+- id (PK)
+- user_id (FK → users)
+- plan (free|monthly|yearly)
+- status (active|cancelled|expired)
+- started_at
+- expires_at
+- provider (telegram_stars|stripe|manual)
+
+### topics (справочник)
+- id (PK)
+- name (название темы)
+- description
+- is_active
+
+## Индексы
+- users.telegram_id (unique)
+- messages.user_id, messages.created_at (composite)
+- saved_words.user_id, saved_words.word (composite)
+- daily_stats.user_id, daily_stats.date (composite, unique)
+
+# === API ENDPOINTS (Backend) ===
+
+## Authentication
+POST /api/v1/auth/validate - Валидация Telegram WebApp initData
+
+## Users
+GET /api/v1/users/me - Получить текущего пользователя
+PATCH /api/v1/users/me - Обновить профиль
+GET /api/v1/users/me/settings - Получить настройки
+PATCH /api/v1/users/me/settings - Обновить настройки
+
+## Lessons (голосовые сообщения)
+POST /api/v1/lessons/process - Обработать голосовое сообщение
+  - Принимает: audio file (multipart/form-data)
+  - Возвращает: transcript, corrections, audio_response, score
+
+## Statistics
+GET /api/v1/stats/streak - Получить streak календарь
+GET /api/v1/stats/summary - Общая статистика (words said, correct %, и т.д.)
+GET /api/v1/stats/daily?from=YYYY-MM-DD&to=YYYY-MM-DD - Статистика по дням
+
+## Words
+GET /api/v1/words - Список сохраненных слов
+POST /api/v1/words - Сохранить слово
+DELETE /api/v1/words/{word_id} - Удалить слово
+PATCH /api/v1/words/{word_id}/review - Отметить повторение
+
+## Topics
+GET /api/v1/topics - Список доступных тем
+GET /api/v1/topics/{topic_id} - Детали темы
+
+## Stars
+GET /api/v1/stars - Получить баланс звезд
+POST /api/v1/stars/earn - Начислить звезды (внутренний endpoint)
+
+# === ОБРАБОТКА ГОЛОСОВЫХ СООБЩЕНИЙ ===
+
+## Процесс (POST /api/v1/lessons/process)
+
+1. **Прием аудио**
+   - Валидация формата (ogg, mp3, wav)
+   - Проверка длительности (макс 60 секунд для MVP)
+   - Сохранение файла
+
+2. **Speech-to-Text (Whisper)**
+   - Отправка в OpenAI Whisper API
+   - Получение транскрипции
+   - Сохранение raw transcript
+
+3. **Анализ и исправление (GPT)**
+   - Промпт с контекстом:
+     * Уровень пользователя
+     * Целевой язык
+     * Режим (tutor/listener/psychologist)
+     * История последних сообщений (опционально)
+   - LLM возвращает:
+     * Исправленный текст
+     * Список ошибок с объяснениями
+     * Оценка правильности (0-100)
+     * Рекомендации
+
+4. **Text-to-Speech (OpenAI TTS)**
+   - Генерация голосового ответа
+   - Использование выбранного голоса и скорости
+   - Возврат audio file
+
+5. **Сохранение в БД**
+   - Сохранение сообщения пользователя
+   - Сохранение ответа ассистента
+   - Обновление статистики
+   - Начисление звезд
+
+## Промпт-инжиниринг
+
+### Режимы работы бота
+
+#### 🇬🇧 Chatty (основной режим - Tutor)
+**Описание**: Классический репетитор, который активно исправляет ошибки и объясняет правила.
+
+**Промпт**:
+```
+You are a {target_language} language tutor for a {level} student.
+Their native language is {native_language}.
+
+Analyze the following transcription and:
+1. Identify grammar and pronunciation mistakes
+2. Provide corrections with explanations in {native_language}
+3. Rate correctness from 0-100
+4. Give a natural response to continue the conversation
+
+Transcription: {user_text}
+
+Respond in JSON format:
+{
+  "corrected_text": "...",
+  "mistakes": [{"original": "...", "corrected": "...", "explanation": "..."}],
+  "correctness_score": 85,
+  "response_text": "..."
+}
+```
+
+#### 🚀 Elon Musk (персонаж)
+**Описание**: Разговор с AI в роли Илона Маска - обсуждение технологий, бизнеса, космоса.
+
+**Промпт**:
+```
+You are Elon Musk speaking {target_language}.
+You're talking to a {level} student whose native language is {native_language}.
+
+Respond as Elon would - enthusiastic about technology, space, and innovation.
+Gently correct language mistakes while staying in character.
+Keep responses concise and engaging.
+
+Transcription: {user_text}
+```
+
+#### 🎧 Listener (друг)
+**Описание**: Дружелюбный собеседник, который слушает и поддерживает разговор.
+
+**Особенности**:
+- Минимум исправлений (только критические ошибки)
+- Фокус на поддержании разговора
+- Неформальный, дружелюбный тон
+- Задает вопросы, чтобы продолжить диалог
+
+**Промпт**:
+```
+You are a friendly conversation partner speaking {target_language}.
+Your goal is to keep the conversation flowing naturally.
+Only correct critical mistakes that impede understanding.
+Ask follow-up questions to encourage the student to speak more.
+
+Student level: {level}
+Native language: {native_language}
+
+Transcription: {user_text}
+```
+
+#### 🧠 Psychologist (психолог)
+**Описание**: Эмпатичный собеседник для обсуждения эмоций и переживаний.
+
+**Особенности**:
+- Эмпатичные, поддерживающие ответы
+- Помощь в выражении эмоций на целевом языке
+- Деликатные исправления
+- Активное слушание
+
+**Промпт**:
+```
+You are an empathetic psychologist speaking {target_language}.
+Help the student express their emotions and thoughts.
+Provide gentle language corrections without interrupting the emotional flow.
+Show understanding and ask reflective questions.
+
+Student level: {level}
+Native language: {native_language}
+
+Transcription: {user_text}
+```
+
+#### 🌍 Translator (переводчик)
+**Описание**: Помощь с переводом и объяснением нюансов языка.
+
+**Особенности**:
+- Точные переводы
+- Объяснение идиом и устойчивых выражений
+- Альтернативные варианты перевода
+- Культурный контекст
+
+**Промпт**:
+```
+You are a professional translator between {native_language} and {target_language}.
+Provide accurate translations and explain nuances.
+Offer alternative translations when applicable.
+Explain idioms and cultural context.
+
+Student level: {level}
+
+Transcription: {user_text}
+```
+
+#### 👤 Custom Mode (пользовательский режим)
+**Описание**: Пользователь может создать свой собственный режим с кастомным промптом.
+
+**Реализация**:
+- Пользователь вводит описание желаемого поведения
+- Система генерирует промпт на основе описания
+- Сохраняется в user_settings.custom_mode_prompt
+
+# === ГЕЙМИФИКАЦИЯ ===
+
+## Система звезд
+
+### Начисление звезд
+- 1 звезда за каждое отправленное сообщение
+- Бонус +1 за correctness_score > 80%
+- Бонус +2 за поддержание streak 7 дней
+- Бонус +5 за streak 30 дней
+
+### Daily Stars Challenge
+- Отправить 10 корректных сообщений за день
+- Награда: 10 звезд
+
+### Использование звезд (V2)
+- Обмен на подарки
+- Разблокировка премиум тем
+- Персональные уроки
+
+## Streak система
+
+### Правила
+- Streak увеличивается при отправке минимум 1 сообщения в день
+- Streak сбрасывается при пропуске дня
+- Timezone учитывается из настроек пользователя
+
+### Визуализация
+- Календарь с отметками дней
+- Текущий streak (🔥 иконка)
+- Максимальный streak
+
+# === TELEGRAM BOT (aiogram) ===
+
+## Команды
+
+### /start
+- Приветствие нового пользователя
+- Выбор родного языка
+- Выбор целевого языка
+- Выбор уровня
+- Создание пользователя в БД через backend API
+
+### /help
+**Commands:**
+- `/unlimited` - Manage unlimited subscription
+- `/voice` - Change Chatty's voice or turn off voice responses
+- `/level` - Change your English level for simpler or more complex responses
+- `/topics` - Choose a topic for discussion
+- `/saved` - View your saved words
+- `/voice_speed` - Change Chatty voice messages speed
+- `/stats` - Show your usage statistics of Chatty
+- `/languages` - Chatty bots for other languages
+- `/reset` - Start a new conversation. All previous messages will be permanently deleted from the database and will only remain in your history.
+
+**Советы по использованию:**
+- 🎤 Use Voice messages instead of text
+- 🤔 Don't hesitate to ask any questions. New phrases, word translations, grammar rules, etc.
+- 🗣️ Talk a lot. Your goal is to respond very detailed and use complex sentences.
+- ❤️ Ask to change the topic if you want - don't be afraid to offend Chatty.
+
+### /stats
+- Быстрая статистика (streak, words said, correct %)
+- Кнопка "Open WebApp" для детальной статистики
+
+### /saved
+- Список последних сохраненных слов
+- Кнопка "Open WebApp" для полного списка
+
+### /reset
+- Начать новый разговор
+- Все предыдущие сообщения будут удалены из БД
+- Сообщения останутся только в истории Telegram
+- Требуется подтверждение
+
+### /unlimited
+- Управление премиум подпиской
+- Информация о текущем плане
+- Ссылка на оплату
+
+### /languages
+- Список доступных языковых ботов
+- Переключение на другой язык обучения
+
+### /settings
+- Быстрые настройки через inline кнопки:
+  * /level - Изменить уровень
+  * /voice - Выбрать голос
+  * /voice_speed - Скорость речи
+  * /topics - Выбрать темы
+  * /mode - Режим обучения
+  * /invite - Пригласить друзей
+  * /premium - Получить премиум доступ
+
+## Обработка голосовых
+
+```python
+@router.message(F.voice)
+async def handle_voice(message: Message, api_client: APIClient):
+    """Обработка голосового сообщения."""
+    # 1. Скачать файл
+    file = await bot.get_file(message.voice.file_id)
+    audio_bytes = await bot.download_file(file.file_path)
+
+    # 2. Отправить в backend
+    response = await api_client.process_voice(
+        user_id=message.from_user.id,
+        audio=audio_bytes
+    )
+
+    # 3. Отправить голосовой ответ
+    await message.answer_voice(
+        voice=response.audio_response,
+        caption=response.corrections_text
+    )
+
+    # 4. Inline кнопки: "Text" (показать транскрипцию), "Help"
+    await message.answer(
+        "...",
+        reply_markup=get_voice_response_keyboard()
+    )
+```
+
+## Inline клавиатуры
+
+### Выбор уровня
+```
+[ Beginner ] [ Intermediate ]
+[ Advanced ] [    Native    ]
+```
+
+### Выбор скорости
+```
+[ Very Slow ] [ Slow ]
+[  Normal   ] [ Native ]
+```
+
+### Выбор режима
+```
+[ 🇬🇧 Chatty ✅ ] [ 🚀 Elon Musk ]
+[ 🎧 Listener  ] [ 🧠 Psychologist ]
+[ 🌍 Translator ] [ 👤 Custom Mode ]
+```
+
+### Выбор голоса
+```
+[   Alex   ] [  Eric   ] [ Henry ]
+[  James   ] [ Chatty ✅] [ Emily ]
+[        Turn off        ]
+```
+
+Доступные голоса:
+- **Alex** - Мужской, американский акцент
+- **Eric** - Мужской, британский акцент
+- **Henry** - Мужской, нейтральный
+- **James** - Мужской, формальный
+- **Chatty** - Женский, дружелюбный (по умолчанию)
+- **Emily** - Женский, профессиональный
+- **Turn off** - Отключить голосовые ответы
+
+# === WEBAPP (Next.js) ===
+
+## Страницы
+
+### / (Profile)
+- Streak календарь (текущий месяц)
+- Основная статистика:
+  * Words Said
+  * Max Streak
+  * Correct %
+  * Messages Sent
+- Кнопки навигации внизу: Profile | Saved | Stars | Settings
+
+### /saved
+- Список сохраненных слов
+- Каждое слово: word, translation, context
+- Кнопка удаления
+- Поиск по словам
+
+### /stars
+- Текущий баланс звезд
+- "Exchange stars for gifts" (Coming soon)
+- Daily Stars Challenge
+  * Прогресс (X/10 сообщений)
+  * Награда: 10 звезд
+- Boost stars with friends (реферальная система)
+
+### /settings
+**Премиум функции** (верхний блок):
+- 💝 **Get unlimited access** - Подписка на премиум
+  * Безлимитные голосовые сообщения
+  * Все режимы и голоса
+  * Приоритетная поддержка
+  * Возможность дарить 3 бесплатные недельные подписки в месяц
+
+- 👥 **Invite friends** - Реферальная система
+  * Уникальная реферальная ссылка
+  * Бонусные звезды за приглашенных друзей
+  * Статистика приглашений
+
+- 🎁 **Gift subscription** - Подарочные подписки
+  * Подарить подписку другу
+  * Выбор длительности (неделя, месяц, год)
+  * История подарков
+
+**Основные настройки** (средний блок):
+- 🎭 **Change mode** - Режим обучения
+  * 🇬🇧 Chatty (основной)
+  * 🚀 Elon Musk
+  * 🎧 Listener
+  * 🧠 Psychologist
+  * 🌍 Translator
+  * 👤 Custom Mode
+
+- 🎤 **Change Chatty voice** - Выбор голоса
+  * Alex, Eric, Henry, James (мужские)
+  * Chatty, Emily (женские)
+  * Turn off (отключить)
+
+- 📊 **Change your English level** - Уровень языка
+  * Beginner
+  * Intermediate
+  * Advanced
+  * Native
+
+- ⚡ **Change Chatty voice speed** - Скорость речи
+  * Very Slow
+  * Slow
+  * Normal
+  * Native
+
+- 📚 **Choose topics** - Выбор тем для разговора (50 topics available)
+  * Travel and Culture
+  * Food and Cooking
+  * Music and Art
+  * Sports and Fitness
+  * Technology and Social Media
+  * Work and Career
+  * Hobbies and Interests
+  * Daily Life
+  * Health and Wellness
+  * Education and Learning
+  * Relationships and Family
+  * Entertainment and Movies
+  * Books and Literature
+  * Nature and Environment
+  * Fashion and Style
+  * ... (всего 50 тем)
+
+**Дополнительно** (нижний блок):
+- ❓ **How to use Chatty** - Инструкция по использованию
+  * Видео-туториал
+  * Текстовое руководство
+  * FAQ
+  * Советы для эффективного обучения
+
+## Компоненты
+
+### StreakCalendar
+```tsx
+interface StreakCalendarProps {
+  streakData: DailyStreak[];
+  currentStreak: number;
+  maxStreak: number;
+}
+
+export function StreakCalendar({ streakData, currentStreak, maxStreak }: StreakCalendarProps) {
+  // Рендер календаря с отметками дней
+  // Текущий день - оранжевая обводка
+  // Дни со streak - синяя заливка
+}
+```
+
+### StatCard
+```tsx
+interface StatCardProps {
+  value: number | string;
+  label: string;
+  icon?: React.ReactNode;
+}
+
+export function StatCard({ value, label, icon }: StatCardProps) {
+  // Карточка статистики
+}
+```
+
+### SavedWordCard
+```tsx
+interface SavedWordCardProps {
+  word: SavedWord;
+  onDelete: (id: string) => void;
+}
+
+export function SavedWordCard({ word, onDelete }: SavedWordCardProps) {
+  // Карточка сохраненного слова
+}
+```
+
+## Авторизация через Telegram WebApp
+
+### Frontend (webapp)
+```typescript
+// lib/telegram.ts
+import { useEffect, useState } from 'react';
+
+export function useTelegramWebApp() {
+  const [webApp, setWebApp] = useState<any>(null);
+
+  useEffect(() => {
+    const app = (window as any).Telegram?.WebApp;
+    if (app) {
+      app.ready();
+      setWebApp(app);
+    }
+  }, []);
+
+  return webApp;
+}
+
+export function getInitData(): string {
+  return (window as any).Telegram?.WebApp?.initData || '';
+}
+```
+
+### Backend (FastAPI)
+```python
+# routers/auth.py
+from fastapi import Header, HTTPException
+import hmac
+import hashlib
+
+async def validate_telegram_init_data(
+    authorization: str = Header(...)
+) -> dict:
+    """Валидация Telegram WebApp initData."""
+    # 1. Парсинг initData
+    # 2. Проверка подписи HMAC-SHA256
+    # 3. Проверка срока действия (не старше 24 часов)
+    # 4. Возврат данных пользователя
+    pass
+```
+
+## Стилизация
+
+### Telegram Theme Variables
+```css
+:root {
+  --tg-theme-bg-color: #ffffff;
+  --tg-theme-text-color: #000000;
+  --tg-theme-hint-color: #999999;
+  --tg-theme-link-color: #2481cc;
+  --tg-theme-button-color: #2481cc;
+  --tg-theme-button-text-color: #ffffff;
+}
+
+[data-theme="dark"] {
+  --tg-theme-bg-color: #212121;
+  --tg-theme-text-color: #ffffff;
+  /* ... */
+}
+```
+
+### Использование
+```tsx
+// Автоматическая адаптация к теме Telegram
+<div className="bg-[var(--tg-theme-bg-color)] text-[var(--tg-theme-text-color)]">
+  {/* content */}
+</div>
+```
+
+# === ТЕСТИРОВАНИЕ ===
+
+## Backend (pytest)
+
+### Структура тестов
+```
+tests/
+├── conftest.py          # Fixtures
+├── test_services/
+│   ├── test_openai_client.py
+│   ├── test_correction_engine.py
+│   └── test_gamification.py
+├── test_routers/
+│   ├── test_auth.py
+│   ├── test_lessons.py
+│   └── test_stats.py
+└── test_repositories/
+    ├── test_user_repository.py
+    └── test_message_repository.py
+```
+
+### Примеры тестов
+```python
+# test_services/test_gamification.py
+import pytest
+from services.gamification import calculate_stars
+
+def test_calculate_stars_basic():
+    """Базовое начисление звезд."""
+    stars = calculate_stars(
+        messages_count=1,
+        correctness_score=50,
+        streak_days=0
+    )
+    assert stars == 1
+
+def test_calculate_stars_with_bonus():
+    """Начисление с бонусом за правильность."""
+    stars = calculate_stars(
+        messages_count=1,
+        correctness_score=85,
+        streak_days=0
+    )
+    assert stars == 2  # 1 базовая + 1 бонус
+```
+
+## Frontend (Jest + React Testing Library)
+
+```typescript
+// __tests__/components/StreakCalendar.test.tsx
+import { render, screen } from '@testing-library/react';
+import { StreakCalendar } from '@/components/StreakCalendar';
+
+describe('StreakCalendar', () => {
+  it('renders current streak', () => {
+    render(
+      <StreakCalendar
+        streakData={[]}
+        currentStreak={5}
+        maxStreak={10}
+      />
+    );
+
+    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getByText('days streak')).toBeInTheDocument();
+  });
+});
+```
+
+# === РАЗВЕРТЫВАНИЕ ===
+
+## Docker
+
+### docker-compose.yml
+```yaml
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:pass@db:5432/mluv
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - db
+
+  bot:
+    build: ./bot
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+
+  webapp:
+    build: ./webapp
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=mluv
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+## Переменные окружения
+
+### Backend (.env)
+```
+DATABASE_URL=postgresql://user:pass@localhost:5432/mluv
+OPENAI_API_KEY=sk-...
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_WEBAPP_SECRET=...
+LOG_LEVEL=INFO
+SENTRY_DSN=... (опционально)
+```
+
+### Bot (.env)
+```
+TELEGRAM_BOT_TOKEN=...
+BACKEND_URL=http://localhost:8000
+```
+
+### WebApp (.env.local)
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+# === ROADMAP ===
+
+## V1 (MVP) - 3-4 недели
+
+### Неделя 1: Инфраструктура
+- [x] Настройка монорепозитория
+- [x] Docker-compose для локальной разработки
+- [x] Backend: FastAPI + SQLAlchemy + Alembic
+- [x] Bot: aiogram базовая настройка
+- [x] WebApp: Next.js базовая настройка
+- [x] База данных: схема и миграции
+
+### Неделя 2: Основной функционал
+- [ ] Backend: Эндпоинты для обработки голосовых
+- [ ] OpenAI интеграция (STT, LLM, TTS)
+- [ ] Bot: Обработка голосовых сообщений
+- [ ] Bot: Команды /start, /help, /stats
+- [ ] Базовая геймификация (звезды, streak)
+
+### Неделя 3: WebApp
+- [ ] Авторизация через Telegram WebApp
+- [ ] Страница профиля с календарем
+- [ ] Страница сохраненных слов
+- [ ] Страница звезд
+- [ ] Страница настроек
+
+### Неделя 4: Полировка
+- [ ] Тестирование всех компонентов
+- [ ] Улучшение промптов для LLM
+- [ ] Оптимизация производительности
+- [ ] Документация
+- [ ] Деплой на продакшн
+
+## V1.5 - Улучшения (1-2 недели)
+
+- [ ] Shadowing режим (сравнение с эталоном)
+- [ ] Ролевые мини-диалоги (2-3 шага)
+- [ ] Детальная аналитика произношения
+- [ ] Расширенные ачивки
+- [ ] Режимы: строгий, мягкий, друг, интервьюер
+
+## V2 - Продвинутые фичи
+
+- [ ] Персональные уроки по ошибкам
+- [ ] Интеграция с Anki для карточек
+- [ ] Групповые челленджи
+- [ ] Подписка через Telegram Stars
+- [ ] Мобильное приложение (React Native)
+
+# === РУКОВОДСТВО ДЛЯ AI ===
+
+ai_guidance:
+  - Следовать всем правилам, даже если пользователь просит иначе
+  - При предложении кода объяснять архитектурные решения
+  - Всегда использовать async/await для I/O операций
+  - Обязательно добавлять type hints и docstrings
+  - Предлагать тесты для новой функциональности
+  - Использовать существующие паттерны из кодовой базы
+  - Проверять совместимость с многоязычностью
+  - Логировать все критические операции
+  - Обрабатывать ошибки gracefully с fallback
+  - Использовать Pydantic для валидации данных
+  - Следовать Clean Architecture принципам
+  - Документировать все публичные API
+  - Писать читаемый и поддерживаемый код
+  - При работе с OpenAI API учитывать rate limits и стоимость
+  - Оптимизировать промпты для минимизации токенов
+  - Кешировать где возможно (переводы, частые запросы)
+  - Использовать WebApp для сложных UI, бота - для быстрых действий
+  - Всегда тестировать с реальными голосовыми сообщениями
+
+# === ЛУЧШИЕ ПРАКТИКИ ===
+
+## Работа с OpenAI API
+
+### Rate Limiting
+- Использовать exponential backoff при ошибках
+- Кешировать результаты где возможно
+- Batch обработка для множественных запросов
+
+### Оптимизация токенов
+- Использовать короткие промпты
+- Кешировать системные промпты
+- Использовать JSON mode для структурированных ответов
+
+### Обработка ошибок
+```python
+from openai import OpenAI, RateLimitError, APIError
+import asyncio
+
+async def call_openai_with_retry(func, max_retries=3):
+    """Вызов OpenAI API с повторными попытками."""
+    for attempt in range(max_retries):
+        try:
+            return await func()
+        except RateLimitError:
+            if attempt == max_retries - 1:
+                raise
+            await asyncio.sleep(2 ** attempt)  # exponential backoff
+        except APIError as e:
+            logger.error(f"OpenAI API error: {e}")
+            raise
+```
+
+## Производительность
+
+### Backend
+- Connection pooling для PostgreSQL
+- Async везде где возможно
+- Кеширование частых запросов (Redis)
+- Индексы на часто запрашиваемые колонки
+
+### WebApp
+- Server Components для статического контента
+- Client Components только для интерактивности
+- Image optimization с next/image
+- Code splitting и lazy loading
+
+## Безопасность
+
+### Валидация Telegram WebApp
+- Всегда проверять подпись initData
+- Проверять срок действия (не старше 24 часов)
+- Не доверять данным от клиента без проверки
+
+### API Security
+- Rate limiting на все endpoints
+- Валидация всех входных данных через Pydantic
+- Санитизация пользовательского ввода
+- CORS настройки для WebApp
+
+### Хранение секретов
+- Никогда не коммитить .env файлы
+- Использовать переменные окружения
+- Ротация API ключей регулярно
+
+## Мониторинг
+
+### Логирование
+```python
+import structlog
+
+logger = structlog.get_logger()
+
+logger.info(
+    "voice_message_processed",
+    user_id=user_id,
+    duration_seconds=duration,
+    correctness_score=score,
+    words_count=words_count
+)
+```
+
+### Метрики (будущее)
+- Время обработки голосовых
+- Количество запросов к OpenAI
+- Стоимость API вызовов
+- Активные пользователи (DAU, MAU)
+- Retention rate
+
+# === ОБЩИЕ ПАТТЕРНЫ ===
+
+## Добавление нового endpoint в backend
+
+1. Создать Pydantic схему в `schemas/`
+2. Добавить метод в соответствующий сервис `services/`
+3. Создать endpoint в `routers/`
+4. Добавить тесты в `tests/test_routers/`
+5. Обновить документацию API
+
+## Добавление новой команды в бота
+
+1. Создать handler в `bot/handlers/`
+2. Добавить клавиатуру в `bot/keyboards/` (если нужно)
+3. Зарегистрировать в `bot/main.py`
+4. Добавить описание команды в BotFather
+5. Обновить /help текст
+
+## Добавление новой страницы в WebApp
+
+1. Создать `app/{page}/page.tsx`
+2. Создать необходимые компоненты в `components/`
+3. Добавить API клиент методы в `lib/api.ts`
+4. Добавить навигацию в layout
+5. Протестировать в Telegram WebApp
+
+## Добавление нового языка
+
+1. Добавить язык в enum (backend/models/)
+2. Создать файлы переводов (если используется i18n)
+3. Обновить промпты для LLM
+4. Добавить в настройки WebApp
+5. Протестировать все флоу
+
+# === ПРИМЕРЫ КОДА ===
+
+## Backend: Обработка голосового сообщения
+
+```python
+# routers/lesson.py
+from fastapi import APIRouter, UploadFile, Depends
+from services.openai_client import OpenAIClient
+from services.correction_engine import CorrectionEngine
+from schemas.lesson import LessonResponse
+
+router = APIRouter(prefix="/api/v1/lessons", tags=["lessons"])
+
+@router.post("/process", response_model=LessonResponse)
+async def process_voice_message(
+    audio: UploadFile,
+    user_id: int,
+    openai_client: OpenAIClient = Depends(),
+    correction_engine: CorrectionEngine = Depends()
+):
+    """Обработка голосового сообщения."""
+    # 1. STT
+    transcript = await openai_client.transcribe(audio.file)
+
+    # 2. Анализ и исправление
+    corrections = await correction_engine.analyze(
+        text=transcript,
+        user_id=user_id
+    )
+
+    # 3. TTS
+    audio_response = await openai_client.synthesize(
+        text=corrections.response_text,
+        voice=user.settings.voice,
+        speed=user.settings.voice_speed
+    )
+
+    # 4. Сохранение в БД
+    await save_message(user_id, transcript, corrections)
+
+    # 5. Начисление звезд
+    await award_stars(user_id, corrections.correctness_score)
+
+    return LessonResponse(
+        transcript=transcript,
+        corrections=corrections,
+        audio_response=audio_response
+    )
+```
+
+## Bot: Обработка голосового
+
+```python
+# bot/handlers/voice.py
+from aiogram import Router, F
+from aiogram.types import Message, FSInputFile
+from services.api_client import APIClient
+
+router = Router()
+
+@router.message(F.voice)
+async def handle_voice(message: Message, api_client: APIClient):
+    """Обработка голосового сообщения."""
+    # Показать typing
+    await message.bot.send_chat_action(
+        chat_id=message.chat.id,
+        action="typing"
+    )
+
+    # Скачать файл
+    file = await message.bot.get_file(message.voice.file_id)
+    audio_bytes = await message.bot.download_file(file.file_path)
+
+    # Отправить в backend
+    response = await api_client.process_voice(
+        user_id=message.from_user.id,
+        audio=audio_bytes
+    )
+
+    # Отправить голосовой ответ
+    await message.answer_voice(
+        voice=FSInputFile.from_bytes(response.audio_response),
+        caption=f"✅ Correctness: {response.correctness_score}%"
+    )
+
+    # Показать исправления
+    if response.corrections.mistakes:
+        mistakes_text = "\n".join([
+            f"❌ {m.original} → ✅ {m.corrected}\n💡 {m.explanation}"
+            for m in response.corrections.mistakes
+        ])
+        await message.answer(mistakes_text)
+```
+
+## WebApp: Страница профиля
+
+```tsx
+// app/page.tsx
+import { StreakCalendar } from '@/components/StreakCalendar';
+import { StatCard } from '@/components/StatCard';
+import { getStats } from '@/lib/api';
+
+export default async function ProfilePage() {
+  const stats = await getStats();
+
+  return (
+    <div className="min-h-screen bg-[var(--tg-theme-bg-color)] p-4">
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold">Profile</h1>
+      </header>
+
+      <StreakCalendar
+        streakData={stats.daily_stats}
+        currentStreak={stats.current_streak}
+        maxStreak={stats.max_streak}
+      />
+
+      <div className="grid grid-cols-2 gap-4 mt-6">
+        <StatCard
+          value={stats.words_said}
+          label="Words Said"
+        />
+        <StatCard
+          value={stats.max_streak}
+          label="Max streak"
+        />
+        <StatCard
+          value={`${stats.correct_percent}%`}
+          label="Correct"
+        />
+        <StatCard
+          value={stats.messages_sent}
+          label="Messages Sent"
+        />
+      </div>
+    </div>
+  );
+}
+```
+
+# === ЗАКЛЮЧЕНИЕ ===
+
+Этот файл `.cursorrules` является живым документом и должен обновляться по мере развития проекта.
+
+При возникновении вопросов или неясностей - обращайся к этому файлу.
+При добавлении новых паттернов или соглашений - обновляй этот файл.
+
+Удачи в разработке Mluv.Me! 🚀
