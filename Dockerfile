@@ -25,8 +25,17 @@ EXPOSE ${PORT:-8000}
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8000}/health')"
 
-# Run migrations and start application
-CMD alembic upgrade head && \
-    uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} & \
-    python bot/main.py
+# Create startup script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "Running database migrations..."\n\
+alembic upgrade head\n\
+echo "Starting backend server..."\n\
+uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} &\n\
+echo "Starting bot..."\n\
+python bot/main.py\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
+# Run startup script
+CMD ["/bin/bash", "/app/start.sh"]
 

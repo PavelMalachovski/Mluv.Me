@@ -26,6 +26,7 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = Field(
+        default="sqlite+aiosqlite:///./temp.db",
         description="Database connection string (PostgreSQL or SQLite for testing)"
     )
 
