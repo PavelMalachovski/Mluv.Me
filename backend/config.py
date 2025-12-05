@@ -6,7 +6,7 @@ Application configuration using Pydantic Settings.
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -108,6 +108,23 @@ class Settings(BaseSettings):
     def is_testing(self) -> bool:
         """Check if running in testing."""
         return self.environment == "testing"
+
+    @field_validator("environment", mode="before")
+    @classmethod
+    def normalize_environment(cls, value: str) -> str:
+        """
+        Normalize environment value to lowercase and validate allowed options.
+
+        Railway may pass values with different casing (e.g., "Production").
+        This ensures they are accepted while preserving strict choices.
+        """
+        if not isinstance(value, str):
+            raise ValueError("environment must be a string")
+        value_normalized = value.lower()
+        allowed = {"development", "production", "testing"}
+        if value_normalized not in allowed:
+            raise ValueError(f"environment must be one of {allowed}")
+        return value_normalized
 
 
 @lru_cache
