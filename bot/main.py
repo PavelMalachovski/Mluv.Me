@@ -63,12 +63,23 @@ async def main() -> None:
 
         logger.info("bot_started", mode="polling")
 
-        # Запускаем polling
-        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+        # Запускаем polling с обработкой конфликтов
+        await dp.start_polling(
+            bot,
+            allowed_updates=dp.resolve_used_update_types(),
+            handle_as_tasks=False,  # Обработка последовательно, чтобы избежать конфликтов
+        )
 
+    except KeyboardInterrupt:
+        logger.info("bot_stopped_by_keyboard_interrupt")
     except Exception as e:
-        logger.error("bot_error", error=str(e))
-        raise
+        logger.error("bot_error", error=str(e), error_type=type(e).__name__, exc_info=True)
+        # Не прерываем выполнение, если это конфликт - просто логируем
+        if "Conflict" in str(e):
+            logger.warning("bot_conflict_detected",
+                          message="Another bot instance is running. This instance will stop.")
+        else:
+            raise
     finally:
         await api_client.close()
         await bot.session.close()

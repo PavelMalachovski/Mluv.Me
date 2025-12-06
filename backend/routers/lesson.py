@@ -286,14 +286,32 @@ async def process_voice_message(
         )
 
     except ValueError as e:
-        log.error("validation_error", error=str(e))
+        log.error("validation_error", error=str(e), exc_info=True)
+        await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
-    except Exception as e:
-        log.error("processing_error", error=str(e), exc_info=True)
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
         await db.rollback()
+        raise
+
+    except Exception as e:
+        log.error(
+            "processing_error",
+            error=str(e),
+            error_type=type(e).__name__,
+            exc_info=True
+        )
+        await db.rollback()
+
+        # Return more detailed error in development
+        import traceback
+        detail = f"Failed to process voice message: {str(e)}"
+        if settings.is_development:
+            detail += f"\n\nTraceback:\n{traceback.format_exc()}"
+
         raise HTTPException(
             status_code=500,
-            detail="Failed to process voice message. Please try again.",
+            detail=detail,
         )
 

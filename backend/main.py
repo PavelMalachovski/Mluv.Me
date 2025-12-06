@@ -139,19 +139,30 @@ async def global_exception_handler(request, exc: Exception) -> JSONResponse:
     Global exception handler.
     Логирует все необработанные ошибки.
     """
+    import traceback
+
     logger.error(
         "unhandled_exception",
         exc_type=type(exc).__name__,
         exc_message=str(exc),
         path=request.url.path,
+        exc_info=True,
     )
+
+    # В development режиме возвращаем traceback
+    settings = get_settings()
+    content = {
+        "detail": "Internal server error",
+        "message": "Něco se pokazilo, ale už to opravuji! 🔧"
+    }
+
+    if settings.is_development:
+        content["error"] = str(exc)
+        content["traceback"] = traceback.format_exc()
 
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "detail": "Internal server error",
-            "message": "Něco se pokazilo, ale už to opravuji! 🔧"
-        }
+        content=content
     )
 
 
