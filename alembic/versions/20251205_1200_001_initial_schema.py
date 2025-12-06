@@ -9,6 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -22,19 +23,43 @@ def upgrade() -> None:
     """Create all tables for Mluv.Me."""
 
     # Create enums
-    ui_language_enum = sa.Enum('ru', 'uk', name='ui_language_enum')
-    level_enum = sa.Enum('beginner', 'intermediate', 'advanced', 'native', name='level_enum')
-    conversation_style_enum = sa.Enum('friendly', 'tutor', 'casual', name='conversation_style_enum')
-    voice_speed_enum = sa.Enum('very_slow', 'slow', 'normal', 'native', name='voice_speed_enum')
-    corrections_level_enum = sa.Enum('minimal', 'balanced', 'detailed', name='corrections_level_enum')
-    message_role_enum = sa.Enum('user', 'assistant', name='message_role_enum')
+    ui_language_enum = postgresql.ENUM(
+        'ru', 'uk', name='ui_language_enum', create_type=True
+    )
+    level_enum = postgresql.ENUM(
+        'beginner', 'intermediate', 'advanced', 'native',
+        name='level_enum',
+        create_type=True,
+    )
+    conversation_style_enum = postgresql.ENUM(
+        'friendly', 'tutor', 'casual',
+        name='conversation_style_enum',
+        create_type=True,
+    )
+    voice_speed_enum = postgresql.ENUM(
+        'very_slow', 'slow', 'normal', 'native',
+        name='voice_speed_enum',
+        create_type=True,
+    )
+    corrections_level_enum = postgresql.ENUM(
+        'minimal', 'balanced', 'detailed',
+        name='corrections_level_enum',
+        create_type=True,
+    )
+    message_role_enum = postgresql.ENUM(
+        'user', 'assistant',
+        name='message_role_enum',
+        create_type=True,
+    )
 
-    ui_language_enum.create(op.get_bind())
-    level_enum.create(op.get_bind())
-    conversation_style_enum.create(op.get_bind())
-    voice_speed_enum.create(op.get_bind())
-    corrections_level_enum.create(op.get_bind())
-    message_role_enum.create(op.get_bind())
+    # Use checkfirst to avoid duplicate type errors on reruns
+    bind = op.get_bind()
+    ui_language_enum.create(bind, checkfirst=True)
+    level_enum.create(bind, checkfirst=True)
+    conversation_style_enum.create(bind, checkfirst=True)
+    voice_speed_enum.create(bind, checkfirst=True)
+    corrections_level_enum.create(bind, checkfirst=True)
+    message_role_enum.create(bind, checkfirst=True)
 
     # Create users table
     op.create_table(
@@ -196,10 +221,10 @@ def downgrade() -> None:
     op.drop_table('users')
 
     # Drop enums
-    sa.Enum(name='message_role_enum').drop(op.get_bind())
-    sa.Enum(name='corrections_level_enum').drop(op.get_bind())
-    sa.Enum(name='voice_speed_enum').drop(op.get_bind())
-    sa.Enum(name='conversation_style_enum').drop(op.get_bind())
-    sa.Enum(name='level_enum').drop(op.get_bind())
-    sa.Enum(name='ui_language_enum').drop(op.get_bind())
+    postgresql.ENUM(name='message_role_enum').drop(op.get_bind(), checkfirst=True)
+    postgresql.ENUM(name='corrections_level_enum').drop(op.get_bind(), checkfirst=True)
+    postgresql.ENUM(name='voice_speed_enum').drop(op.get_bind(), checkfirst=True)
+    postgresql.ENUM(name='conversation_style_enum').drop(op.get_bind(), checkfirst=True)
+    postgresql.ENUM(name='level_enum').drop(op.get_bind(), checkfirst=True)
+    postgresql.ENUM(name='ui_language_enum').drop(op.get_bind(), checkfirst=True)
 
