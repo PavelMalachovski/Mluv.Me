@@ -262,7 +262,7 @@ async def process_voice_message(
         # 11. Формируем ответ
         # Кодируем аудио в base64 для передачи через JSON
         audio_base64 = base64.b64encode(audio_response).decode('utf-8')
-        
+
         return LessonProcessResponse(
             transcript=transcript,
             honzik_response_text=processed["honzik_response"],
