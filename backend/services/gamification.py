@@ -219,11 +219,12 @@ class GamificationService:
         # Получаем статистику за вчера
         yesterday = user_date - timedelta(days=1)
         yesterday_stats = await self.stats_repo.get_daily_stats(
-            db, user_id, yesterday
+            user_id=user_id,
+            date_value=yesterday,
         )
 
         # Получаем общую статистику пользователя
-        user_stats = await self.stats_repo.get_user_summary(db, user_id)
+        user_stats = await self.stats_repo.get_user_summary(user_id=user_id)
         current_streak = user_stats.get("current_streak", 0)
         max_streak = user_stats.get("max_streak", 0)
 
@@ -247,10 +248,9 @@ class GamificationService:
             new_max_streak = max(max_streak, new_streak)
 
             # Сохраняем в daily_stats
-            await self.stats_repo.update_daily_stats(
-                db,
-                user_id,
-                user_date,
+            await self.stats_repo.update_daily(
+                user_id=user_id,
+                date_value=user_date,
                 streak_day=new_streak,
             )
 
@@ -303,7 +303,8 @@ class GamificationService:
 
         # Получаем статистику за сегодня
         today_stats = await self.stats_repo.get_daily_stats(
-            db, user_id, user_date
+            user_id=user_id,
+            date_value=user_date,
         )
 
         messages_today = today_stats.get("messages_count", 0) if today_stats else 0
