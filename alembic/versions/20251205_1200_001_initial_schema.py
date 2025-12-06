@@ -22,44 +22,68 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Create all tables for Mluv.Me."""
 
+    def _ensure_enum_type(name: str, values: list[str]) -> None:
+        """Create enum type if missing to handle reruns safely."""
+        values_sql = ", ".join(f"'{v}'" for v in values)
+        op.execute(
+            sa.text(
+                """
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM pg_type t
+                        JOIN pg_namespace n ON n.oid = t.typnamespace
+                        WHERE n.nspname = current_schema()
+                          AND t.typname = :enum_name
+                    ) THEN
+                        EXECUTE 'CREATE TYPE ' || quote_ident(:enum_name)
+                            || ' AS ENUM ({{values}})';
+                    END IF;
+                END $$;
+                """.replace("{values}", values_sql)
+            ).bindparams(enum_name=name)
+        )
+
     # Create enums
     ui_language_enum = postgresql.ENUM(
-        'ru', 'uk', name='ui_language_enum', create_type=True
+        'ru', 'uk', name='ui_language_enum', create_type=False
     )
     level_enum = postgresql.ENUM(
         'beginner', 'intermediate', 'advanced', 'native',
         name='level_enum',
-        create_type=True,
+        create_type=False,
     )
     conversation_style_enum = postgresql.ENUM(
         'friendly', 'tutor', 'casual',
         name='conversation_style_enum',
-        create_type=True,
+        create_type=False,
     )
     voice_speed_enum = postgresql.ENUM(
         'very_slow', 'slow', 'normal', 'native',
         name='voice_speed_enum',
-        create_type=True,
+        create_type=False,
     )
     corrections_level_enum = postgresql.ENUM(
         'minimal', 'balanced', 'detailed',
         name='corrections_level_enum',
-        create_type=True,
+        create_type=False,
     )
     message_role_enum = postgresql.ENUM(
         'user', 'assistant',
         name='message_role_enum',
-        create_type=True,
+        create_type=False,
     )
 
-    # Use checkfirst to avoid duplicate type errors on reruns
-    bind = op.get_bind()
-    ui_language_enum.create(bind, checkfirst=True)
-    level_enum.create(bind, checkfirst=True)
-    conversation_style_enum.create(bind, checkfirst=True)
-    voice_speed_enum.create(bind, checkfirst=True)
-    corrections_level_enum.create(bind, checkfirst=True)
-    message_role_enum.create(bind, checkfirst=True)
+    # Ensure enum types exist (safe for reruns)
+    _ensure_enum_type('ui_language_enum', ['ru', 'uk'])
+    _ensure_enum_type(
+        'level_enum',
+        ['beginner', 'intermediate', 'advanced', 'native'],
+    )
+    _ensure_enum_type('conversation_style_enum', ['friendly', 'tutor', 'casual'])
+    _ensure_enum_type('voice_speed_enum', ['very_slow', 'slow', 'normal', 'native'])
+    _ensure_enum_type('corrections_level_enum', ['minimal', 'balanced', 'detailed'])
+    _ensure_enum_type('message_role_enum', ['user', 'assistant'])
 
     # Create users table
     op.create_table(
@@ -221,10 +245,22 @@ def downgrade() -> None:
     op.drop_table('users')
 
     # Drop enums
-    postgresql.ENUM(name='message_role_enum').drop(op.get_bind(), checkfirst=True)
-    postgresql.ENUM(name='corrections_level_enum').drop(op.get_bind(), checkfirst=True)
-    postgresql.ENUM(name='voice_speed_enum').drop(op.get_bind(), checkfirst=True)
-    postgresql.ENUM(name='conversation_style_enum').drop(op.get_bind(), checkfirst=True)
-    postgresql.ENUM(name='level_enum').drop(op.get_bind(), checkfirst=True)
-    postgresql.ENUM(name='ui_language_enum').drop(op.get_bind(), checkfirst=True)
+    postgresql.ENUM(name='message_role_enum', create_type=False).drop(
+        op.get_bind(), checkfirst=True
+    )
+    postgresql.ENUM(name='corrections_level_enum', create_type=False).drop(
+        op.get_bind(), checkfirst=True
+    )
+    postgresql.ENUM(name='voice_speed_enum', create_type=False).drop(
+        op.get_bind(), checkfirst=True
+    )
+    postgresql.ENUM(name='conversation_style_enum', create_type=False).drop(
+        op.get_bind(), checkfirst=True
+    )
+    postgresql.ENUM(name='level_enum', create_type=False).drop(
+        op.get_bind(), checkfirst=True
+    )
+    postgresql.ENUM(name='ui_language_enum', create_type=False).drop(
+        op.get_bind(), checkfirst=True
+    )
 
