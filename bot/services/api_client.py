@@ -152,13 +152,13 @@ class APIClient:
             return None
 
     async def process_voice(
-        self, telegram_id: int, audio_bytes: bytes, filename: str = "voice.ogg"
+        self, user_id: int, audio_bytes: bytes, filename: str = "voice.ogg"
     ) -> Optional[dict[str, Any]]:
         """
         Обработать голосовое сообщение.
 
         Args:
-            telegram_id: Telegram ID пользователя
+            user_id: Telegram ID пользователя
             audio_bytes: Байты аудио файла
             filename: Имя файла
 
@@ -169,7 +169,7 @@ class APIClient:
         try:
             # Создаем multipart form data
             data = FormData()
-            data.add_field("telegram_id", str(telegram_id))
+            data.add_field("user_id", str(user_id))
             data.add_field(
                 "audio",
                 io.BytesIO(audio_bytes),
@@ -185,12 +185,12 @@ class APIClient:
                 else:
                     logger.error(
                         "process_voice_failed",
-                        telegram_id=telegram_id,
+                        user_id=user_id,
                         status=resp.status,
                     )
                     return None
         except Exception as e:
-            logger.error("process_voice_error", telegram_id=telegram_id, error=str(e))
+            logger.error("process_voice_error", user_id=user_id, error=str(e))
             return None
 
     async def get_stats(self, telegram_id: int) -> Optional[dict[str, Any]]:

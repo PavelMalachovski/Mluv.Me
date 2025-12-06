@@ -55,7 +55,7 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
         )
 
         response = await api_client.process_voice(
-            telegram_id=telegram_id,
+            user_id=telegram_id,
             audio_bytes=audio_bytes.read(),
             filename="voice.ogg",
         )
@@ -65,29 +65,36 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
             return
 
         # Получаем данные из ответа
-        audio_response = response.get("audio_response")
-        correctness_score = response.get("correctness_score", 0)
-        streak = response.get("streak", 0)
+        audio_response = response.get("honzik_response_audio") or response.get(
+            "audio_response"
+        )
+        corrections = response.get("corrections", {}) or {}
+        correctness_score = corrections.get("correctness_score", 0)
+        streak = response.get("current_streak", response.get("streak", 0))
         stars_earned = response.get("stars_earned", 0)
-        corrections = response.get("corrections", {})
 
         # Отправляем голосовой ответ Хонзика
-        if audio_response:
-            # Конвертируем base64 в bytes если нужно
+        if audio_response is not None:
             import base64
 
+            audio_bytes_response = None
             if isinstance(audio_response, str):
                 audio_bytes_response = base64.b64decode(audio_response)
-            else:
+            elif isinstance(audio_response, bytes):
                 audio_bytes_response = audio_response
 
-            voice_file = BufferedInputFile(audio_bytes_response, filename="honzik.ogg")
+            if audio_bytes_response:
+                voice_file = BufferedInputFile(
+                    audio_bytes_response, filename="honzik.ogg"
+                )
 
-            # Создаем caption с результатами
-            caption = f"{get_text('voice_correctness', language, score=correctness_score)}\n"
-            caption += f"{get_text('voice_streak', language, streak=streak)}"
+                # Создаем caption с результатами
+                caption = (
+                    f"{get_text('voice_correctness', language, score=correctness_score)}\n"
+                )
+                caption += f"{get_text('voice_streak', language, streak=streak)}"
 
-            await message.answer_voice(voice=voice_file, caption=caption)
+                await message.answer_voice(voice=voice_file, caption=caption)
 
         # Показываем исправления если есть
         mistakes = corrections.get("mistakes", [])
