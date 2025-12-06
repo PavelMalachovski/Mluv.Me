@@ -24,7 +24,10 @@ def upgrade() -> None:
 
     def _ensure_enum_type(name: str, values: list[str]) -> None:
         """Create enum type if missing to handle reruns safely."""
-        values_sql = ", ".join(f"'{v}'" for v in values)
+        # Values must be double-quoted inside the SQL string so that the DO block
+        # sees them as string literals. Single quoting (e.g. 'ru') breaks the
+        # format() string and produces a syntax error like "near ru".
+        values_sql = ", ".join(f"''{v}''" for v in values)
         op.execute(
             sa.text(
                 f"""
