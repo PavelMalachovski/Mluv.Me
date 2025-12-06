@@ -27,21 +27,23 @@ def upgrade() -> None:
         values_sql = ", ".join(f"'{v}'" for v in values)
         op.execute(
             sa.text(
-                """
+                f"""
                 DO $$
                 BEGIN
                     IF NOT EXISTS (
                         SELECT 1 FROM pg_type t
                         JOIN pg_namespace n ON n.oid = t.typnamespace
                         WHERE n.nspname = current_schema()
-                          AND t.typname = :enum_name
+                          AND t.typname = '{name}'
                     ) THEN
-                        EXECUTE 'CREATE TYPE ' || quote_ident(:enum_name)
-                            || ' AS ENUM ({{values}})';
+                        EXECUTE format(
+                            'CREATE TYPE %I AS ENUM ({values_sql})',
+                            '{name}'
+                        );
                     END IF;
                 END $$;
-                """.replace("{values}", values_sql)
-            ).bindparams(enum_name=name)
+                """
+            )
         )
 
     # Create enums
