@@ -4,3 +4,4 @@ Mluv.Me Backend - FastAPI приложение для Telegram бота Хонз
 
 __version__ = "1.0.0"
 
+

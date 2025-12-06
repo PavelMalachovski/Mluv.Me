@@ -389,3 +389,4 @@ class StatsRepository:
         await self.session.commit()
         return await self.get_user_stars(user_id)
 
+

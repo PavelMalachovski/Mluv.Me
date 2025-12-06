@@ -296,3 +296,4 @@ async def update_user_settings(
 
     return UserSettingsResponse.model_validate(settings)
 
+

@@ -158,3 +158,4 @@ class Stars(Base):
             f"total={self.total}, lifetime={self.lifetime})>"
         )
 
+

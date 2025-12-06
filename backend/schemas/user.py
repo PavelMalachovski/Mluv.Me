@@ -78,3 +78,4 @@ class UserSettingsResponse(BaseModel):
     timezone: str
     notifications_enabled: bool
 
+

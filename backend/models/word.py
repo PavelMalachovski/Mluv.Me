@@ -97,3 +97,4 @@ class SavedWord(Base):
             f"word={self.word_czech}, translation={self.translation})>"
         )
 
+

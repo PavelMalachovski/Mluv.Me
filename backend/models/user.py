@@ -194,3 +194,4 @@ class UserSettings(Base):
             f"corrections={self.corrections_level})>"
         )
 
+
