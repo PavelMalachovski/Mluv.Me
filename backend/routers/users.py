@@ -297,3 +297,71 @@ async def update_user_settings(
     return UserSettingsResponse.model_validate(settings)
 
 
+@router.patch(
+    "/telegram/{telegram_id}/settings",
+    response_model=UserSettingsResponse,
+    summary="Обновить настройки пользователя по Telegram ID",
+    description="Обновить настройки пользователя (стиль Хонзика, скорость голоса, и т.д.)",
+)
+async def update_user_settings_by_telegram(
+    telegram_id: int,
+    settings_data: UserSettingsUpdate,
+    session: AsyncSession = Depends(get_session),
+) -> UserSettingsResponse:
+    """
+    Обновить настройки пользователя по Telegram ID.
+
+    Args:
+        telegram_id: Telegram ID
+        settings_data: Обновляемые настройки
+        session: Database session
+
+    Returns:
+        UserSettingsResponse: Обновленные настройки
+
+    Raises:
+        HTTPException: Если пользователь не найден
+    """
+    user_repo = UserRepository(session)
+    user = await user_repo.get_by_telegram_id(telegram_id)
+
+    if not user:
+        logger.warning("user_not_found", telegram_id=telegram_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with telegram_id {telegram_id} not found"
+        )
+
+    repo = UserSettingsRepository(session)
+
+    # Only update fields that are provided
+    update_data = settings_data.model_dump(exclude_unset=True)
+    if not update_data:
+        # No fields to update
+        settings = await repo.get_by_user_id(user.id)
+        if not settings:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Settings for user {user.id} not found"
+            )
+        return UserSettingsResponse.model_validate(settings)
+
+    settings = await repo.update(user.id, **update_data)
+
+    if not settings:
+        logger.warning("settings_not_found", user_id=user.id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Settings for user {user.id} not found"
+        )
+
+    logger.info(
+        "settings_updated",
+        telegram_id=telegram_id,
+        user_id=user.id,
+        updated_fields=list(update_data.keys())
+    )
+
+    return UserSettingsResponse.model_validate(settings)
+
+
