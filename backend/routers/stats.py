@@ -8,12 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.db.database import get_session
-from backend.db.repositories import (
-    DailyStatsRepository,
-    MessageRepository,
-    StarsRepository,
-    UserRepository,
-)
+from backend.db.repositories import StatsRepository, UserRepository
 
 logger = structlog.get_logger()
 
@@ -52,23 +47,16 @@ async def get_stats_summary(
             detail=f"User with telegram_id {telegram_id} not found",
         )
 
-    # Получаем streak
-    stats_repo = DailyStatsRepository(session)
-    streak = await stats_repo.get_current_streak(user.id)
-
-    # Получаем статистику сообщений
-    message_repo = MessageRepository(session)
-    messages_stats = await message_repo.get_user_stats(user.id)
-
-    # Получаем звезды
-    stars_repo = StarsRepository(session)
-    stars = await stars_repo.get_by_user_id(user.id)
+    # Собираем агрегированную статистику пользователя
+    stats_repo = StatsRepository(session)
+    summary = await stats_repo.get_user_summary(user.id)
+    stars = await stats_repo.get_user_stars(user.id)
 
     return {
-        "streak": streak,
-        "words_said": messages_stats.get("total_words", 0),
-        "correct_percent": messages_stats.get("avg_correctness", 0),
-        "messages_count": messages_stats.get("total_messages", 0),
+        "streak": summary.get("current_streak", 0),
+        "words_said": summary.get("total_words", 0),
+        "correct_percent": summary.get("average_correctness", 0),
+        "messages_count": summary.get("total_messages", 0),
         "stars": stars.total if stars else 0,
     }
 

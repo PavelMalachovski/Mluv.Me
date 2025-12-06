@@ -33,7 +33,7 @@ alembic upgrade head\n\
 echo "Starting backend server..."\n\
 uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} &\n\
 echo "Starting bot..."\n\
-python bot/main.py\n\
+python -m bot.main\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
 # Run startup script
