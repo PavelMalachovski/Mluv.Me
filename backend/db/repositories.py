@@ -186,6 +186,23 @@ class MessageRepository:
         await self.session.refresh(message)
         return message
 
+    async def get_user_messages(
+        self,
+        user_id: int,
+        limit: int = 10,
+    ) -> list[Message]:
+        """
+        Получить последние сообщения пользователя (user и assistant).
+
+        Args:
+            user_id: ID пользователя
+            limit: Максимальное количество сообщений
+
+        Returns:
+            list[Message]: Сообщения, отсортированные от новых к старым
+        """
+        return await self.get_recent_by_user(user_id=user_id, limit=limit)
+
     async def get_recent_by_user(
         self,
         user_id: int,
