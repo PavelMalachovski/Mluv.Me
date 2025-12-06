@@ -1,9 +1,7 @@
 """
-FastAPI routers для API endpoints.
+API routers для FastAPI endpoints.
 """
 
-from backend.routers import users
+from . import users, lesson
 
-__all__ = ["users"]
-
-
+__all__ = ["users", "lesson"]

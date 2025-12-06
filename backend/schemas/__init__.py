@@ -9,6 +9,14 @@ from backend.schemas.user import (
     UserSettingsResponse,
     UserSettingsUpdate,
 )
+from backend.schemas.lesson import (
+    MistakeSchema,
+    CorrectionSchema,
+    DailyChallengeSchema,
+    LessonProcessRequest,
+    LessonProcessResponse,
+    VoiceSettingsSchema,
+)
 
 __all__ = [
     "UserCreate",
@@ -16,6 +24,12 @@ __all__ = [
     "UserUpdate",
     "UserSettingsResponse",
     "UserSettingsUpdate",
+    "MistakeSchema",
+    "CorrectionSchema",
+    "DailyChallengeSchema",
+    "LessonProcessRequest",
+    "LessonProcessResponse",
+    "VoiceSettingsSchema",
 ]
 
 

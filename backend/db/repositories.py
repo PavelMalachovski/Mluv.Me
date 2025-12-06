@@ -389,4 +389,117 @@ class StatsRepository:
         await self.session.commit()
         return await self.get_user_stars(user_id)
 
+    async def get_daily_stats(
+        self, user_id: int, date_value: date
+    ) -> dict[str, Any] | None:
+        """
+        Получить статистику за конкретный день.
+
+        Args:
+            user_id: ID пользователя
+            date_value: Дата
+
+        Returns:
+            dict | None: Словарь со статистикой или None
+        """
+        result = await self.session.execute(
+            select(DailyStats).where(
+                and_(
+                    DailyStats.user_id == user_id,
+                    DailyStats.date == date_value
+                )
+            )
+        )
+        stats = result.scalar_one_or_none()
+
+        if stats is None:
+            return None
+
+        return {
+            "messages_count": stats.messages_count,
+            "words_said": stats.words_said,
+            "correct_percent": stats.correct_percent,
+            "streak_day": stats.streak_day,
+        }
+
+    async def get_user_summary(self, user_id: int) -> dict[str, Any]:
+        """
+        Получить общую статистику пользователя.
+
+        Args:
+            user_id: ID пользователя
+
+        Returns:
+            dict: Словарь со статистикой
+        """
+        # Получаем все записи daily_stats для пользователя
+        result = await self.session.execute(
+            select(DailyStats)
+            .where(DailyStats.user_id == user_id)
+            .order_by(DailyStats.date.desc())
+        )
+        all_stats = list(result.scalars().all())
+
+        if not all_stats:
+            return {
+                "total_messages": 0,
+                "total_words": 0,
+                "average_correctness": 0,
+                "current_streak": 0,
+                "max_streak": 0,
+            }
+
+        # Рассчитываем общую статистику
+        total_messages = sum(s.messages_count for s in all_stats)
+        total_words = sum(s.words_said for s in all_stats)
+
+        # Средняя правильность (взвешенная по количеству слов)
+        total_weighted = sum(
+            s.correct_percent * s.words_said for s in all_stats if s.words_said > 0
+        )
+        average_correctness = (
+            total_weighted / total_words if total_words > 0 else 0
+        )
+
+        # Текущий и максимальный streak
+        current_streak = all_stats[0].streak_day if all_stats else 0
+        max_streak = max((s.streak_day for s in all_stats), default=0)
+
+        return {
+            "total_messages": total_messages,
+            "total_words": total_words,
+            "average_correctness": round(average_correctness, 1),
+            "current_streak": current_streak,
+            "max_streak": max_streak,
+        }
+
+    async def update_user_stars(
+        self,
+        user_id: int,
+        total: int | None = None,
+        available: int | None = None,
+        lifetime: int | None = None,
+    ) -> None:
+        """
+        Обновить звезды пользователя (гибкая версия).
+
+        Args:
+            user_id: ID пользователя
+            total: Всего звезд (если None, не обновляется)
+            available: Доступно (если None, не обновляется)
+            lifetime: За все время (если None, не обновляется)
+        """
+        values = {"updated_at": datetime.utcnow()}
+        if total is not None:
+            values["total"] = total
+        if available is not None:
+            values["available"] = available
+        if lifetime is not None:
+            values["lifetime"] = lifetime
+
+        await self.session.execute(
+            update(Stars).where(Stars.user_id == user_id).values(**values)
+        )
+        await self.session.flush()
+
 

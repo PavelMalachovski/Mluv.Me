@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 
 from backend.config import get_settings
 from backend.db.database import close_db
-from backend.routers import users
+from backend.routers import users, lesson
 
 # Configure structlog for Railway.com
 structlog.configure(
@@ -75,6 +75,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(users.router)
+app.include_router(lesson.router)
 
 
 @app.get(
