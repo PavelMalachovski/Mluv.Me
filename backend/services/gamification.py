@@ -212,7 +212,8 @@ class GamificationService:
 
         # Получаем статистику за сегодня
         today_stats = await self.stats_repo.get_daily_stats(
-            db, user_id, user_date
+            user_id=user_id,
+            date_value=user_date,
         )
 
         # Получаем статистику за вчера
@@ -368,7 +369,9 @@ class GamificationService:
 
         # Проверяем daily challenge
         challenge_info = await self.check_daily_challenge(
-            db, user_id, timezone_str
+            db=db,
+            user_id=user_id,
+            timezone_str=timezone_str,
         )
 
         self.logger.info(
