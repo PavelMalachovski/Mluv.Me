@@ -6,7 +6,7 @@
 
 ## ✅ Проблема 1: ImportError - ИСПРАВЛЕНО
 
-### Ошибка:
+### Ошибка 1a:
 ```
 ImportError: cannot import name 'settings' from 'backend.config'
 ```
@@ -16,7 +16,17 @@ ImportError: cannot import name 'settings' from 'backend.config'
 - ✅ Изменён импорт: `from backend.config import get_settings`
 - ✅ Добавлен вызов `settings = get_settings()` в функции
 
-**Статус**: ✅ ИСПРАВЛЕНО
+### Ошибка 1b:
+```
+ImportError: cannot import name 'get_db' from 'backend.db.database'
+```
+
+### Решение:
+Обновлены файлы `web_auth.py` и `web_lessons.py`:
+- ✅ Заменён `get_db` на `get_session`
+- ✅ Правильная функция: `from backend.db.database import get_session`
+
+**Статус**: ✅ ОБЕ ИСПРАВЛЕНЫ
 
 ---
 

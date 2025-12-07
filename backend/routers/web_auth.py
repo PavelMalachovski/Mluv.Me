@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.config import get_settings
-from backend.db.database import get_db
+from backend.db.database import get_session
 from backend.db.repositories import UserRepository
 from backend.models.user import User
 
@@ -84,7 +84,7 @@ def generate_session_token() -> str:
 async def telegram_web_auth(
     auth_data: TelegramAuthData,
     response: Response,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_session)
 ):
     """
     Verify Telegram Login Widget data and create session
@@ -177,7 +177,7 @@ async def logout(response: Response, session_token: Optional[str] = None):
 @router.get("/me")
 async def get_current_user(
     session_token: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_session)
 ):
     """
     Get current authenticated user

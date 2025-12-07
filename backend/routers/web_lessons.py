@@ -6,7 +6,7 @@ from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 
-from backend.db.database import get_db
+from backend.db.database import get_session
 from backend.db.repositories import (
     UserRepository,
     MessageRepository,
@@ -53,7 +53,7 @@ class MessageHistoryResponse(BaseModel):
 @router.post("/text", response_model=TextMessageResponse)
 async def process_text_message(
     request: TextMessageRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_session)
 ):
     """
     Process text input (no audio) for web users
@@ -150,7 +150,7 @@ async def get_lesson_history(
     user_id: int,
     page: int = 1,
     limit: int = 20,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_session)
 ):
     """
     Get paginated lesson history with audio URLs
