@@ -359,3 +359,4 @@ railway variables set WEBHOOK_URL=https://your-app.railway.app
 
 **На здоровье!** 🍺 Honzík
 
+

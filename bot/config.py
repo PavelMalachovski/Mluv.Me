@@ -42,3 +42,4 @@ class BotConfig(BaseSettings):
 # Создаем глобальный экземпляр конфига
 config = BotConfig()
 
+

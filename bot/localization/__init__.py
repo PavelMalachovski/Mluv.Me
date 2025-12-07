@@ -68,3 +68,4 @@ def get_days_word(count: int, language: str = "ru") -> str:
 
 __all__ = ["get_text", "get_days_word", "LOCALIZATIONS"]
 
+

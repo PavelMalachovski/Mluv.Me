@@ -346,3 +346,4 @@ If issues persist:
 **Vyřešeno!** 🎉 (Fixed!)
 **Na zdraví!** 🍺 - Honzík
 
+

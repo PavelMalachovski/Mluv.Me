@@ -135,3 +135,4 @@ async def level_selected_handler(
 
         logger.error("user_registration_failed", telegram_id=telegram_id)
 
+

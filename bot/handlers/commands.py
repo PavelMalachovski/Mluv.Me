@@ -443,3 +443,4 @@ async def style_changed(callback: CallbackQuery, api_client: APIClient) -> None:
 
     logger.info("style_changed", telegram_id=telegram_id, style=style)
 
+

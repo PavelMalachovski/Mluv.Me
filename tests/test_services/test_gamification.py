@@ -100,3 +100,4 @@ class TestGamificationConstants:
         assert service.DAILY_CHALLENGE_MESSAGES == 5
         assert service.DAILY_CHALLENGE_REWARD == 5
 
+

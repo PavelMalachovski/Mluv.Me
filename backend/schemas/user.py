@@ -79,3 +79,4 @@ class UserSettingsResponse(BaseModel):
     notifications_enabled: bool
 
 
+

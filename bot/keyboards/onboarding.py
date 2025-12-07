@@ -73,3 +73,4 @@ def get_level_keyboard(language: str = "ru") -> InlineKeyboardMarkup:
     )
     return keyboard
 
+

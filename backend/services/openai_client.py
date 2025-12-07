@@ -297,3 +297,4 @@ class OpenAIClient:
         }
         return speed_map.get(speed_setting, 1.0)
 
+
