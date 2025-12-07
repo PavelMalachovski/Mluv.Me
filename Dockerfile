@@ -5,11 +5,11 @@ FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
-# Copy frontend package files
+# Copy frontend package files (including package-lock.json)
 COPY frontend/package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (npm ci is faster and more reliable for CI/CD)
+RUN npm ci || npm install --legacy-peer-deps
 
 # Copy frontend source
 COPY frontend/ ./
