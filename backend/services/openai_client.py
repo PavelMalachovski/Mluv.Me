@@ -194,6 +194,7 @@ class OpenAIClient:
         temperature: float | None = None,
         json_mode: bool = False,
         model: str | None = None,
+        stream: bool = False,
     ) -> str:
         """
         Сгенерировать ответ от GPT модели.
@@ -203,6 +204,7 @@ class OpenAIClient:
             temperature: Температура генерации (если None, используется из настроек)
             json_mode: Использовать JSON mode для структурированных ответов
             model: Модель для использования (если None, используется из настроек)
+            stream: Использовать streaming (не совместимо с json_mode)
 
         Returns:
             str: Ответ от модели (JSON строка если json_mode=True)
@@ -216,11 +218,17 @@ class OpenAIClient:
         if model is None:
             model = self.settings.openai_model
 
+        # Streaming не поддерживается с JSON mode
+        if stream and json_mode:
+            self.logger.warning("stream_with_json_mode_not_supported")
+            stream = False
+
         self.logger.info(
             "generating_completion",
             model=model,
             temperature=temperature,
             json_mode=json_mode,
+            stream=stream,
             messages_count=len(messages),
         )
 
@@ -229,13 +237,24 @@ class OpenAIClient:
                 "model": model,
                 "messages": messages,
                 "temperature": temperature,
+                "stream": stream,
             }
 
             if json_mode:
                 params["response_format"] = {"type": "json_object"}
 
-            response = await self.client.chat.completions.create(**params)
-            return response.choices[0].message.content
+            if stream:
+                # Streaming response
+                full_response = ""
+                response_stream = await self.client.chat.completions.create(**params)
+                async for chunk in response_stream:
+                    if chunk.choices[0].delta.content:
+                        full_response += chunk.choices[0].delta.content
+                return full_response
+            else:
+                # Regular response
+                response = await self.client.chat.completions.create(**params)
+                return response.choices[0].message.content
 
         try:
             content = await self._call_with_retry(_complete)

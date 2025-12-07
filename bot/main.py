@@ -27,7 +27,7 @@ logger = structlog.get_logger()
 
 
 async def main() -> None:
-    """Главная функция запуска бота."""
+    """Главная функция запуска бота с обработкой конфликтов."""
     logger.info(
         "bot_starting",
         environment=config.environment,
@@ -57,33 +57,63 @@ async def main() -> None:
         data["api_client"] = api_client
         return await handler(event, data)
 
+    max_conflict_retries = 3
+    retry_delay = 5  # seconds
+
+    for attempt in range(max_conflict_retries):
+        try:
+            # Удаляем webhook если был установлен
+            await bot.delete_webhook(drop_pending_updates=True)
+
+            logger.info("bot_started", mode="polling", attempt=attempt + 1)
+
+            # Запускаем polling с обработкой конфликтов
+            await dp.start_polling(
+                bot,
+                allowed_updates=dp.resolve_used_update_types(),
+                handle_as_tasks=False,  # Обработка последовательно
+            )
+
+            # Если дошли сюда - polling завершился успешно
+            break
+
+        except KeyboardInterrupt:
+            logger.info("bot_stopped_by_keyboard_interrupt")
+            break
+
+        except Exception as e:
+            error_str = str(e)
+            logger.error("bot_error", error=error_str, error_type=type(e).__name__, attempt=attempt + 1)
+
+            # Обработка конфликта
+            if "Conflict" in error_str or "terminated by other getUpdates" in error_str:
+                if attempt < max_conflict_retries - 1:
+                    logger.warning(
+                        "bot_conflict_detected",
+                        message="Another bot instance detected. Waiting before retry...",
+                        retry_attempt=attempt + 1,
+                        retry_delay=retry_delay
+                    )
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    logger.error(
+                        "bot_conflict_permanent",
+                        message="Multiple bot instances conflict. Stopping this instance."
+                    )
+                    break
+            else:
+                # Другие ошибки - прерываем
+                logger.error("bot_fatal_error", error=error_str)
+                raise
+
+    # Cleanup
     try:
-        # Удаляем webhook если был установлен
-        await bot.delete_webhook(drop_pending_updates=True)
-
-        logger.info("bot_started", mode="polling")
-
-        # Запускаем polling с обработкой конфликтов
-        await dp.start_polling(
-            bot,
-            allowed_updates=dp.resolve_used_update_types(),
-            handle_as_tasks=False,  # Обработка последовательно, чтобы избежать конфликтов
-        )
-
-    except KeyboardInterrupt:
-        logger.info("bot_stopped_by_keyboard_interrupt")
-    except Exception as e:
-        logger.error("bot_error", error=str(e), error_type=type(e).__name__, exc_info=True)
-        # Не прерываем выполнение, если это конфликт - просто логируем
-        if "Conflict" in str(e):
-            logger.warning("bot_conflict_detected",
-                          message="Another bot instance is running. This instance will stop.")
-        else:
-            raise
-    finally:
         await api_client.close()
         await bot.session.close()
         logger.info("bot_stopped")
+    except Exception as e:
+        logger.error("bot_cleanup_error", error=str(e))
 
 
 if __name__ == "__main__":

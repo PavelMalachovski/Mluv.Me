@@ -102,13 +102,14 @@ def create_engine() -> AsyncEngine:
         pool_pre_ping=True,        # Verify connection health before using
 
         # Query optimization via PostgreSQL settings
+        # Note: asyncpg uses different connect_args than psycopg2
         connect_args={
             "server_settings": {
                 "application_name": "mluv_backend",
                 "jit": "off",  # Disable JIT compilation for simple queries (faster)
             },
-            # Connection timeout
-            "timeout": 10,
+            # asyncpg uses 'timeout' for connection timeout (in seconds)
+            "command_timeout": 60.0,  # Command timeout in seconds
         },
     )
 
