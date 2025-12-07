@@ -58,11 +58,14 @@ celery -A backend.tasks.celery_app inspect active
 
 ## 📊 What Was Deployed
 
-✅ **6 Performance Indexes** - 10-20x faster queries
+✅ **6 Performance Indexes** - 10-20x faster queries (regular mode)
 ✅ **1 Materialized View** - 10x faster dashboards
 ✅ **Connection Pool Optimization** - 6x capacity
 ✅ **Eager Loading Methods** - 80% fewer DB queries
 ✅ **Hourly Auto-Refresh Task** - Always fresh data
+
+**Note:** Indexes are created in regular mode (not CONCURRENTLY) for transaction safety.
+For large production DBs, see [PRODUCTION_INDEX_CREATION.md](./docs/PRODUCTION_INDEX_CREATION.md) for zero-downtime index creation.
 
 ---
 

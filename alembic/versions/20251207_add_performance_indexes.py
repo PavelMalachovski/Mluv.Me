@@ -27,42 +27,44 @@ def upgrade() -> None:
     """
     Create performance indexes.
 
-    All indexes use CONCURRENTLY to avoid locking tables in production.
+    Note: We use regular CREATE INDEX (not CONCURRENTLY) because:
+    1. CONCURRENTLY cannot run inside a transaction block
+    2. For initial migration, the table should be small/empty
+    3. For production with data, you can create indexes manually with CONCURRENTLY
     """
 
     # 1. Messages table - composite index for user history queries
     # This speeds up queries like: SELECT * FROM messages WHERE user_id = ? ORDER BY created_at DESC
-    op.execute(
-        sa.text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_user_created
-            ON messages (user_id, created_at DESC)
-        """)
+    op.create_index(
+        'idx_messages_user_created',
+        'messages',
+        ['user_id', sa.text('created_at DESC')],
+        unique=False
     )
 
     # 2. Daily stats - composite index for user stats queries
     # This speeds up queries like: SELECT * FROM daily_stats WHERE user_id = ? ORDER BY date DESC
-    op.execute(
-        sa.text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_daily_stats_user_date
-            ON daily_stats (user_id, date DESC)
-        """)
+    op.create_index(
+        'idx_daily_stats_user_date',
+        'daily_stats',
+        ['user_id', sa.text('date DESC')],
+        unique=False
     )
 
     # 3. Saved words - composite index for word lookups
     # This speeds up queries like: SELECT * FROM saved_words WHERE user_id = ? AND word_czech = ?
-    op.execute(
-        sa.text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_saved_words_user_word
-            ON saved_words (user_id, word_czech)
-        """)
+    op.create_index(
+        'idx_saved_words_user_word',
+        'saved_words',
+        ['user_id', 'word_czech'],
+        unique=False
     )
 
     # 4. Full-text search index for messages
     # This enables fast text search in Czech language
-    # Note: We use 'text' column instead of 'user_text' as per the model
     op.execute(
         sa.text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_text_search
+            CREATE INDEX idx_messages_text_search
             ON messages USING gin(to_tsvector('czech', text))
             WHERE text IS NOT NULL
         """)
@@ -70,19 +72,19 @@ def upgrade() -> None:
 
     # 5. Additional index for messages correctness_score (for analytics)
     # This speeds up queries for finding high-scoring or low-scoring messages
-    op.execute(
-        sa.text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_correctness_score
-            ON messages (correctness_score)
-            WHERE correctness_score IS NOT NULL
-        """)
+    op.create_index(
+        'idx_messages_correctness_score',
+        'messages',
+        ['correctness_score'],
+        unique=False,
+        postgresql_where=sa.text('correctness_score IS NOT NULL')
     )
 
     # 6. Additional index for saved_words last_reviewed_at (for spaced repetition)
     # This speeds up queries for finding words due for review
     op.execute(
         sa.text("""
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_saved_words_review
+            CREATE INDEX idx_saved_words_review
             ON saved_words (user_id, last_reviewed_at NULLS FIRST)
         """)
     )
@@ -94,9 +96,9 @@ def downgrade() -> None:
     """
 
     # Drop indexes in reverse order
-    op.execute(sa.text("DROP INDEX CONCURRENTLY IF EXISTS idx_saved_words_review"))
-    op.execute(sa.text("DROP INDEX CONCURRENTLY IF EXISTS idx_messages_correctness_score"))
-    op.execute(sa.text("DROP INDEX CONCURRENTLY IF EXISTS idx_messages_text_search"))
-    op.execute(sa.text("DROP INDEX CONCURRENTLY IF EXISTS idx_saved_words_user_word"))
-    op.execute(sa.text("DROP INDEX CONCURRENTLY IF EXISTS idx_daily_stats_user_date"))
-    op.execute(sa.text("DROP INDEX CONCURRENTLY IF EXISTS idx_messages_user_created"))
+    op.drop_index('idx_saved_words_review', table_name='saved_words')
+    op.drop_index('idx_messages_correctness_score', table_name='messages')
+    op.drop_index('idx_messages_text_search', table_name='messages')
+    op.drop_index('idx_saved_words_user_word', table_name='saved_words')
+    op.drop_index('idx_daily_stats_user_date', table_name='daily_stats')
+    op.drop_index('idx_messages_user_created', table_name='messages')

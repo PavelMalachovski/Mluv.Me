@@ -27,6 +27,9 @@ def upgrade() -> None:
 
     Materialized views precompute and store results of complex queries,
     making dashboard and analytics queries much faster.
+
+    Note: Initial indexes are created without CONCURRENTLY.
+    In production, use CONCURRENTLY for manual index creation.
     """
 
     # Create user_stats_summary materialized view
@@ -94,37 +97,37 @@ def upgrade() -> None:
     )
 
     # Create indexes on materialized view for fast queries
-    op.execute(
-        sa.text("""
-            CREATE INDEX IF NOT EXISTS idx_user_stats_summary_telegram_id
-            ON user_stats_summary(telegram_id)
-        """)
+    op.create_index(
+        'idx_user_stats_summary_telegram_id',
+        'user_stats_summary',
+        ['telegram_id'],
+        unique=False
     )
 
     op.execute(
         sa.text("""
-            CREATE INDEX IF NOT EXISTS idx_user_stats_summary_total_stars
+            CREATE INDEX idx_user_stats_summary_total_stars
             ON user_stats_summary(total_stars DESC)
         """)
     )
 
     op.execute(
         sa.text("""
-            CREATE INDEX IF NOT EXISTS idx_user_stats_summary_max_streak
+            CREATE INDEX idx_user_stats_summary_max_streak
             ON user_stats_summary(max_streak DESC)
         """)
     )
 
     op.execute(
         sa.text("""
-            CREATE INDEX IF NOT EXISTS idx_user_stats_summary_total_messages
+            CREATE INDEX idx_user_stats_summary_total_messages
             ON user_stats_summary(total_messages DESC)
         """)
     )
 
     op.execute(
         sa.text("""
-            CREATE INDEX IF NOT EXISTS idx_user_stats_summary_last_activity
+            CREATE INDEX idx_user_stats_summary_last_activity
             ON user_stats_summary(last_activity DESC NULLS LAST)
         """)
     )
@@ -135,12 +138,5 @@ def downgrade() -> None:
     Drop materialized views and indexes.
     """
 
-    # Drop indexes first
-    op.execute(sa.text("DROP INDEX IF EXISTS idx_user_stats_summary_last_activity"))
-    op.execute(sa.text("DROP INDEX IF EXISTS idx_user_stats_summary_total_messages"))
-    op.execute(sa.text("DROP INDEX IF EXISTS idx_user_stats_summary_max_streak"))
-    op.execute(sa.text("DROP INDEX IF EXISTS idx_user_stats_summary_total_stars"))
-    op.execute(sa.text("DROP INDEX IF EXISTS idx_user_stats_summary_telegram_id"))
-
-    # Drop materialized view
-    op.execute(sa.text("DROP MATERIALIZED VIEW IF EXISTS user_stats_summary"))
+    # Drop materialized view (this will also drop all indexes on it)
+    op.execute(sa.text("DROP MATERIALIZED VIEW IF EXISTS user_stats_summary CASCADE"))
