@@ -86,35 +86,46 @@ async def cleanup_old_data(self) -> Dict[str, Any]:
         raise
 
 
-@celery_app.task(bind=True, base=AsyncTask)
+@celery_app.task(bind=True, base=AsyncTask, max_retries=3)
 async def refresh_materialized_views(self) -> Dict[str, Any]:
     """
     Обновить материализованные представления.
 
     Вызывается каждый час для обновления агрегированных данных.
 
-    Note: Материализованные представления будут созданы в Phase 3.
-    Пока эта задача является placeholder.
+    Обновляет:
+    - user_stats_summary: Агрегированная статистика пользователей
+
+    Использует CONCURRENTLY для обновления без блокировки чтений.
+    Это критически важно для производительности в production.
 
     Returns:
         dict: Результат обновления
     """
+    start_time = datetime.now()
+
     try:
         async with AsyncSessionLocal() as db:
-            # TODO: Будет реализовано в Phase 3
-            # Пока просто логируем
-            logger.info("materialized_views_refresh_placeholder")
+            # Refresh user_stats_summary materialized view
+            # CONCURRENTLY позволяет обновлять без блокировки чтений
+            await db.execute(text(
+                "REFRESH MATERIALIZED VIEW CONCURRENTLY user_stats_summary"
+            ))
+            await db.commit()
 
-            # В Phase 3 будет примерно так:
-            # await db.execute(text(
-            #     "REFRESH MATERIALIZED VIEW CONCURRENTLY user_stats_summary"
-            # ))
-            # await db.commit()
+            duration = (datetime.now() - start_time).total_seconds()
+
+            logger.info(
+                "materialized_views_refreshed",
+                duration_seconds=duration,
+                views=["user_stats_summary"]
+            )
 
             return {
-                "status": "placeholder",
+                "status": "completed",
                 "timestamp": datetime.now().isoformat(),
-                "note": "Will be implemented in Phase 3"
+                "duration_seconds": duration,
+                "views_refreshed": ["user_stats_summary"]
             }
 
     except Exception as exc:
@@ -122,6 +133,8 @@ async def refresh_materialized_views(self) -> Dict[str, Any]:
             "refresh_materialized_views_failed",
             error=str(exc)
         )
+        # Retry on failure with exponential backoff
+        self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
         raise
 
 

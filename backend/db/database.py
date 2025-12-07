@@ -59,23 +59,57 @@ def get_database_url() -> str:
 
 def create_engine() -> AsyncEngine:
     """
-    Создать async engine для SQLAlchemy.
+    Создать async engine для SQLAlchemy с оптимизированными настройками пула.
+
+    Настройки оптимизированы для производительности:
+    - pool_size=20: Увеличено с 5 до 20 для обработки большего числа конкурентных запросов
+    - max_overflow=10: Дополнительные соединения при пиковой нагрузке
+    - pool_timeout=30: Время ожидания свободного соединения
+    - pool_recycle=3600: Переиспользование соединений каждый час
+    - pool_pre_ping=True: Проверка жизнеспособности соединения перед использованием
+    - connect_args: Оптимизация PostgreSQL (отключение JIT для простых запросов)
 
     Returns:
-        AsyncEngine: Async database engine
+        AsyncEngine: Async database engine с оптимизированным пулом соединений
     """
     settings = get_settings()
     db_url = get_database_url()
 
-    # Engine configuration for Railway.com
+    # Use NullPool for testing to avoid connection issues
+    if settings.is_testing:
+        engine = create_async_engine(
+            db_url,
+            echo=settings.is_development,
+            poolclass=NullPool,
+        )
+        return engine
+
+    # Optimized production configuration
+    from sqlalchemy.pool import QueuePool
+
     engine = create_async_engine(
         db_url,
+        # Logging
         echo=settings.is_development,  # Log SQL in development
-        pool_pre_ping=True,  # Verify connections before using
-        pool_size=5,  # Connection pool size
-        max_overflow=10,  # Max overflow connections
-        pool_recycle=3600,  # Recycle connections after 1 hour
-        poolclass=NullPool if settings.is_testing else None,  # No pool for tests
+        echo_pool=False,  # Don't log pool operations (too verbose)
+
+        # Connection pool settings (optimized for Railway.com and high concurrency)
+        poolclass=QueuePool,
+        pool_size=20,              # Up from default 5 - main connection pool
+        max_overflow=10,           # Additional connections during peak load
+        pool_timeout=30,           # Wait up to 30s for a connection
+        pool_recycle=3600,         # Recycle connections after 1 hour
+        pool_pre_ping=True,        # Verify connection health before using
+
+        # Query optimization via PostgreSQL settings
+        connect_args={
+            "server_settings": {
+                "application_name": "mluv_backend",
+                "jit": "off",  # Disable JIT compilation for simple queries (faster)
+            },
+            # Connection timeout
+            "timeout": 10,
+        },
     )
 
     return engine

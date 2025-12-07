@@ -8,7 +8,7 @@ from typing import Any
 
 from sqlalchemy import select, update, delete, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 import structlog
 
 from backend.models import (
@@ -170,6 +170,73 @@ class UserRepository:
         await self.session.commit()
         return result.rowcount > 0
 
+    async def get_by_telegram_id_with_relations(
+        self,
+        telegram_id: int,
+        include: list[str] | None = None,
+    ) -> User | None:
+        """
+        Получить пользователя с связанными данными одним запросом (eager loading).
+
+        Эта функция использует eager loading для получения пользователя
+        и его связанных данных в одном SQL запросе, устраняя проблему N+1.
+
+        Args:
+            telegram_id: Telegram user ID
+            include: Список связей для загрузки. Допустимые значения:
+                - 'settings': Настройки пользователя
+                - 'recent_messages': Последние 10 сообщений
+                - 'daily_stats': Последние 30 дней статистики
+                - 'saved_words': Сохраненные слова
+                - 'stars': Звезды пользователя
+
+        Returns:
+            User | None: Пользователь со связанными данными или None
+
+        Example:
+            ```python
+            # Загрузить пользователя с настройками и последними сообщениями
+            user = await user_repo.get_by_telegram_id_with_relations(
+                123456,
+                include=['settings', 'recent_messages']
+            )
+            # Теперь user.settings и user.messages доступны без дополнительных запросов
+            ```
+        """
+        query = select(User).where(User.telegram_id == telegram_id)
+
+        if include:
+            # Settings - используем joinedload так как это 1:1 связь
+            if 'settings' in include:
+                query = query.options(joinedload(User.settings))
+
+            # Recent messages - используем selectinload и limit
+            if 'recent_messages' in include:
+                query = query.options(
+                    selectinload(User.messages)
+                    .options(selectinload(Message.user))
+                    .limit(10)
+                )
+
+            # Daily stats - последние 30 дней
+            if 'daily_stats' in include:
+                query = query.options(
+                    selectinload(User.daily_stats).limit(30)
+                )
+
+            # Saved words
+            if 'saved_words' in include:
+                query = query.options(
+                    selectinload(User.saved_words)
+                )
+
+            # Stars - 1:1 связь
+            if 'stars' in include:
+                query = query.options(joinedload(User.stars))
+
+        result = await self.session.execute(query)
+        return result.unique().scalar_one_or_none()
+
 
 class UserSettingsRepository:
     """Repository для работы с настройками пользователей."""
@@ -321,6 +388,32 @@ class MessageRepository:
             .order_by(Message.created_at.asc())
         )
         return list(result.scalars().all())
+
+    async def get_recent_with_user(
+        self,
+        user_id: int,
+        limit: int = 10
+    ) -> list[Message]:
+        """
+        Получить последние сообщения с предзагруженными данными пользователя.
+
+        Использует eager loading для устранения N+1 запросов.
+
+        Args:
+            user_id: ID пользователя
+            limit: Количество сообщений
+
+        Returns:
+            list[Message]: Список сообщений с предзагруженным user
+        """
+        result = await self.session.execute(
+            select(Message)
+            .where(Message.user_id == user_id)
+            .options(joinedload(Message.user))
+            .order_by(Message.created_at.desc())
+            .limit(limit)
+        )
+        return list(result.unique().scalars().all())
 
 
 class SavedWordRepository:
@@ -667,6 +760,193 @@ class StatsRepository:
                 "streak_day": stats.streak_day,
             }
             for stats in stats_list
+        ]
+
+    async def get_stats_range_with_user(
+        self,
+        user_id: int,
+        start_date: date,
+        end_date: date
+    ) -> list[DailyStats]:
+        """
+        Получить статистику за период с предзагруженными данными пользователя.
+
+        Использует eager loading для устранения N+1 запросов.
+
+        Args:
+            user_id: ID пользователя
+            start_date: Начальная дата
+            end_date: Конечная дата
+
+        Returns:
+            list[DailyStats]: Список статистики с предзагруженным user
+        """
+        result = await self.session.execute(
+            select(DailyStats)
+            .where(
+                and_(
+                    DailyStats.user_id == user_id,
+                    DailyStats.date >= start_date,
+                    DailyStats.date <= end_date
+                )
+            )
+            .options(joinedload(DailyStats.user))
+            .order_by(DailyStats.date.asc())
+        )
+        return list(result.unique().scalars().all())
+
+
+class MaterializedViewRepository:
+    """Repository для работы с материализованными представлениями."""
+
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def get_user_stats_summary(
+        self,
+        telegram_id: int | None = None,
+        limit: int | None = None,
+        order_by: str = "total_messages"
+    ) -> list[dict[str, Any]]:
+        """
+        Получить агрегированную статистику пользователей из материализованного представления.
+
+        Это намного быстрее чем вычислять статистику на лету,
+        так как данные предварительно агрегированы.
+
+        Args:
+            telegram_id: ID конкретного пользователя (опционально)
+            limit: Ограничение количества результатов
+            order_by: Поле для сортировки (total_messages, total_stars, max_streak)
+
+        Returns:
+            list[dict]: Список статистики пользователей
+        """
+        from sqlalchemy import text
+
+        # Build query dynamically
+        query_parts = ["SELECT * FROM user_stats_summary"]
+        params = {}
+
+        if telegram_id is not None:
+            query_parts.append("WHERE telegram_id = :telegram_id")
+            params["telegram_id"] = telegram_id
+
+        # Order by
+        valid_order_fields = [
+            "total_messages", "total_stars", "max_streak",
+            "avg_correctness", "last_activity", "total_words_said"
+        ]
+        if order_by in valid_order_fields:
+            query_parts.append(f"ORDER BY {order_by} DESC")
+
+        if limit is not None:
+            query_parts.append("LIMIT :limit")
+            params["limit"] = limit
+
+        query = " ".join(query_parts)
+        result = await self.session.execute(text(query), params)
+
+        # Convert to list of dicts
+        columns = result.keys()
+        rows = result.fetchall()
+
+        return [
+            {col: val for col, val in zip(columns, row)}
+            for row in rows
+        ]
+
+    async def get_leaderboard(
+        self,
+        metric: str = "total_stars",
+        limit: int = 10
+    ) -> list[dict[str, Any]]:
+        """
+        Получить таблицу лидеров по выбранной метрике.
+
+        Args:
+            metric: Метрика для рейтинга (total_stars, max_streak, total_messages)
+            limit: Количество пользователей
+
+        Returns:
+            list[dict]: Топ пользователей
+        """
+        from sqlalchemy import text
+
+        valid_metrics = ["total_stars", "max_streak", "total_messages", "avg_correctness"]
+        if metric not in valid_metrics:
+            metric = "total_stars"
+
+        query = f"""
+            SELECT
+                telegram_id,
+                first_name,
+                username,
+                level,
+                {metric} as score,
+                total_messages,
+                total_stars,
+                max_streak,
+                avg_correctness
+            FROM user_stats_summary
+            WHERE {metric} > 0
+            ORDER BY {metric} DESC
+            LIMIT :limit
+        """
+
+        result = await self.session.execute(text(query), {"limit": limit})
+        columns = result.keys()
+        rows = result.fetchall()
+
+        return [
+            {col: val for col, val in zip(columns, row)}
+            for row in rows
+        ]
+
+    async def get_active_users(
+        self,
+        days: int = 7,
+        limit: int | None = None
+    ) -> list[dict[str, Any]]:
+        """
+        Получить активных пользователей за последние N дней.
+
+        Args:
+            days: Количество дней для проверки активности
+            limit: Ограничение количества результатов
+
+        Returns:
+            list[dict]: Список активных пользователей
+        """
+        from sqlalchemy import text
+
+        query = f"""
+            SELECT
+                telegram_id,
+                first_name,
+                username,
+                level,
+                total_messages,
+                messages_last_{days}_days,
+                avg_correctness,
+                last_activity
+            FROM user_stats_summary
+            WHERE messages_last_{days}_days > 0
+            ORDER BY messages_last_{days}_days DESC
+        """
+
+        if limit is not None:
+            query += " LIMIT :limit"
+            result = await self.session.execute(text(query), {"limit": limit})
+        else:
+            result = await self.session.execute(text(query))
+
+        columns = result.keys()
+        rows = result.fetchall()
+
+        return [
+            {col: val for col, val in zip(columns, row)}
+            for row in rows
         ]
 
 
