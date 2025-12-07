@@ -7,16 +7,29 @@
 
 ## 🎉 What Was Fixed
 
-### Issue
+### Issue #1: CONCURRENTLY in Transactions
 ```
 CREATE INDEX CONCURRENTLY cannot run inside a transaction block
 ```
 
-### Solution
+**Solution:**
 ✅ Changed migrations to use regular `CREATE INDEX`
 ✅ Created production guide for `CONCURRENTLY` indexes
 ✅ All migrations now work in transaction mode
 ✅ Zero-downtime option documented for production
+
+### Issue #2: Czech Text Search Not Available
+```
+text search configuration "czech" does not exist
+```
+
+**Solution:**
+✅ Changed from `'czech'` to `'simple'` text search configuration
+✅ Works on all PostgreSQL installations (Railway.com compatible)
+✅ Full-text search fully functional
+✅ Optional Czech upgrade guide created
+
+**Note:** `simple` configuration works everywhere but doesn't include Czech-specific word stemming. Can be upgraded later if needed. See [CZECH_FULLTEXT_SEARCH_SETUP.md](./docs/CZECH_FULLTEXT_SEARCH_SETUP.md)
 
 ---
 
@@ -150,7 +163,9 @@ psql $DATABASE_URL -c "EXPLAIN ANALYZE SELECT * FROM messages WHERE user_id = 1 
 - [Production Indexes](./docs/PRODUCTION_INDEX_CREATION.md) - Zero-downtime index creation
 
 ### Troubleshooting
-- [Migration Fix Summary](./docs/MIGRATION_FIX_SUMMARY.md) - What was fixed & why
+- [Migration Notes](./docs/MIGRATION_NOTES.md) - All fixes & known issues (START HERE)
+- [Migration Fix Summary](./docs/MIGRATION_FIX_SUMMARY.md) - CONCURRENTLY issue details
+- [Czech Search Setup](./docs/CZECH_FULLTEXT_SEARCH_SETUP.md) - Optional Czech text search
 - [Migration README](./alembic/versions/README_PHASE3.md) - Migration-specific help
 
 ---

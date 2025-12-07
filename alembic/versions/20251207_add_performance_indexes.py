@@ -61,11 +61,13 @@ def upgrade() -> None:
     )
 
     # 4. Full-text search index for messages
-    # This enables fast text search in Czech language
+    # This enables fast text search
+    # Note: Using 'simple' config as 'czech' may not be available on all PostgreSQL installations
+    # For production, consider installing Czech text search config or using 'english' as fallback
     op.execute(
         sa.text("""
             CREATE INDEX idx_messages_text_search
-            ON messages USING gin(to_tsvector('czech', text))
+            ON messages USING gin(to_tsvector('simple', text))
             WHERE text IS NOT NULL
         """)
     )
