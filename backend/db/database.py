@@ -85,7 +85,7 @@ def create_engine() -> AsyncEngine:
         return engine
 
     # Optimized production configuration
-    from sqlalchemy.pool import QueuePool
+    # Note: AsyncEngine uses AsyncAdaptedQueuePool by default, don't override with QueuePool
 
     engine = create_async_engine(
         db_url,
@@ -94,7 +94,7 @@ def create_engine() -> AsyncEngine:
         echo_pool=False,  # Don't log pool operations (too verbose)
 
         # Connection pool settings (optimized for Railway.com and high concurrency)
-        poolclass=QueuePool,
+        # poolclass is not specified - uses default AsyncAdaptedQueuePool for async
         pool_size=20,              # Up from default 5 - main connection pool
         max_overflow=10,           # Additional connections during peak load
         pool_timeout=30,           # Wait up to 30s for a connection
