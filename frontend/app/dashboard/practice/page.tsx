@@ -85,8 +85,8 @@ export default function PracticePage() {
               <Card className="bg-blue-50 border-blue-200">
                 <CardContent className="p-6">
                   <p className="text-center text-blue-900">
-                    👋 Nazdar! Jsem Honzík. Let's start practicing Czech! Write
-                    something in Czech and I'll help you improve.
+                    👋 Nazdar! Jsem Honzík. Let&apos;s start practicing Czech! Write
+                    something in Czech and I&apos;ll help you improve.
                   </p>
                 </CardContent>
               </Card>
@@ -157,7 +157,7 @@ export default function PracticePage() {
             />
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
-                Tip: Don't worry about mistakes - that's how you learn! 💪
+                Tip: Don&apos;t worry about mistakes - that&apos;s how you learn! 💪
               </p>
               <Button
                 type="submit"
@@ -175,7 +175,7 @@ export default function PracticePage() {
           <h3 className="mb-3 font-semibold">Practice Tips:</h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li>✅ Try to write complete sentences</li>
-            <li>✅ Don't be afraid to make mistakes</li>
+            <li>✅ Don&apos;t be afraid to make mistakes</li>
             <li>✅ Ask Honzík questions about Czech culture</li>
             <li>✅ Practice regularly to maintain your streak</li>
           </ul>

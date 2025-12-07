@@ -121,7 +121,7 @@ export function loginWithTelegram(): Promise<TelegramUser> {
  */
 export async function authenticateWithBackend(telegramUser: TelegramUser): Promise<any> {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  
+
   const response = await fetch(`${API_URL}/api/auth/telegram`, {
     method: 'POST',
     headers: {
