@@ -23,6 +23,7 @@ pydantic-settings==2.6.1
 
 # OpenAI
 openai==1.54.4
+tiktoken==0.7.0
 
 # Telegram Bot
 aiogram==3.14.0
@@ -43,6 +44,7 @@ pytest-cov==6.0.0
 # httpx 0.28+ removes the `proxies` kwarg used by openai 1.54.x -> pin 0.27.x
 httpx==0.27.2
 fakeredis==2.23.3
+locust==2.31.8
 
 # Code Quality
 ruff==0.8.2

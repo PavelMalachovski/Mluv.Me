@@ -11,6 +11,7 @@ OpenAI Client для интеграции с GPT-4o, Whisper (STT) и TTS API.
 
 import asyncio
 import io
+import tiktoken
 from typing import Any, BinaryIO
 
 import structlog
@@ -19,6 +20,20 @@ from openai import AsyncOpenAI, RateLimitError, APIError, APITimeoutError
 from backend.config import Settings
 
 logger = structlog.get_logger(__name__)
+
+# Model pricing per 1K tokens (as of Dec 2024)
+MODEL_PRICING = {
+    'gpt-4o': {'input': 0.005, 'output': 0.015},
+    'gpt-3.5-turbo': {'input': 0.0005, 'output': 0.0015},
+    'whisper-1': {'per_minute': 0.006},
+    'tts-1': {'per_1M_chars': 15.0},
+}
+
+# Token limits for context
+TOKEN_LIMITS = {
+    'gpt-4o': 128000,
+    'gpt-3.5-turbo': 16385,
+}
 
 
 class OpenAIClient:
@@ -40,6 +55,13 @@ class OpenAIClient:
         self.client = AsyncOpenAI(api_key=settings.openai_api_key)
         self.settings = settings
         self.logger = logger.bind(service="openai_client")
+
+        # Initialize tokenizer for token counting
+        try:
+            self.encoding = tiktoken.encoding_for_model(settings.openai_model)
+        except KeyError:
+            # Fallback to cl100k_base if model not found
+            self.encoding = tiktoken.get_encoding("cl100k_base")
 
     async def _call_with_retry(
         self,
@@ -171,14 +193,16 @@ class OpenAIClient:
         messages: list[dict[str, str]],
         temperature: float | None = None,
         json_mode: bool = False,
+        model: str | None = None,
     ) -> str:
         """
-        Сгенерировать ответ от GPT-4o.
+        Сгенерировать ответ от GPT модели.
 
         Args:
             messages: Список сообщений в формате OpenAI
             temperature: Температура генерации (если None, используется из настроек)
             json_mode: Использовать JSON mode для структурированных ответов
+            model: Модель для использования (если None, используется из настроек)
 
         Returns:
             str: Ответ от модели (JSON строка если json_mode=True)
@@ -189,9 +213,12 @@ class OpenAIClient:
         if temperature is None:
             temperature = self.settings.openai_temperature
 
+        if model is None:
+            model = self.settings.openai_model
+
         self.logger.info(
             "generating_completion",
-            model=self.settings.openai_model,
+            model=model,
             temperature=temperature,
             json_mode=json_mode,
             messages_count=len(messages),
@@ -199,7 +226,7 @@ class OpenAIClient:
 
         async def _complete():
             params = {
-                "model": self.settings.openai_model,
+                "model": model,
                 "messages": messages,
                 "temperature": temperature,
             }
@@ -296,5 +323,199 @@ class OpenAIClient:
             "native": 1.1,
         }
         return speed_map.get(speed_setting, 1.0)
+
+    def get_optimal_model(
+        self,
+        czech_level: str,
+        task_type: str = "analysis"
+    ) -> str:
+        """
+        Выбрать оптимальную модель в зависимости от уровня пользователя.
+
+        Стратегия:
+        - Для начинающих (beginner) используем GPT-3.5-turbo (10x дешевле)
+        - Для продвинутых (intermediate, advanced, native) используем GPT-4o
+
+        Args:
+            czech_level: Уровень чешского (beginner, intermediate, advanced, native)
+            task_type: Тип задачи (analysis, summarization)
+
+        Returns:
+            str: Название модели
+        """
+        if not self.settings.use_adaptive_model_selection:
+            return self.settings.openai_model
+
+        # Для суммаризации всегда используем дешевую модель
+        if task_type == "summarization":
+            return self.settings.openai_model_simple
+
+        # Для начинающих используем GPT-3.5-turbo
+        if czech_level == "beginner":
+            self.logger.info(
+                "using_simple_model_for_beginner",
+                model=self.settings.openai_model_simple,
+                level=czech_level,
+            )
+            return self.settings.openai_model_simple
+
+        # Для остальных используем GPT-4o
+        return self.settings.openai_model
+
+    def estimate_tokens(self, text: str) -> int:
+        """
+        Оценить количество токенов в тексте.
+
+        Args:
+            text: Текст для оценки
+
+        Returns:
+            int: Приблизительное количество токенов
+        """
+        try:
+            return len(self.encoding.encode(text))
+        except Exception as e:
+            self.logger.warning("token_estimation_failed", error=str(e))
+            # Fallback: примерно 4 символа на токен
+            return len(text) // 4
+
+    def estimate_messages_tokens(self, messages: list[dict[str, str]]) -> int:
+        """
+        Оценить количество токенов в списке сообщений.
+
+        Args:
+            messages: Список сообщений OpenAI формата
+
+        Returns:
+            int: Приблизительное количество токенов
+        """
+        total_tokens = 0
+        for message in messages:
+            # 4 токена на сообщение (метаданные)
+            total_tokens += 4
+            for key, value in message.items():
+                total_tokens += self.estimate_tokens(str(value))
+        return total_tokens
+
+    def optimize_conversation_history(
+        self,
+        messages: list[dict[str, str]],
+        max_tokens: int = 1500,
+    ) -> list[dict[str, str]]:
+        """
+        Оптимизировать историю разговора для уменьшения использования токенов.
+
+        Стратегия:
+        - Всегда сохранять системный промпт
+        - Всегда сохранять последние 3 сообщения
+        - Если превышен лимит, обрезать более старые сообщения
+
+        Args:
+            messages: Список сообщений
+            max_tokens: Максимальное количество токенов
+
+        Returns:
+            list: Оптимизированный список сообщений
+        """
+        if not messages:
+            return messages
+
+        current_tokens = self.estimate_messages_tokens(messages)
+
+        if current_tokens <= max_tokens:
+            return messages
+
+        self.logger.info(
+            "optimizing_conversation_history",
+            original_tokens=current_tokens,
+            max_tokens=max_tokens,
+            messages_count=len(messages),
+        )
+
+        # Разделяем сообщения
+        system_messages = [m for m in messages if m.get("role") == "system"]
+        conversation = [m for m in messages if m.get("role") != "system"]
+
+        # Всегда сохраняем последние 3 сообщения
+        recent_messages = conversation[-3:] if len(conversation) >= 3 else conversation
+        older_messages = conversation[:-3] if len(conversation) > 3 else []
+
+        # Собираем оптимизированный список
+        optimized = system_messages + recent_messages
+
+        # Если все еще превышаем лимит, добавляем старые сообщения по одному
+        if older_messages:
+            for msg in reversed(older_messages):
+                test_messages = system_messages + [msg] + recent_messages
+                if self.estimate_messages_tokens(test_messages) <= max_tokens:
+                    optimized = test_messages
+                else:
+                    break
+
+        optimized_tokens = self.estimate_messages_tokens(optimized)
+
+        self.logger.info(
+            "conversation_history_optimized",
+            original_tokens=current_tokens,
+            optimized_tokens=optimized_tokens,
+            reduction_percent=round((1 - optimized_tokens / current_tokens) * 100, 1),
+            original_messages=len(messages),
+            optimized_messages=len(optimized),
+        )
+
+        return optimized
+
+    async def summarize_older_messages(
+        self,
+        messages: list[dict[str, str]],
+    ) -> dict[str, str]:
+        """
+        Суммировать старые сообщения используя GPT-3.5-turbo для экономии.
+
+        Args:
+            messages: Список сообщений для суммаризации
+
+        Returns:
+            dict: Системное сообщение с суммарией
+        """
+        if not messages:
+            return {"role": "system", "content": "Žádná předchozí historie."}
+
+        # Форматируем сообщения для суммаризации
+        formatted = []
+        for msg in messages:
+            role = "Student" if msg.get("role") == "user" else "Honzík"
+            formatted.append(f"{role}: {msg.get('content', '')}")
+
+        history_text = "\n".join(formatted)
+
+        summary_prompt = f"""Shrň následující konverzaci mezi studentem češtiny a Honzíkem ve 2-3 větách.
+Zaměř se na hlavní témata a chyby studenta:
+
+{history_text}
+
+Shrnutí:"""
+
+        try:
+            # Используем GPT-3.5-turbo для суммаризации (дешевле)
+            summary = await self.generate_chat_completion(
+                messages=[{"role": "user", "content": summary_prompt}],
+                temperature=0.3,
+                model=self.settings.openai_model_simple,
+            )
+
+            self.logger.info(
+                "messages_summarized",
+                original_messages=len(messages),
+                summary_length=len(summary),
+            )
+
+            return {
+                "role": "system",
+                "content": f"Předchozí konverzace (shrnutí): {summary}"
+            }
+        except Exception as e:
+            self.logger.error("summarization_failed", error=str(e))
+            return {"role": "system", "content": "Předchozí konverzace nebyla dostupná."}
 
 

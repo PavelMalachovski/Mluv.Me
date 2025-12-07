@@ -11,6 +11,13 @@ from pydantic import BaseModel, ConfigDict, Field
 class UserCreate(BaseModel):
     """Schema для создания пользователя."""
 
+    model_config = ConfigDict(
+        # Performance optimizations
+        validate_assignment=False,
+        str_strip_whitespace=True,
+        use_enum_values=True,
+    )
+
     telegram_id: int = Field(
         description="Telegram user ID"
     )
@@ -34,6 +41,13 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     """Schema для обновления пользователя."""
 
+    model_config = ConfigDict(
+        # Performance optimizations
+        validate_assignment=False,
+        str_strip_whitespace=True,
+        use_enum_values=True,
+    )
+
     username: str | None = None
     first_name: str | None = None
     ui_language: Literal["ru", "uk"] | None = None
@@ -43,7 +57,13 @@ class UserUpdate(BaseModel):
 class UserResponse(BaseModel):
     """Schema для ответа с пользователем."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        # Performance optimizations
+        validate_assignment=False,
+        str_strip_whitespace=True,
+        use_enum_values=True,
+    )
 
     id: int
     telegram_id: int
@@ -58,6 +78,12 @@ class UserResponse(BaseModel):
 class UserSettingsUpdate(BaseModel):
     """Schema для обновления настроек пользователя."""
 
+    model_config = ConfigDict(
+        # Performance optimizations
+        validate_assignment=False,
+        use_enum_values=True,
+    )
+
     conversation_style: Literal["friendly", "tutor", "casual"] | None = None
     voice_speed: Literal["very_slow", "slow", "normal", "native"] | None = None
     corrections_level: Literal["minimal", "balanced", "detailed"] | None = None
@@ -68,7 +94,12 @@ class UserSettingsUpdate(BaseModel):
 class UserSettingsResponse(BaseModel):
     """Schema для ответа с настройками пользователя."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        # Performance optimizations
+        validate_assignment=False,
+        use_enum_values=True,
+    )
 
     id: int
     user_id: int

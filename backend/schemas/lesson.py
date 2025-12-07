@@ -4,7 +4,7 @@ Pydantic схемы для lesson endpoints (обработка голосовы
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class MistakeSchema(BaseModel):
@@ -16,6 +16,13 @@ class MistakeSchema(BaseModel):
         corrected: Исправленный текст
         explanation: Объяснение ошибки на языке пользователя
     """
+
+    model_config = ConfigDict(
+        # Performance optimizations
+        validate_assignment=False,
+        str_strip_whitespace=True,
+        use_enum_values=True,
+    )
 
     original: str = Field(description="Оригинальный текст с ошибкой")
     corrected: str = Field(description="Исправленный текст")
@@ -32,6 +39,13 @@ class CorrectionSchema(BaseModel):
         correctness_score: Оценка правильности (0-100)
         suggestion: Совет от Хонзика
     """
+
+    model_config = ConfigDict(
+        # Performance optimizations
+        validate_assignment=False,
+        str_strip_whitespace=True,
+        use_enum_values=True,
+    )
 
     corrected_text: str = Field(description="Исправленный текст")
     mistakes: list[MistakeSchema] = Field(description="Список ошибок")
@@ -52,6 +66,12 @@ class DailyChallengeSchema(BaseModel):
         bonus_stars: Бонусные звезды (если челлендж только что выполнен)
     """
 
+    model_config = ConfigDict(
+        # Performance optimizations
+        validate_assignment=False,
+        use_enum_values=True,
+    )
+
     challenge_completed: bool = Field(description="Выполнен ли челлендж")
     messages_today: int = Field(description="Сообщений сегодня")
     messages_needed: int = Field(description="Нужно для выполнения")
@@ -68,6 +88,11 @@ class LessonProcessRequest(BaseModel):
     Note:
         Аудио файл передается через multipart/form-data отдельно
     """
+
+    model_config = ConfigDict(
+        # Performance optimizations
+        validate_assignment=False,
+    )
 
     user_id: int = Field(description="Telegram ID пользователя")
 
@@ -91,6 +116,16 @@ class LessonProcessResponse(BaseModel):
         words_total: Всего слов в сообщении
         words_correct: Правильных слов
     """
+
+    model_config = ConfigDict(
+        # Performance optimizations
+        validate_assignment=False,
+        str_strip_whitespace=True,
+        use_enum_values=True,
+        # Serialization
+        ser_json_timedelta='float',
+        ser_json_bytes='base64',
+    )
 
     transcript: str = Field(description="Транскрипция речи")
     honzik_response_text: str = Field(description="Текстовый ответ Хонзика")
@@ -168,6 +203,12 @@ class VoiceSettingsSchema(BaseModel):
         voice: Голос (alloy, onyx, и т.д.)
         speed: Скорость речи
     """
+
+    model_config = ConfigDict(
+        # Performance optimizations
+        validate_assignment=False,
+        use_enum_values=True,
+    )
 
     voice: Literal["alloy", "echo", "fable", "onyx", "nova", "shimmer"] = (
         Field(default="alloy", description="Голос для TTS")

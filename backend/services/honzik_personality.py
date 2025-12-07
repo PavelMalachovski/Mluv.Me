@@ -246,11 +246,36 @@ Analyzuj text studenta a odpověz ve formátu JSON podle instrukcí výše."""
             {"role": "user", "content": user_prompt},
         ]
 
+        # Оптимизируем историю для уменьшения токенов
+        optimized_messages = self.openai_client.optimize_conversation_history(
+            messages,
+            max_tokens=2000,  # Разумный лимит для контекста
+        )
+
+        # Логируем экономию токенов
+        original_tokens = self.openai_client.estimate_messages_tokens(messages)
+        optimized_tokens = self.openai_client.estimate_messages_tokens(optimized_messages)
+
+        if original_tokens != optimized_tokens:
+            self.logger.info(
+                "tokens_optimized",
+                original=original_tokens,
+                optimized=optimized_tokens,
+                saved=original_tokens - optimized_tokens,
+            )
+
+        # Выбираем оптимальную модель в зависимости от уровня
+        selected_model = self.openai_client.get_optimal_model(
+            czech_level=level,
+            task_type="analysis"
+        )
+
         try:
             # Генерируем ответ от GPT в JSON mode
             response_text = await self.openai_client.generate_chat_completion(
-                messages=messages,
+                messages=optimized_messages,
                 json_mode=True,
+                model=selected_model,
             )
 
             # Парсим JSON

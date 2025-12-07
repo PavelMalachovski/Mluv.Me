@@ -13,6 +13,7 @@ Lesson router - обработка голосовых сообщений.
 import base64
 import io
 import structlog
+import aiofiles
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,6 +37,32 @@ from backend.services.gamification import GamificationService
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/lessons", tags=["lessons"])
+
+
+async def save_audio_file_async(audio_bytes: bytes, filepath: str) -> None:
+    """
+    Асинхронное сохранение аудио файла.
+
+    Args:
+        audio_bytes: Байты аудио файла
+        filepath: Путь для сохранения
+    """
+    async with aiofiles.open(filepath, "wb") as f:
+        await f.write(audio_bytes)
+
+
+async def read_audio_file_async(filepath: str) -> bytes:
+    """
+    Асинхронное чтение аудио файла.
+
+    Args:
+        filepath: Путь к файлу
+
+    Returns:
+        bytes: Содержимое файла
+    """
+    async with aiofiles.open(filepath, "rb") as f:
+        return await f.read()
 
 
 def get_openai_client(settings: Settings = Depends(get_settings)) -> OpenAIClient:
