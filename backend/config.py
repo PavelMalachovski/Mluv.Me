@@ -57,6 +57,42 @@ class Settings(BaseSettings):
         description="Port for FastAPI server (Railway sets this automatically)"
     )
 
+    # Redis Cache
+    redis_url: str = Field(
+        default="redis://localhost:6379/0",
+        description="Redis connection URL"
+    )
+
+    redis_max_connections: int = Field(
+        default=50,
+        description="Maximum connections in Redis pool"
+    )
+
+    cache_enabled: bool = Field(
+        default=True,
+        description="Enable Redis caching"
+    )
+
+    redis_cache_ttl_default: int = Field(
+        default=3600,
+        description="Default cache TTL in seconds (1 hour)"
+    )
+
+    redis_cache_ttl_user: int = Field(
+        default=3600,
+        description="User data cache TTL in seconds (1 hour)"
+    )
+
+    redis_cache_ttl_stats: int = Field(
+        default=900,
+        description="Stats cache TTL in seconds (15 minutes)"
+    )
+
+    redis_cache_ttl_openai: int = Field(
+        default=86400,
+        description="OpenAI response cache TTL in seconds (24 hours)"
+    )
+
     # API Configuration
     max_voice_duration: int = Field(
         default=60,

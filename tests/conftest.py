@@ -17,6 +17,7 @@ os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ["OPENAI_API_KEY"] = "sk-test-key"
 os.environ["TELEGRAM_BOT_TOKEN"] = "test:token"
 os.environ["ENVIRONMENT"] = "testing"
+os.environ["CACHE_ENABLED"] = "false"  # Disable cache by default in tests
 
 from backend.main import app
 from backend.db.database import Base, get_session
@@ -31,6 +32,8 @@ def get_test_settings() -> Settings:
         openai_api_key="sk-test-key",
         telegram_bot_token="test:token",
         environment="testing",
+        cache_enabled=False,  # Disable cache in tests by default
+        redis_url="redis://localhost:6379/1",  # Use test DB
     )
 
 

@@ -15,6 +15,7 @@ from typing import Literal
 import structlog
 
 from backend.services.openai_client import OpenAIClient
+from backend.services.cache_service import cache_service
 
 logger = structlog.get_logger(__name__)
 
@@ -209,6 +210,19 @@ Pamatuj: Buď Honzík - veselý, přátelský Čech, který miluje svou zemi a r
         if conversation_history is None:
             conversation_history = []
 
+        # Try to get cached response
+        settings_dict = {
+            "czech_level": level,
+            "correction_level": corrections_level,
+            "conversation_style": style,
+        }
+        cached_response = await cache_service.get_cached_honzik_response(
+            user_text, settings_dict
+        )
+        if cached_response:
+            self.logger.info("using_cached_honzik_response")
+            return cached_response
+
         # Формируем промпт
         system_prompt = self._get_base_prompt(
             level=level,
@@ -273,6 +287,11 @@ Analyzuj text studenta a odpověz ve formátu JSON podle instrukcí výše."""
                 "honzik_response_generated",
                 correctness_score=response_data["correctness_score"],
                 mistakes_count=len(response_data["mistakes"]),
+            )
+
+            # Cache the response
+            await cache_service.cache_honzik_response(
+                user_text, settings_dict, response_data
             )
 
             return response_data

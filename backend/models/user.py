@@ -4,7 +4,7 @@ User and UserSettings models.
 """
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Integer, String, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -119,6 +119,19 @@ class User(Base):
         cascade="all, delete-orphan"
     )
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert user to dictionary for caching."""
+        return {
+            "id": self.id,
+            "telegram_id": self.telegram_id,
+            "username": self.username,
+            "first_name": self.first_name,
+            "ui_language": self.ui_language,
+            "level": self.level,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
     def __repr__(self) -> str:
         return f"<User(id={self.id}, telegram_id={self.telegram_id}, username={self.username})>"
 
@@ -187,12 +200,23 @@ class UserSettings(Base):
     # Relationship
     user: Mapped["User"] = relationship("User", back_populates="settings")
 
+    def to_dict(self) -> dict[str, Any]:
+        """Convert settings to dictionary for caching."""
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "conversation_style": self.conversation_style,
+            "voice_speed": self.voice_speed,
+            "corrections_level": self.corrections_level,
+            "timezone": self.timezone,
+            "notifications_enabled": self.notifications_enabled,
+        }
+
     def __repr__(self) -> str:
         return (
             f"<UserSettings(user_id={self.user_id}, "
             f"style={self.conversation_style}, "
             f"corrections={self.corrections_level})>"
         )
-
 
 

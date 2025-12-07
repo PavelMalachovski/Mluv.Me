@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import select, update, delete, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+import structlog
 
 from backend.models import (
     User,
@@ -18,6 +19,11 @@ from backend.models import (
     DailyStats,
     Stars,
 )
+from backend.cache.redis_client import redis_client
+from backend.cache.cache_keys import CacheKeys
+from backend.config import get_settings
+
+logger = structlog.get_logger(__name__)
 
 
 class UserRepository:
@@ -43,22 +49,52 @@ class UserRepository:
         )
         return result.scalar_one_or_none()
 
-    async def get_by_telegram_id(self, telegram_id: int) -> User | None:
+    async def get_by_telegram_id(
+        self, telegram_id: int, use_cache: bool = True
+    ) -> User | None:
         """
-        Получить пользователя по Telegram ID.
+        Получить пользователя по Telegram ID с кешированием.
 
         Args:
             telegram_id: Telegram user ID
+            use_cache: Использовать кеш (default: True)
 
         Returns:
             User | None: Пользователь или None
         """
+        # Try cache first
+        if use_cache and redis_client.is_enabled:
+            cache_key = CacheKeys.user_profile(telegram_id)
+            cached = await redis_client.get(cache_key)
+            if cached:
+                logger.debug("user_cache_hit", telegram_id=telegram_id)
+                # Reconstruct User object from cached dict
+                user = User(**{k: v for k, v in cached.items() if k != "settings"})
+                if "settings" in cached and cached["settings"]:
+                    user.settings = UserSettings(**cached["settings"])
+                return user
+
+        # Database query
         result = await self.session.execute(
             select(User)
             .where(User.telegram_id == telegram_id)
             .options(selectinload(User.settings))
         )
-        return result.scalar_one_or_none()
+        user = result.scalar_one_or_none()
+
+        # Cache result
+        if user and use_cache and redis_client.is_enabled:
+            cache_key = CacheKeys.user_profile(telegram_id)
+            settings = get_settings()
+            user_dict = user.to_dict()
+            if user.settings:
+                user_dict["settings"] = user.settings.to_dict()
+            await redis_client.set(
+                cache_key, user_dict, ttl=settings.redis_cache_ttl_user
+            )
+            logger.debug("user_cached", telegram_id=telegram_id)
+
+        return user
 
     async def create(self, **kwargs: Any) -> User:
         """
@@ -89,7 +125,7 @@ class UserRepository:
 
     async def update(self, user_id: int, **kwargs: Any) -> User | None:
         """
-        Обновить пользователя.
+        Обновить пользователя и инвалидировать кеш.
 
         Args:
             user_id: ID пользователя
@@ -98,12 +134,24 @@ class UserRepository:
         Returns:
             User | None: Обновленный пользователь или None
         """
+        # Get user to find telegram_id for cache invalidation
+        user = await self.get_by_id(user_id)
+        if not user:
+            return None
+
         await self.session.execute(
             update(User)
             .where(User.id == user_id)
             .values(**kwargs, updated_at=datetime.utcnow())
         )
         await self.session.commit()
+
+        # Invalidate cache
+        if redis_client.is_enabled:
+            cache_key = CacheKeys.user_profile(user.telegram_id)
+            await redis_client.delete(cache_key)
+            logger.debug("user_cache_invalidated", telegram_id=user.telegram_id)
+
         return await self.get_by_id(user_id)
 
     async def delete(self, user_id: int) -> bool:
@@ -146,7 +194,7 @@ class UserSettingsRepository:
 
     async def update(self, user_id: int, **kwargs: Any) -> UserSettings | None:
         """
-        Обновить настройки пользователя.
+        Обновить настройки пользователя и инвалидировать кеш.
 
         Args:
             user_id: ID пользователя
@@ -161,6 +209,19 @@ class UserSettingsRepository:
             .values(**kwargs)
         )
         await self.session.commit()
+
+        # Invalidate user cache (settings are part of user cache)
+        if redis_client.is_enabled:
+            from backend.models import User
+            result = await self.session.execute(
+                select(User.telegram_id).where(User.id == user_id)
+            )
+            telegram_id = result.scalar_one_or_none()
+            if telegram_id:
+                cache_key = CacheKeys.user_profile(telegram_id)
+                await redis_client.delete(cache_key)
+                logger.debug("user_settings_cache_invalidated", telegram_id=telegram_id)
+
         return await self.get_by_user_id(user_id)
 
 
@@ -340,7 +401,7 @@ class StatsRepository:
         **kwargs: Any
     ) -> DailyStats:
         """
-        Обновить статистику за день.
+        Обновить статистику за день и инвалидировать кеш.
 
         Args:
             user_id: ID пользователя
@@ -357,6 +418,19 @@ class StatsRepository:
 
         await self.session.flush()
         await self.session.refresh(stats)
+
+        # Invalidate stats cache
+        if redis_client.is_enabled:
+            from backend.models import User
+            result = await self.session.execute(
+                select(User.telegram_id).where(User.id == user_id)
+            )
+            telegram_id = result.scalar_one_or_none()
+            if telegram_id:
+                cache_key = CacheKeys.daily_stats(telegram_id, str(date_value))
+                await redis_client.delete(cache_key)
+                logger.debug("stats_cache_invalidated", telegram_id=telegram_id)
+
         return stats
 
     async def get_user_stars(self, user_id: int) -> Stars | None:

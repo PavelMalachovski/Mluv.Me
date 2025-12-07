@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 
 from backend.config import get_settings
 from backend.db.database import close_db
+from backend.cache.redis_client import redis_client
 from backend.routers import users, lesson, stats, words
 
 # Configure structlog for Railway.com
@@ -47,10 +48,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         port=settings.port,
     )
 
+    # Connect to Redis
+    try:
+        await redis_client.connect()
+    except Exception as e:
+        logger.warning("redis_startup_failed", error=str(e))
+
     yield
 
     # Shutdown
     logger.info("application_shutdown")
+    await redis_client.disconnect()
     await close_db()
 
 
@@ -97,6 +105,13 @@ async def health_check() -> JSONResponse:
     """
     settings = get_settings()
 
+    # Check Redis connection
+    redis_status = "unknown"
+    if settings.cache_enabled:
+        redis_status = "healthy" if await redis_client.ping() else "unavailable"
+    else:
+        redis_status = "disabled"
+
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
@@ -104,6 +119,7 @@ async def health_check() -> JSONResponse:
             "service": "mluv-me",
             "version": "1.0.0",
             "environment": settings.environment,
+            "redis": redis_status,
         }
     )
 
