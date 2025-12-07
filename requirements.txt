@@ -13,6 +13,10 @@ aiosqlite==0.20.0
 # Redis Cache
 redis[hiredis]==5.1.1
 
+# Task Queue
+celery[redis]==5.4.0
+flower==2.0.1
+
 # Pydantic
 pydantic==2.9.2
 pydantic-settings==2.6.1

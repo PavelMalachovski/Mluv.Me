@@ -287,6 +287,41 @@ class MessageRepository:
         )
         return list(result.scalars().all())
 
+    async def get_user_messages_by_date(
+        self,
+        user_id: int,
+        start_date: date,
+        end_date: date | None = None
+    ) -> list[Message]:
+        """
+        Получить сообщения пользователя за период.
+
+        Args:
+            user_id: ID пользователя
+            start_date: Начальная дата
+            end_date: Конечная дата (если None, то только start_date)
+
+        Returns:
+            list[Message]: Список сообщений
+        """
+        from sqlalchemy import func
+
+        if end_date is None:
+            end_date = start_date
+
+        result = await self.session.execute(
+            select(Message)
+            .where(
+                and_(
+                    Message.user_id == user_id,
+                    func.date(Message.created_at) >= start_date,
+                    func.date(Message.created_at) <= end_date
+                )
+            )
+            .order_by(Message.created_at.asc())
+        )
+        return list(result.scalars().all())
+
 
 class SavedWordRepository:
     """Repository для работы с сохраненными словами."""
@@ -592,5 +627,46 @@ class StatsRepository:
             update(Stars).where(Stars.user_id == user_id).values(**values)
         )
         await self.session.flush()
+
+    async def get_stats_range(
+        self,
+        user_id: int,
+        start_date: date,
+        end_date: date
+    ) -> list[dict[str, Any]]:
+        """
+        Получить статистику за период.
+
+        Args:
+            user_id: ID пользователя
+            start_date: Начальная дата
+            end_date: Конечная дата
+
+        Returns:
+            list[dict]: Список статистики по дням
+        """
+        result = await self.session.execute(
+            select(DailyStats)
+            .where(
+                and_(
+                    DailyStats.user_id == user_id,
+                    DailyStats.date >= start_date,
+                    DailyStats.date <= end_date
+                )
+            )
+            .order_by(DailyStats.date.asc())
+        )
+        stats_list = list(result.scalars().all())
+
+        return [
+            {
+                "date": stats.date.isoformat(),
+                "messages_count": stats.messages_count,
+                "words_said": stats.words_said,
+                "correct_percent": stats.correct_percent,
+                "streak_day": stats.streak_day,
+            }
+            for stats in stats_list
+        ]
 
 
