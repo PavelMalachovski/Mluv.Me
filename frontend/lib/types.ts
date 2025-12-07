@@ -1,0 +1,54 @@
+export interface User {
+  id: number
+  telegram_id: number
+  username?: string
+  first_name: string
+  ui_language: "ru" | "uk"
+  czech_level: string
+  created_at: string
+}
+
+export interface UserStats {
+  streak: number
+  total_stars: number
+  czech_level: string
+  messages_today: number
+  total_messages: number
+  words_said: number
+  correct_percent: number
+  progress_data: ProgressData[]
+}
+
+export interface ProgressData {
+  date: string
+  correctness_score: number
+  messages_count: number
+}
+
+export interface Message {
+  id: number
+  user_id: number
+  role: "user" | "assistant"
+  text: string
+  correctness_score?: number
+  created_at: string
+  user_mistakes?: string[]
+}
+
+export interface LessonResponse {
+  honzik_text: string
+  user_mistakes: string[]
+  suggestions: string[]
+  stars_earned: number
+  correctness_score: number
+}
+
+export interface SavedWord {
+  id: number
+  word_czech: string
+  translation: string
+  context_sentence: string
+  phonetics?: string
+  times_reviewed: number
+  created_at: string
+}
