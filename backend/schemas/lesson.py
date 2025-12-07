@@ -125,38 +125,8 @@ class LessonProcessResponse(BaseModel):
         # Serialization
         ser_json_timedelta='float',
         ser_json_bytes='base64',
-    )
-
-    transcript: str = Field(description="Транскрипция речи")
-    honzik_response_text: str = Field(description="Текстовый ответ Хонзика")
-    honzik_response_audio: str = Field(
-        description="Аудио ответ Хонзика (base64 encoded)"
-    )
-    corrections: CorrectionSchema = Field(description="Исправления")
-    formatted_mistakes: str = Field(
-        description="Отформатированные ошибки для отображения"
-    )
-    formatted_suggestion: str = Field(
-        description="Отформатированная подсказка"
-    )
-
-    # Геймификация
-    stars_earned: int = Field(description="Звезды за сообщение")
-    total_stars: int = Field(description="Всего звезд")
-    current_streak: int = Field(description="Текущий streak")
-    max_streak: int = Field(description="Максимальный streak")
-    daily_challenge: DailyChallengeSchema = Field(
-        description="Информация о daily challenge"
-    )
-
-    # Статистика
-    words_total: int = Field(description="Всего слов")
-    words_correct: int = Field(description="Правильных слов")
-
-    class Config:
-        """Конфигурация модели."""
-
-        json_schema_extra = {
+        # JSON schema example
+        json_schema_extra={
             "example": {
                 "transcript": "Ahoj, jak se máš? Já jsem dobře.",
                 "honzik_response_text": "Nazdar! Mám se skvěle, díky! "
@@ -193,6 +163,33 @@ class LessonProcessResponse(BaseModel):
                 "words_correct": 6,
             }
         }
+    )
+
+    transcript: str = Field(description="Транскрипция речи")
+    honzik_response_text: str = Field(description="Текстовый ответ Хонзика")
+    honzik_response_audio: str = Field(
+        description="Аудио ответ Хонзика (base64 encoded)"
+    )
+    corrections: CorrectionSchema = Field(description="Исправления")
+    formatted_mistakes: str = Field(
+        description="Отформатированные ошибки для отображения"
+    )
+    formatted_suggestion: str = Field(
+        description="Отформатированная подсказка"
+    )
+
+    # Геймификация
+    stars_earned: int = Field(description="Звезды за сообщение")
+    total_stars: int = Field(description="Всего звезд")
+    current_streak: int = Field(description="Текущий streak")
+    max_streak: int = Field(description="Максимальный streak")
+    daily_challenge: DailyChallengeSchema = Field(
+        description="Информация о daily challenge"
+    )
+
+    # Статистика
+    words_total: int = Field(description="Всего слов")
+    words_correct: int = Field(description="Правильных слов")
 
 
 class VoiceSettingsSchema(BaseModel):
