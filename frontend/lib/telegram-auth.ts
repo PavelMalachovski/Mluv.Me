@@ -91,3 +91,49 @@ export function getTelegramUserFromUrl(): TelegramUser | null {
     hash,
   };
 }
+
+/**
+ * Login with Telegram - returns a promise that resolves when user authenticates
+ */
+export function loginWithTelegram(): Promise<TelegramUser> {
+  return new Promise((resolve, reject) => {
+    // Set up the callback for Telegram widget
+    (window as any).onTelegramAuth = (user: TelegramUser) => {
+      resolve(user);
+    };
+
+    // Check if user data is already in URL (redirect case)
+    const urlUser = getTelegramUserFromUrl();
+    if (urlUser) {
+      resolve(urlUser);
+      return;
+    }
+
+    // If Telegram widget is not loaded, reject after timeout
+    setTimeout(() => {
+      reject(new Error('Telegram authentication timeout'));
+    }, 30000);
+  });
+}
+
+/**
+ * Authenticate with backend using Telegram user data
+ */
+export async function authenticateWithBackend(telegramUser: TelegramUser): Promise<any> {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  
+  const response = await fetch(`${API_URL}/api/auth/telegram`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(telegramUser),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Authentication failed');
+  }
+
+  return response.json();
+}
