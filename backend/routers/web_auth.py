@@ -9,7 +9,7 @@ import secrets
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.config import settings
+from backend.config import get_settings
 from backend.db.database import get_db
 from backend.db.repositories import UserRepository
 from backend.models.user import User
@@ -49,6 +49,8 @@ def verify_telegram_auth(auth_data: TelegramAuthData) -> bool:
     Returns:
         True if hash is valid, False otherwise
     """
+    settings = get_settings()
+
     # Create check string
     check_dict = auth_data.dict(exclude={"hash"})
     check_dict = {k: v for k, v in check_dict.items() if v is not None}
@@ -60,7 +62,7 @@ def verify_telegram_auth(auth_data: TelegramAuthData) -> bool:
 
     # Create secret key from bot token
     secret_key = hashlib.sha256(
-        settings.TELEGRAM_BOT_TOKEN.encode()
+        settings.telegram_bot_token.encode()
     ).digest()
 
     # Calculate expected hash
