@@ -11,11 +11,6 @@ interface NavigationProps {
 
 const navigationItems = [
   {
-    href: "/dashboard",
-    label: "Chat",
-    icon: MessageCircle,
-  },
-  {
     href: "/dashboard/profile",
     label: "Profile",
     icon: User,
@@ -44,7 +39,7 @@ export function Navigation({ className }: NavigationProps) {
     >
       <div className="flex h-16 items-center justify-around md:h-full md:flex-col md:py-8">
         {navigationItems.map((item) => {
-          const isActive = pathname === item.href
+          const isActive = pathname === item.href || (pathname === "/dashboard" && item.href === "/dashboard/profile")
           const Icon = item.icon
 
           return (
@@ -52,16 +47,16 @@ export function Navigation({ className }: NavigationProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-gray-100 md:w-full md:gap-2 md:py-4",
+                "flex flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-purple-50 md:w-full md:gap-2 md:py-4",
                 isActive
-                  ? "text-blue-600 font-semibold"
+                  ? "text-purple-600 font-semibold bg-purple-50"
                   : "text-gray-600 hover:text-gray-900"
               )}
             >
               <Icon
                 className={cn(
                   "h-6 w-6",
-                  isActive ? "text-blue-600" : "text-gray-500"
+                  isActive ? "text-purple-600" : "text-gray-500"
                 )}
               />
               <span className="text-xs">{item.label}</span>

@@ -7,6 +7,8 @@ import { apiClient } from "@/lib/api-client"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Toast, ToastContainer } from "@/components/ui/toast"
+import { useToast } from "@/lib/use-toast"
 import {
   Settings as SettingsIcon,
   User,
@@ -15,8 +17,8 @@ import {
   Bell,
   LogOut,
   Check,
+  Loader2,
 } from "lucide-react"
-import { useState } from "react"
 
 interface UserSettings {
   conversation_style: string
@@ -30,6 +32,7 @@ export default function SettingsPage() {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const queryClient = useQueryClient()
+  const { toasts, toast, removeToast } = useToast()
 
   const { data: settings, isLoading } = useQuery<UserSettings>({
     queryKey: ["user-settings"],
@@ -42,6 +45,18 @@ export default function SettingsPage() {
       apiClient.patch("/api/v1/users/me/settings", newSettings),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-settings"] })
+      toast({
+        title: "Settings updated",
+        description: "Your preferences have been saved successfully.",
+        variant: "success",
+      })
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update settings. Please try again.",
+        variant: "error",
+      })
     },
   })
 
@@ -50,6 +65,18 @@ export default function SettingsPage() {
       apiClient.patch("/api/v1/users/me", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-stats"] })
+      toast({
+        title: "Level updated",
+        description: "Your Czech level has been updated.",
+        variant: "success",
+      })
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update level. Please try again.",
+        variant: "error",
+      })
     },
   })
 
@@ -63,8 +90,22 @@ export default function SettingsPage() {
     router.push("/login")
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    )
+  }
+
   return (
-    <div className="mx-auto max-w-2xl p-6">
+    <>
+      <ToastContainer>
+        {toasts.map((t) => (
+          <Toast key={t.id} {...t} onClose={() => removeToast(t.id)} />
+        ))}
+      </ToastContainer>
+      <div className="mx-auto max-w-2xl p-6">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
@@ -107,10 +148,11 @@ export default function SettingsPage() {
                 <button
                   key={level.value}
                   onClick={() => updateProfileMutation.mutate({ level: level.value })}
-                  className={`rounded-lg border-2 p-4 text-left transition-all ${
+                  disabled={updateProfileMutation.isPending}
+                  className={`rounded-lg border-2 p-4 text-left transition-all disabled:opacity-50 ${
                     user.level === level.value
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-blue-300"
+                      ? "border-purple-500 bg-purple-50"
+                      : "border-gray-200 hover:border-purple-300"
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -118,9 +160,11 @@ export default function SettingsPage() {
                       <div className="font-medium text-gray-900">{level.label}</div>
                       <div className="text-sm text-gray-500">{level.sublabel}</div>
                     </div>
-                    {user.level === level.value && (
-                      <Check className="h-5 w-5 text-blue-600" />
-                    )}
+                    {updateProfileMutation.isPending ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
+                    ) : user.level === level.value ? (
+                      <Check className="h-5 w-5 text-purple-600" />
+                    ) : null}
                   </div>
                 </button>
               ))}
@@ -153,7 +197,8 @@ export default function SettingsPage() {
                   onClick={() =>
                     updateSettingsMutation.mutate({ corrections_level: level.value })
                   }
-                  className={`w-full rounded-lg border-2 p-4 text-left transition-all ${
+                  disabled={updateSettingsMutation.isPending}
+                  className={`w-full rounded-lg border-2 p-4 text-left transition-all disabled:opacity-50 ${
                     settings?.corrections_level === level.value
                       ? "border-purple-500 bg-purple-50"
                       : "border-gray-200 hover:border-purple-300"
@@ -195,10 +240,11 @@ export default function SettingsPage() {
                   onClick={() =>
                     updateSettingsMutation.mutate({ conversation_style: style.value })
                   }
-                  className={`w-full rounded-lg border-2 p-4 text-left transition-all ${
+                  disabled={updateSettingsMutation.isPending}
+                  className={`w-full rounded-lg border-2 p-4 text-left transition-all disabled:opacity-50 ${
                     settings?.conversation_style === style.value
-                      ? "border-green-500 bg-green-50"
-                      : "border-gray-200 hover:border-green-300"
+                      ? "border-purple-500 bg-purple-50"
+                      : "border-gray-200 hover:border-purple-300"
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -209,9 +255,11 @@ export default function SettingsPage() {
                         <div className="text-sm text-gray-500">{style.description}</div>
                       </div>
                     </div>
-                    {settings?.conversation_style === style.value && (
-                      <Check className="h-5 w-5 text-green-600" />
-                    )}
+                    {updateSettingsMutation.isPending ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
+                    ) : settings?.conversation_style === style.value ? (
+                      <Check className="h-5 w-5 text-purple-600" />
+                    ) : null}
                   </div>
                 </button>
               ))}
@@ -242,10 +290,11 @@ export default function SettingsPage() {
                 <button
                   key={speed.value}
                   onClick={() => updateSettingsMutation.mutate({ voice_speed: speed.value })}
-                  className={`rounded-lg border-2 p-4 text-left transition-all ${
+                  disabled={updateSettingsMutation.isPending}
+                  className={`rounded-lg border-2 p-4 text-left transition-all disabled:opacity-50 ${
                     settings?.voice_speed === speed.value
-                      ? "border-orange-500 bg-orange-50"
-                      : "border-gray-200 hover:border-orange-300"
+                      ? "border-purple-500 bg-purple-50"
+                      : "border-gray-200 hover:border-purple-300"
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -253,9 +302,11 @@ export default function SettingsPage() {
                       <div className="font-medium text-gray-900">{speed.label}</div>
                       <div className="text-sm text-gray-500">{speed.sublabel}</div>
                     </div>
-                    {settings?.voice_speed === speed.value && (
-                      <Check className="h-5 w-5 text-orange-600" />
-                    )}
+                    {updateSettingsMutation.isPending ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
+                    ) : settings?.voice_speed === speed.value ? (
+                      <Check className="h-5 w-5 text-purple-600" />
+                    ) : null}
                   </div>
                 </button>
               ))}
@@ -279,9 +330,10 @@ export default function SettingsPage() {
                   notifications_enabled: !settings?.notifications_enabled,
                 })
               }
-              className={`w-full rounded-lg border-2 p-4 transition-all ${
+              disabled={updateSettingsMutation.isPending}
+              className={`w-full rounded-lg border-2 p-4 transition-all disabled:opacity-50 ${
                 settings?.notifications_enabled
-                  ? "border-blue-500 bg-blue-50"
+                  ? "border-purple-500 bg-purple-50"
                   : "border-gray-200"
               }`}
             >
@@ -294,9 +346,11 @@ export default function SettingsPage() {
                     Get daily reminders to practice Czech
                   </div>
                 </div>
-                {settings?.notifications_enabled && (
-                  <Check className="h-5 w-5 text-blue-600" />
-                )}
+                {updateSettingsMutation.isPending ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
+                ) : settings?.notifications_enabled ? (
+                  <Check className="h-5 w-5 text-purple-600" />
+                ) : null}
               </div>
             </button>
           </Card>
@@ -391,5 +445,6 @@ export default function SettingsPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </>
   )
 }
