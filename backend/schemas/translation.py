@@ -51,3 +51,31 @@ class WordTranslationResponse(BaseModel):
     phonetics: str | None = Field(
         default=None, description="Фонетическая транскрипция"
     )
+
+
+class SaveWordRequest(BaseModel):
+    """
+    Схема для запроса сохранения слова.
+
+    Attributes:
+        user_id: ID пользователя
+        word_czech: Чешское слово
+        translation: Перевод слова
+        context_sentence: Контекстное предложение (опционально)
+        phonetics: Фонетическая транскрипция (опционально)
+    """
+
+    model_config = ConfigDict(
+        validate_assignment=False,
+        str_strip_whitespace=True,
+    )
+
+    user_id: int = Field(description="ID пользователя")
+    word_czech: str = Field(description="Чешское слово")
+    translation: str = Field(description="Перевод слова")
+    context_sentence: str | None = Field(
+        default=None, description="Контекстное предложение"
+    )
+    phonetics: str | None = Field(
+        default=None, description="Фонетическая транскрипция"
+    )

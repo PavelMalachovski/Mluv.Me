@@ -12,6 +12,7 @@ from backend.db.repositories import UserRepository, SavedWordRepository
 from backend.schemas.translation import (
     WordTranslationRequest,
     WordTranslationResponse,
+    SaveWordRequest,
 )
 from backend.services.translation_service import TranslationService
 
@@ -113,6 +114,103 @@ async def reset_conversation(
     logger.info("conversation_reset", telegram_id=telegram_id, user_id=user.id)
 
     return {"status": "success", "message": "Conversation context reset"}
+
+
+@router.post(
+    "",
+    summary="Сохранить слово",
+    description="Сохранить переведенное слово в словарь пользователя",
+)
+async def save_word(
+    request: SaveWordRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Сохранить слово в словарь пользователя.
+
+    Args:
+        request: Запрос с данными слова
+        session: Database session
+
+    Returns:
+        Сохраненное слово
+
+    Raises:
+        HTTPException: Если пользователь не найден
+    """
+    user_repo = UserRepository(session)
+    user = await user_repo.get_by_id(request.user_id)
+
+    if not user:
+        logger.warning("user_not_found", user_id=request.user_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with id {request.user_id} not found",
+        )
+
+    word_repo = SavedWordRepository(session)
+    saved_word = await word_repo.create(
+        user_id=request.user_id,
+        word_czech=request.word_czech,
+        translation=request.translation,
+        context_sentence=request.context_sentence,
+        phonetics=request.phonetics,
+    )
+
+    await session.commit()
+
+    logger.info(
+        "word_saved",
+        user_id=request.user_id,
+        word=request.word_czech,
+    )
+
+    return {
+        "id": saved_word.id,
+        "word_czech": saved_word.word_czech,
+        "translation": saved_word.translation,
+        "context_sentence": saved_word.context_sentence,
+        "phonetics": saved_word.phonetics,
+        "times_reviewed": saved_word.times_reviewed,
+        "created_at": saved_word.created_at.isoformat() if saved_word.created_at else None,
+    }
+
+
+@router.delete(
+    "/{word_id}",
+    summary="Удалить слово",
+    description="Удалить сохраненное слово из словаря",
+)
+async def delete_word(
+    word_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Удалить сохраненное слово.
+
+    Args:
+        word_id: ID слова
+        session: Database session
+
+    Returns:
+        Статус успешности
+
+    Raises:
+        HTTPException: Если слово не найдено
+    """
+    word_repo = SavedWordRepository(session)
+    deleted = await word_repo.delete(word_id)
+
+    if not deleted:
+        logger.warning("word_not_found", word_id=word_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Word with id {word_id} not found",
+        )
+
+    logger.info("word_deleted", word_id=word_id)
+
+    return {"status": "success", "message": "Word deleted"}
 
 
 @router.post(
