@@ -3,7 +3,9 @@
 ## Что было исправлено
 
 ### ✅ Проблема 1: WEB UI не доступен снаружи
-**Решение**: Добавлен флаг `--hostname 0.0.0.0` в Dockerfile для Next.js
+**Решения**:
+1. Добавлен флаг `--hostname 0.0.0.0` в Dockerfile для Next.js
+2. Добавлен reverse proxy в FastAPI для проксирования на Next.js
 
 ### ✅ Проблема 2: Кэширование всех ответов Хонзика
 **Решение**: Кэшируется только первое приветствие (когда нет истории разговора)
@@ -13,6 +15,8 @@
 1. `Dockerfile` - добавлен `--hostname 0.0.0.0`
 2. `env.example` - добавлена переменная `FRONTEND_PORT=3000`
 3. `backend/services/honzik_personality.py` - кэширование только первого приветствия
+4. `backend/main.py` - добавлен reverse proxy для Next.js
+5. `backend/config.py` - добавлена настройка `frontend_port`
 
 ## Как задеплоить
 
@@ -30,7 +34,7 @@ git diff
 
 ```bash
 git add .
-git commit -m "fix: web ui hostname and cache first greeting only"
+git commit -m "fix: web ui hostname, reverse proxy and cache first greeting only"
 ```
 
 ### Шаг 3: Запушить
@@ -72,12 +76,19 @@ Starting frontend (Next.js)...
 ### Шаг 6: Проверить работу
 
 1. **Web UI**: Откройте `https://ваш-сервис.railway.app` в браузере
-2. **API**: Проверьте `https://ваш-сервис.railway.app/api/health`
-3. **Telegram Bot**: Отправьте голосовое сообщение "Ahoj, jak se máš?" дважды
+   - Должна загрузиться главная страница Next.js
+   - Если показывается "Frontend is starting up..." - подождите 10 секунд, страница обновится автоматически
 
-В логах должно быть:
-- Первый раз: `honzik_response_generated` + `honzik_greeting_cached`
-- Второй раз: `using_cached_honzik_greeting`
+2. **API**: Проверьте `https://ваш-сервис.railway.app/api/health`
+   - Должен вернуть JSON с `{"status": "healthy"}`
+
+3. **Docs**: Откройте `https://ваш-сервис.railway.app/docs`
+   - Должен показать Swagger UI
+
+4. **Telegram Bot**: Отправьте голосовое сообщение "Ahoj, jak se máš?" дважды
+   - В логах должно быть:
+     - Первый раз: `honzik_response_generated` + `honzik_greeting_cached`
+     - Второй раз: `using_cached_honzik_greeting`
 
 ## Если что-то пошло не так
 
