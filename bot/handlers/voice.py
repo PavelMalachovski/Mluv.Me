@@ -4,11 +4,11 @@
 
 import base64
 import io
+import urllib.parse
 
 from aiogram import F, Router
 from aiogram.types import (
     BufferedInputFile,
-    CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
@@ -24,8 +24,9 @@ router = Router()
 logger = structlog.get_logger()
 
 # Временное хранилище текстовых ответов Хонзика (telegram_id -> text)
-# Используется для показа текста при нажатии на кнопку "Текст"
+# Используется для передачи текста в WebUI через URL
 honzik_text_storage: dict[int, str] = {}
+
 
 
 @router.message(F.voice)
@@ -112,17 +113,16 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                 if honzik_text:
                     honzik_text_storage[telegram_id] = honzik_text
 
-                # Создаем inline кнопки: "Текст" и "Перейти в WEBUI"
+                # Создаем кнопку "Текст" которая открывает WebUI
+                encoded_text = urllib.parse.quote(honzik_text)
+                webui_url_with_text = f"{config.webui_url}/response?text={encoded_text}"
+
                 text_button = InlineKeyboardButton(
                     text=get_text("btn_show_text", language),
-                    callback_data="show_honzik_text"
-                )
-                webui_button = InlineKeyboardButton(
-                    text=get_text("btn_open_webui", language),
-                    web_app=WebAppInfo(url=config.webui_url)
+                    web_app=WebAppInfo(url=webui_url_with_text)
                 )
                 keyboard = InlineKeyboardMarkup(
-                    inline_keyboard=[[text_button], [webui_button]]
+                    inline_keyboard=[[text_button]]
                 )
 
                 # Отправляем голосовое сообщение с кнопкой
@@ -174,39 +174,4 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
         logger.error("voice_processing_error", telegram_id=telegram_id, error=str(e))
         await message.answer(get_text("error_general", language))
 
-
-@router.callback_query(F.data == "show_honzik_text")
-async def show_honzik_text_handler(
-    callback: CallbackQuery, api_client: APIClient
-) -> None:
-    """
-    Обработчик нажатия на кнопку "Текст" для показа текстового ответа Хонзика.
-
-    Args:
-        callback: Callback query от кнопки
-        api_client: API клиент для общения с backend
-    """
-    # Получаем пользователя для определения языка
-    telegram_id = callback.from_user.id
-    user = await api_client.get_user(telegram_id)
-    language = user.get("ui_language", "ru") if user else "ru"
-
-    # Получаем текстовый ответ из хранилища
-    honzik_text = honzik_text_storage.get(telegram_id)
-
-    if honzik_text:
-        # Отправляем текстовый ответ
-        text_message = get_text("honzik_text_response", language, text=honzik_text)
-        await callback.message.answer(text_message, parse_mode="HTML")
-        await callback.answer()
-    else:
-        # Текст не найден (возможно, сообщение слишком старое)
-        await callback.answer(
-            get_text("error_general", language), show_alert=False
-        )
-
-    logger.info(
-        "honzik_text_shown",
-        telegram_id=telegram_id,
-    )
 
