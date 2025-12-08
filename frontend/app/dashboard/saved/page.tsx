@@ -26,22 +26,22 @@ export default function SavedPage() {
   const [searchQuery, setSearchQuery] = useState("")
 
   const { data: savedWords, isLoading } = useQuery<SavedWord[]>({
-    queryKey: ["saved-words"],
-    queryFn: () => apiClient.get("/api/v1/words"),
-    enabled: !!user,
+    queryKey: ["saved-words", user?.id],
+    queryFn: () => apiClient.getSavedWords(user!.id),
+    enabled: !!user?.id,
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (wordId: number) => apiClient.delete(`/api/v1/words/${wordId}`),
+    mutationFn: (wordId: number) => apiClient.deleteWord(wordId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["saved-words"] })
+      queryClient.invalidateQueries({ queryKey: ["saved-words", user?.id] })
     },
   })
 
   const reviewMutation = useMutation({
     mutationFn: (wordId: number) => apiClient.patch(`/api/v1/words/${wordId}/review`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["saved-words"] })
+      queryClient.invalidateQueries({ queryKey: ["saved-words", user?.id] })
     },
   })
 

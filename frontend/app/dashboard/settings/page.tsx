@@ -35,26 +35,27 @@ export default function SettingsPage() {
   const { toasts, toast, removeToast } = useToast()
 
   const { data: settings, isLoading } = useQuery<UserSettings>({
-    queryKey: ["user-settings"],
-    queryFn: () => apiClient.get("/api/v1/users/me/settings"),
-    enabled: !!user,
+    queryKey: ["user-settings", user?.id],
+    queryFn: () => apiClient.get(`/api/v1/users/${user?.id}/settings`),
+    enabled: !!user?.id,
   })
 
   const updateSettingsMutation = useMutation({
     mutationFn: (newSettings: Partial<UserSettings>) =>
-      apiClient.patch("/api/v1/users/me/settings", newSettings),
+      apiClient.patch(`/api/v1/users/${user?.id}/settings`, newSettings),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-settings"] })
+      queryClient.invalidateQueries({ queryKey: ["user-settings", user?.id] })
       toast({
         title: "Settings updated",
         description: "Your preferences have been saved successfully.",
         variant: "success",
       })
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Settings update error:", error)
       toast({
         title: "Error",
-        description: "Failed to update settings. Please try again.",
+        description: error?.response?.data?.detail || "Failed to update settings. Please try again.",
         variant: "error",
       })
     },
@@ -62,19 +63,22 @@ export default function SettingsPage() {
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: { level: string }) =>
-      apiClient.patch("/api/v1/users/me", data),
-    onSuccess: () => {
+      apiClient.patch(`/api/v1/users/${user?.id}`, data),
+    onSuccess: (updatedUser) => {
       queryClient.invalidateQueries({ queryKey: ["user-stats"] })
+      // Update user in auth store
+      useAuthStore.getState().updateUser({ level: updatedUser.level })
       toast({
         title: "Level updated",
         description: "Your Czech level has been updated.",
         variant: "success",
       })
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Level update error:", error)
       toast({
         title: "Error",
-        description: "Failed to update level. Please try again.",
+        description: error?.response?.data?.detail || "Failed to update level. Please try again.",
         variant: "error",
       })
     },
@@ -108,8 +112,8 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-2xl p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-500">Customize your learning experience</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Customize your learning experience</p>
       </div>
 
       <Tabs defaultValue="learning" className="space-y-6">
