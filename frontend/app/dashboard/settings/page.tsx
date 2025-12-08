@@ -180,7 +180,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">Conversation Style</h3>
-                <p className="text-sm text-gray-500">Honzík's personality</p>
+                <p className="text-sm text-gray-500">Honzík&apos;s personality</p>
               </div>
             </div>
 
@@ -228,7 +228,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">Voice Speed</h3>
-                <p className="text-sm text-gray-500">Honzík's speaking speed</p>
+                <p className="text-sm text-gray-500">Honzík&apos;s speaking speed</p>
               </div>
             </div>
 

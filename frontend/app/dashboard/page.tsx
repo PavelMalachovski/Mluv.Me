@@ -92,7 +92,7 @@ export default function DashboardPage() {
         <div className="rounded-lg bg-blue-50 p-4 text-center">
           <div className="mb-2 text-2xl">👋</div>
           <p className="text-sm font-medium text-blue-900">
-            Nazdar, {user.first_name}! I'm Honzík, your personal Czech tutor.
+            Nazdar, {user.first_name}! I&apos;m Honzík, your personal Czech tutor.
           </p>
           <p className="mt-2 text-xs text-blue-700">
             🗣️ Send me voice messages to practice your spoken Czech

@@ -121,11 +121,11 @@ export default function SavedPage() {
                   <p className="mb-2 text-sm text-gray-700">{word.translation}</p>
 
                   {word.context_sentence && (
-                    <div className="rounded-lg bg-blue-50 p-3">
+                  <div className="rounded-lg bg-blue-50 p-3">
                       <p className="text-sm italic text-blue-900">
-                        "{word.context_sentence}"
+                        &ldquo;{word.context_sentence}&rdquo;
                       </p>
-                    </div>
+                  </div>
                   )}
 
                   <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
