@@ -57,6 +57,11 @@ class Settings(BaseSettings):
         description="Port for FastAPI server (Railway sets this automatically)"
     )
 
+    frontend_port: int = Field(
+        default=3000,
+        description="Port for Next.js frontend"
+    )
+
     # Redis Cache
     redis_url: str = Field(
         default="redis://localhost:6379/0",
