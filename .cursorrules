@@ -779,6 +779,8 @@ logger.info(
     streak=streak
 )
 ```
+### Тестирование локально
+- сd C:\Git\Mluv.Me\frontend && cmd /c "npm run build 2>&1"
 
 ### Метрики
 - Время обработки голосовых (Railway Observability)
