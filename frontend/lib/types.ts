@@ -33,6 +33,8 @@ export interface Message {
   correctness_score?: number
   created_at: string
   user_mistakes?: string[]
+  audio_file_path?: string
+  transcript_raw?: string
 }
 
 export interface LessonResponse {

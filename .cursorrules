@@ -780,7 +780,7 @@ logger.info(
 )
 ```
 ### Тестирование локально
-- сd C:\Git\Mluv.Me\frontend && cmd /c "npm run build 2>&1"
+- всегда запускай эту команду после каждого изменения сd C:\Git\Mluv.Me\frontend && cmd /c "npm run build 2>&1"
 
 ### Метрики
 - Время обработки голосовых (Railway Observability)
