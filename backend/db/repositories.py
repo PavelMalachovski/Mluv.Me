@@ -481,6 +481,60 @@ class SavedWordRepository:
         await self.session.commit()
         return result.rowcount > 0
 
+    async def get_by_user_id(
+        self,
+        user_id: int,
+        limit: int | None = None
+    ) -> list[SavedWord]:
+        """
+        Alias для get_by_user чтобы сохранить обратную совместимость.
+
+        Args:
+            user_id: ID пользователя
+            limit: Ограничение количества
+
+        Returns:
+            list[SavedWord]: Список слов
+        """
+        return await self.get_by_user(user_id=user_id, limit=limit)
+
+    async def get_by_id(self, word_id: int) -> SavedWord | None:
+        """
+        Получить сохраненное слово по ID.
+
+        Args:
+            word_id: ID слова
+
+        Returns:
+            SavedWord | None: Найденное слово или None
+        """
+        result = await self.session.execute(
+            select(SavedWord).where(SavedWord.id == word_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def increment_review(self, word_id: int) -> SavedWord | None:
+        """
+        Увеличить счетчик повторений и обновить дату последнего повторения.
+
+        Args:
+            word_id: ID слова
+
+        Returns:
+            SavedWord | None: Обновленное слово или None если не найдено
+        """
+        word = await self.get_by_id(word_id)
+        if not word:
+            return None
+
+        word.times_reviewed = (word.times_reviewed or 0) + 1
+        word.last_reviewed_at = datetime.utcnow()
+
+        await self.session.flush()
+        await self.session.refresh(word)
+
+        return word
+
 
 class StatsRepository:
     """Repository для работы со статистикой."""

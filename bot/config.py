@@ -19,6 +19,11 @@ class BotConfig(BaseSettings):
     # Backend API URL
     backend_api_url: str = os.getenv("BACKEND_API_URL", "http://localhost:8000")
 
+    # WebUI URL (для кнопок WebApp)
+    webui_url: str = os.getenv(
+        "WEBUI_URL", "https://mluvme-production.up.railway.app"
+    )
+
     # Environment
     environment: str = os.getenv("ENVIRONMENT", "development")
 

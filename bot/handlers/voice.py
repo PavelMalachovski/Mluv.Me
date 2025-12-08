@@ -6,9 +6,17 @@ import base64
 import io
 
 from aiogram import F, Router
-from aiogram.types import BufferedInputFile, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import (
+    BufferedInputFile,
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+    WebAppInfo,
+)
 import structlog
 
+from bot.config import config
 from bot.localization import get_text
 from bot.services.api_client import APIClient
 
@@ -104,12 +112,18 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                 if honzik_text:
                     honzik_text_storage[telegram_id] = honzik_text
 
-                # Создаем inline кнопку "Текст" (текст скрыт до нажатия)
+                # Создаем inline кнопки: "Текст" и "Перейти в WEBUI"
                 text_button = InlineKeyboardButton(
                     text=get_text("btn_show_text", language),
                     callback_data="show_honzik_text"
                 )
-                keyboard = InlineKeyboardMarkup(inline_keyboard=[[text_button]])
+                webui_button = InlineKeyboardButton(
+                    text=get_text("btn_open_webui", language),
+                    web_app=WebAppInfo(url=config.webui_url)
+                )
+                keyboard = InlineKeyboardMarkup(
+                    inline_keyboard=[[text_button], [webui_button]]
+                )
 
                 # Отправляем голосовое сообщение с кнопкой
                 await message.answer_voice(

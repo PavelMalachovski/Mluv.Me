@@ -444,3 +444,56 @@ async def style_changed(callback: CallbackQuery, api_client: APIClient) -> None:
     logger.info("style_changed", telegram_id=telegram_id, style=style)
 
 
+@router.message(Command("translate"))
+async def command_translate(message: Message, api_client: APIClient) -> None:
+    """
+    Обработчик команды /translate <word>.
+
+    Args:
+        message: Сообщение от пользователя
+        api_client: API клиент
+    """
+    telegram_id = message.from_user.id
+    user = await api_client.get_user(telegram_id)
+
+    if not user:
+        await message.answer(get_text("error_general", "ru"))
+        return
+
+    language = user.get("ui_language", "ru")
+
+    # Получаем слово из команды
+    command_parts = message.text.split(maxsplit=1)
+    if len(command_parts) < 2:
+        await message.answer(
+            get_text("translate_usage", language), parse_mode="HTML"
+        )
+        return
+
+    word = command_parts[1].strip()
+
+    # Переводим слово
+    translation_result = await api_client.translate_word(word, target_language=language)
+
+    if not translation_result:
+        await message.answer(get_text("translate_error", language))
+        return
+
+    translation = translation_result.get("translation", "")
+    phonetics = translation_result.get("phonetics")
+
+    # Формируем ответ
+    response_text = get_text(
+        "translate_result",
+        language,
+        word=word,
+        translation=translation,
+    )
+
+    if phonetics:
+        response_text += f"\n📝 {get_text('phonetics', language)}: {phonetics}"
+
+    await message.answer(response_text, parse_mode="HTML")
+    logger.info("word_translated", telegram_id=telegram_id, word=word)
+
+

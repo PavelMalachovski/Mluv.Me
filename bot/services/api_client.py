@@ -274,6 +274,47 @@ class APIClient:
             )
             return False
 
+    async def translate_word(
+        self, word: str, target_language: str = "ru"
+    ) -> Optional[dict[str, Any]]:
+        """
+        Перевести слово с чешского на целевой язык.
+
+        Args:
+            word: Слово для перевода (чешское)
+            target_language: Язык перевода (ru/uk)
+
+        Returns:
+            Результат перевода или None при ошибке
+        """
+        session = await self._get_session()
+        try:
+            data = {
+                "word": word,
+                "target_language": target_language,
+            }
+            async with session.post(
+                f"{self.base_url}/api/v1/words/translate", json=data
+            ) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    logger.error(
+                        "translate_word_failed",
+                        word=word,
+                        target_language=target_language,
+                        status=resp.status,
+                    )
+                    return None
+        except Exception as e:
+            logger.error(
+                "translate_word_error",
+                word=word,
+                target_language=target_language,
+                error=str(e),
+            )
+            return None
+
     async def close(self):
         """Закрыть сессию."""
         if self.session:

@@ -9,10 +9,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.db.database import get_session
 from backend.db.repositories import UserRepository, SavedWordRepository
+from backend.schemas.translation import (
+    WordTranslationRequest,
+    WordTranslationResponse,
+)
+from backend.services.translation_service import TranslationService
 
 logger = structlog.get_logger()
 
 router = APIRouter(prefix="/api/v1/words", tags=["words"])
+
+
+def get_translation_service() -> TranslationService:
+    """Dependency для сервиса перевода."""
+    return TranslationService()
 
 
 @router.get(
@@ -103,5 +113,66 @@ async def reset_conversation(
     logger.info("conversation_reset", telegram_id=telegram_id, user_id=user.id)
 
     return {"status": "success", "message": "Conversation context reset"}
+
+
+@router.post(
+    "/translate",
+    response_model=WordTranslationResponse,
+    summary="Перевести слово",
+    description="Перевести чешское слово на русский или украинский язык",
+)
+async def translate_word(
+    request: WordTranslationRequest,
+    translation_service: TranslationService = Depends(get_translation_service),
+):
+    """
+    Перевести слово с чешского на целевой язык.
+
+    Args:
+        request: Запрос с словом и целевым языком
+        translation_service: Сервис перевода
+
+    Returns:
+        WordTranslationResponse: Перевод слова
+
+    Raises:
+        HTTPException: При ошибках перевода
+    """
+    try:
+        result = await translation_service.translate_word(
+            word=request.word, target_language=request.target_language
+        )
+
+        return WordTranslationResponse(
+            word=request.word,
+            translation=result["translation"],
+            target_language=request.target_language,
+            phonetics=result.get("phonetics"),
+        )
+
+    except ValueError as e:
+        logger.warning(
+            "translation_request_failed",
+            word=request.word,
+            target_language=request.target_language,
+            error=str(e),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+    except Exception as e:
+        logger.error(
+            "translation_error",
+            word=request.word,
+            target_language=request.target_language,
+            error=str(e),
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to translate word",
+        )
 
 

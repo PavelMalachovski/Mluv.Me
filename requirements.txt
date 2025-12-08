@@ -46,6 +46,10 @@ httpx==0.27.2
 fakeredis==2.23.3
 locust==2.31.8
 
+# Translation
+googletrans==4.0.0-rc1
+deep-translator==1.11.4
+
 # Code Quality
 ruff==0.8.2
 mypy==1.13.0
