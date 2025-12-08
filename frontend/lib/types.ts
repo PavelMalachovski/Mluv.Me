@@ -17,6 +17,9 @@ export interface UserStats {
   words_said: number
   correct_percent: number
   progress_data: ProgressData[]
+  correctness_avg?: number
+  words_learned?: number
+  max_streak?: number
 }
 
 export interface ProgressData {
