@@ -210,18 +210,22 @@ Pamatuj: Buď Honzík - veselý, přátelský Čech, který miluje svou zemi a r
         if conversation_history is None:
             conversation_history = []
 
-        # Try to get cached response
-        settings_dict = {
-            "czech_level": level,
-            "correction_level": corrections_level,
-            "conversation_style": style,
-        }
-        cached_response = await cache_service.get_cached_honzik_response(
-            user_text, settings_dict
-        )
-        if cached_response:
-            self.logger.info("using_cached_honzik_response")
-            return cached_response
+        # Cache ONLY the first greeting message (when there's no conversation history)
+        # This saves API calls for the same initial greeting
+        should_cache = len(conversation_history) == 0
+
+        if should_cache:
+            settings_dict = {
+                "czech_level": level,
+                "correction_level": corrections_level,
+                "conversation_style": style,
+            }
+            cached_response = await cache_service.get_cached_honzik_response(
+                user_text, settings_dict
+            )
+            if cached_response:
+                self.logger.info("using_cached_honzik_greeting")
+                return cached_response
 
         # Формируем промпт
         system_prompt = self._get_base_prompt(
@@ -314,10 +318,12 @@ Analyzuj text studenta a odpověz ve formátu JSON podle instrukcí výše."""
                 mistakes_count=len(response_data["mistakes"]),
             )
 
-            # Cache the response
-            await cache_service.cache_honzik_response(
-                user_text, settings_dict, response_data
-            )
+            # Cache ONLY first greeting (no conversation history)
+            if should_cache:
+                await cache_service.cache_honzik_response(
+                    user_text, settings_dict, response_data
+                )
+                self.logger.info("honzik_greeting_cached")
 
             return response_data
 

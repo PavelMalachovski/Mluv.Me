@@ -82,7 +82,7 @@ uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} &\n\
 BACKEND_PID=$!\n\
 \n\
 echo "Starting frontend (Next.js)..."\n\
-cd /app/frontend && npm start -- --port ${FRONTEND_PORT:-3000} &\n\
+cd /app/frontend && npm start -- --port ${FRONTEND_PORT:-3000} --hostname 0.0.0.0 &\n\
 FRONTEND_PID=$!\n\
 cd /app\n\
 \n\
