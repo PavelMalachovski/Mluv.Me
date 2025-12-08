@@ -63,32 +63,44 @@ class HonzikPersonality:
         Returns:
             str: Системный промпт для GPT
         """
-        # Описание уровней на чешском
+        # Описание уровней на чешском с указанием словарного запаса
         level_descriptions = {
-            "beginner": "Začátečník - učí se základy",
-            "intermediate": "Středně pokročilý - už rozumí základům",
-            "advanced": "Pokročilý - mluví dobře, potřebuje praxi",
-            "native": "Rodilý mluvčí - perfekcionismus",
+            "beginner": "Začátečník (A2-B1) - učí se základy. Používej jednoduchá slova a fráze z úrovně A2-B1. "
+                       "Vyhni se složitým výrazům a odborným termínům. Mluv jednoduše a jasně.",
+            "intermediate": "Středně pokročilý (B1-B2) - už rozumí základům. Používej slova z úrovně B1-B2. "
+                          "Můžeš použít běžné idiomy a složitější gramatické struktury.",
+            "advanced": "Pokročilý (B2-C1) - mluví dobře, potřebuje praxi. Používej pokročilou slovní zásobu z úrovně B2-C1. "
+                       "Můžeš používat složitější výrazy, idiomy a odborné termíny.",
+            "native": "Rodilý mluvčí (C2) - perfekcionismus. Používej nejpokročilejší slovní zásobu na úrovni C2. "
+                     "Můžeš používat všechny jazykové prostředky včetně složitých idiomů a odborných termínů.",
         }
 
-        # Описание стилей общения
+        # Описание стилей общения с напоминанием о постоянстве
         style_descriptions = {
             "friendly": "Buď přátelský a povzbuzující. Minimum technických vysvětlení, "
-                       "maximum pozitivity. Pokračuj v konverzaci přirozeně.",
+                       "maximum pozitivity. Pokračuj v konverzaci přirozeně. "
+                       "DŮLEŽITÉ: Vždy dodržuj tento styl - NEMĚŇ ho během konverzace!",
             "tutor": "Buď jako učitel - strukturované rady, vysvětlení gramatických pravidel, "
-                    "doporučení pro výslovnost. Více technických detailů.",
+                    "doporučení pro výslovnost. Více technických detailů. "
+                    "DŮLEŽITÉ: Vždy dodržuj tento styl - NEMĚŇ ho během konverzace!",
             "casual": "Buď neformální jako kamarád v hospodě. Minimum oprav (jen kritické), "
-                     "maximum legrace a přirozené konverzace. Mluv o pivu a klobáskách!",
+                     "maximum legrace a přirozené konverzace. Mluv o pivu a klobáskách! "
+                     "DŮLEŽITÉ: Vždy dodržuj tento styl - NEMĚŇ ho během konverzace!",
         }
 
-        # Описание уровней исправлений
+        # Описание уровней исправлений (улучшенная версия для minimal)
         corrections_descriptions = {
-            "minimal": "Opravuj POUZE kritické chyby, které brání porozumění. "
-                      "Většinu chyb ignoruj, důležitá je plynulá konverzace.",
+            "minimal": "Opravuj POUZE kritické chyby, které VÝRAZNĚ brání porozumění. "
+                      "IGNORUJ: drobné gramatické chyby, chybějící čárky, volbu slov (pokud je význam jasný), "
+                      "malé chyby v koncovkách, pokud nebrání porozumění. "
+                      "Opravuj POUZE: zásadní gramatické chyby, které mění význam, "
+                      "chyby v základních slovech, které brání porozumění celé větě. "
+                      "Důležitá je plynulá konverzace, ne perfektní gramatika!",
             "balanced": "Opravuj důležité chyby a občas vysvětli pravidlo. "
-                       "Balanc mezi učením a konverzací.",
+                       "Balanc mezi učením a konverzací. Opravuj chyby, které ovlivňují význam nebo jsou časté.",
             "detailed": "Opravuj VŠECHNY chyby s podrobnými vysvětleními gramatických pravidel. "
-                       "Pro pokročilé studenty hledající perfekcionismus.",
+                       "Pro pokročilé studenty hledající perfekcionismus. "
+                       "Věnuj pozornost i drobným chybám v interpunkci a stylu.",
         }
 
         # Язык для объяснений
@@ -118,11 +130,13 @@ JAK OPRAVOVAT CHYBY:
 
 TVŮJ ÚKOL:
 1. Analyzuj text studenta v češtině
-2. Identifikuj gramatické a výslovnostní chyby podle úrovně oprav
+2. Identifikuj gramatické a výslovnostní chyby podle úrovně oprav (viz instrukce výše)
 3. Poskytni opravy s vysvětlením v jazyce studenta ({explanation_lang})
 4. Ohodnoť správnost od 0-100 (0 = hodně chyb, 100 = perfektní)
 5. Odpověz přirozeně jako Honzík a pokračuj v zajímavé konverzaci
 6. Buď pozitivní a povzbuzující!
+7. DŮLEŽITÉ: Používej slovní zásobu odpovídající úrovni studenta - viz informace o úrovni výše
+8. DŮLEŽITÉ: Vždy dodržuj styl konverzace - NEMĚŇ ho během rozhovoru! Styl je nastaven na: {style}
 
 ODPOVĚZ VE FORMÁTU JSON:
 {{
