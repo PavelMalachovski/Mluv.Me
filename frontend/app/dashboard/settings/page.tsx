@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Toast, ToastContainer } from "@/components/ui/toast"
 import { useToast } from "@/lib/use-toast"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
+import { useThemeStore } from "@/lib/theme-store"
 import {
   Settings as SettingsIcon,
   User,
@@ -18,6 +20,8 @@ import {
   LogOut,
   Check,
   Loader2,
+  Moon,
+  Sun,
 } from "lucide-react"
 
 interface UserSettings {
@@ -33,6 +37,7 @@ export default function SettingsPage() {
   const logout = useAuthStore((state) => state.logout)
   const queryClient = useQueryClient()
   const { toasts, toast, removeToast } = useToast()
+  const { theme, toggleTheme } = useThemeStore()
 
   const { data: settings, isLoading } = useQuery<UserSettings>({
     queryKey: ["user-settings", user?.id],
@@ -117,14 +122,17 @@ export default function SettingsPage() {
       </div>
 
       <Tabs defaultValue="learning" className="space-y-6">
-        <TabsList className="w-full">
-          <TabsTrigger value="learning" className="flex-1">
+        <TabsList className="w-full grid grid-cols-4">
+          <TabsTrigger value="learning">
             Learning
           </TabsTrigger>
-          <TabsTrigger value="voice" className="flex-1">
+          <TabsTrigger value="voice">
             Voice
           </TabsTrigger>
-          <TabsTrigger value="account" className="flex-1">
+          <TabsTrigger value="appearance">
+            Appearance
+          </TabsTrigger>
+          <TabsTrigger value="account">
             Account
           </TabsTrigger>
         </TabsList>
@@ -357,6 +365,71 @@ export default function SettingsPage() {
                 ) : null}
               </div>
             </button>
+          </Card>
+        </TabsContent>
+
+        {/* Appearance Settings */}
+        <TabsContent value="appearance" className="space-y-4">
+          <Card className="p-6">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100">
+                {theme === "light" ? (
+                  <Sun className="h-5 w-5 text-indigo-600" />
+                ) : (
+                  <Moon className="h-5 w-5 text-indigo-600" />
+                )}
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Theme</h3>
+                <p className="text-sm text-gray-500">Choose your preferred color scheme</p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                onClick={() => {
+                  if (theme === "dark") toggleTheme()
+                }}
+                className={`rounded-lg border-2 p-4 text-left transition-all ${
+                  theme === "light"
+                    ? "border-purple-500 bg-purple-50"
+                    : "border-gray-200 hover:border-purple-300"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Sun className="h-5 w-5 text-yellow-600" />
+                    <div>
+                      <div className="font-medium text-gray-900">Light</div>
+                      <div className="text-sm text-gray-500">Bright and clear</div>
+                    </div>
+                  </div>
+                  {theme === "light" && <Check className="h-5 w-5 text-purple-600" />}
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (theme === "light") toggleTheme()
+                }}
+                className={`rounded-lg border-2 p-4 text-left transition-all ${
+                  theme === "dark"
+                    ? "border-purple-500 bg-purple-50"
+                    : "border-gray-200 hover:border-purple-300"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Moon className="h-5 w-5 text-indigo-600" />
+                    <div>
+                      <div className="font-medium text-gray-900">Dark</div>
+                      <div className="text-sm text-gray-500">Easy on the eyes</div>
+                    </div>
+                  </div>
+                  {theme === "dark" && <Check className="h-5 w-5 text-purple-600" />}
+                </div>
+              </button>
+            </div>
           </Card>
         </TabsContent>
 

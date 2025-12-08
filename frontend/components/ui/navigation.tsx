@@ -4,7 +4,6 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { User, BookmarkCheck, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 interface NavigationProps {
   className?: string
@@ -39,11 +38,6 @@ export function Navigation({ className }: NavigationProps) {
       )}
     >
       <div className="flex h-16 items-center justify-around md:h-full md:flex-col md:py-8">
-        {/* Desktop: Theme toggle at top */}
-        <div className="hidden md:block md:mb-4">
-          <ThemeToggle />
-        </div>
-
         {navigationItems.map((item) => {
           const isActive = pathname === item.href || (pathname === "/dashboard" && item.href === "/dashboard/profile")
           const Icon = item.icon
@@ -69,14 +63,6 @@ export function Navigation({ className }: NavigationProps) {
             </Link>
           )
         })}
-
-        {/* Mobile: Theme toggle at end */}
-        <div className="md:hidden">
-          <ThemeToggle />
-        </div>
-
-        {/* Desktop: Theme toggle at bottom (spacer) */}
-        <div className="hidden md:block md:mt-auto" />
       </div>
     </nav>
   )

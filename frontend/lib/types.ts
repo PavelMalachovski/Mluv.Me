@@ -42,6 +42,7 @@ export interface Message {
 
 export interface LessonResponse {
   honzik_text: string
+  honzik_transcript: string
   user_mistakes: string[]
   suggestions: string[]
   stars_earned: number

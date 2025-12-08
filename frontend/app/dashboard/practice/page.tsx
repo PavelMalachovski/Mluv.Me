@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { LessonResponse } from "@/lib/types"
+import { FileText } from "lucide-react"
 
 interface ConversationMessage {
   role: "user" | "assistant"
   text: string
   response?: LessonResponse
+  showTranscript?: boolean
 }
 
 export default function PracticePage() {
@@ -45,6 +47,8 @@ export default function PracticePage() {
         {
           role: "assistant",
           text: data.honzik_text,
+          response: data,
+          showTranscript: false,
         },
       ])
 
@@ -62,6 +66,14 @@ export default function PracticePage() {
     if (userText.trim()) {
       sendMessage.mutate(userText)
     }
+  }
+
+  const toggleTranscript = (index: number) => {
+    setConversation((prev) =>
+      prev.map((msg, i) =>
+        i === index ? { ...msg, showTranscript: !msg.showTranscript } : msg
+      )
+    )
   }
 
   return (
@@ -123,6 +135,27 @@ export default function PracticePage() {
                                 <li key={i}>{mistake}</li>
                               ))}
                             </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {msg.role === "assistant" && msg.response?.honzik_transcript && (
+                      <div className="mt-3 space-y-2 border-t border-gray-300 pt-3">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleTranscript(index)}
+                          className="flex items-center gap-2 text-xs text-gray-600 hover:text-gray-900"
+                        >
+                          <FileText className="h-4 w-4" />
+                          {msg.showTranscript ? "Hide Transcript" : "Show Transcript"}
+                        </Button>
+
+                        {msg.showTranscript && (
+                          <div className="rounded-md bg-gray-200 p-3 text-sm text-gray-800">
+                            <p className="font-semibold mb-1 text-xs text-gray-600">Transcript:</p>
+                            <p className="whitespace-pre-wrap">{msg.response.honzik_transcript}</p>
                           </div>
                         )}
                       </div>

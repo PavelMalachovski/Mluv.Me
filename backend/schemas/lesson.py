@@ -167,6 +167,7 @@ class LessonProcessResponse(BaseModel):
 
     transcript: str = Field(description="Транскрипция речи")
     honzik_response_text: str = Field(description="Текстовый ответ Хонзика")
+    honzik_response_transcript: str = Field(description="Транскрипция голосового ответа Хонзика")
     honzik_response_audio: str = Field(
         description="Аудио ответ Хонзика (base64 encoded)"
     )

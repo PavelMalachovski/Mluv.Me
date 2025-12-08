@@ -293,6 +293,7 @@ async def process_voice_message(
         return LessonProcessResponse(
             transcript=transcript,
             honzik_response_text=processed["honzik_response"],
+            honzik_response_transcript=processed["honzik_response"],  # Same as text for now
             honzik_response_audio=audio_base64,
             corrections=CorrectionSchema(
                 corrected_text=processed["corrected_text"],

@@ -28,6 +28,7 @@ class TextMessageRequest(BaseModel):
 class TextMessageResponse(BaseModel):
     """Response for text message processing"""
     honzik_text: str
+    honzik_transcript: str  # Transcript of Honzík's audio response
     user_mistakes: List[str]
     suggestions: List[str]
     stars_earned: int
@@ -138,6 +139,7 @@ async def process_text_message(
 
     return TextMessageResponse(
         honzik_text=response["honzik_response"],
+        honzik_transcript=response["honzik_response"],  # Same as text response for now
         user_mistakes=response.get("mistakes", []),
         suggestions=[response.get("suggestion", "")],
         stars_earned=stars,
