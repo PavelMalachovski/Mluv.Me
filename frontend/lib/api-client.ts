@@ -174,6 +174,15 @@ class APIClient {
     return response.data;
   }
 
+  // Translation endpoint
+  async translateWord(word: string, targetLanguage: "ru" | "uk" = "ru") {
+    const response = await this.client.post('/api/v1/words/translate', {
+      word,
+      target_language: targetLanguage,
+    });
+    return response.data;
+  }
+
   // Web auth endpoints (for Telegram Login Widget)
   async authenticateWithTelegram(telegramData: any) {
     const response = await this.client.post('/api/v1/web/auth/telegram', telegramData);

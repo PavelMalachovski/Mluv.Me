@@ -1,21 +1,33 @@
 "use client"
 
 import { useState } from "react"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
 import { apiClient } from "@/lib/api-client"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
-import { LessonResponse } from "@/lib/types"
-import { FileText } from "lucide-react"
+import { ClickableText } from "@/components/ui/ClickableText"
+import { TranslationPopup } from "@/components/ui/TranslationPopup"
+import { LessonResponse, WordTranslation } from "@/lib/types"
+import { FileText, Languages } from "lucide-react"
 
 interface ConversationMessage {
   role: "user" | "assistant"
   text: string
   response?: LessonResponse
   showTranscript?: boolean
+  translateMode?: boolean
+}
+
+interface TranslationState {
+  word: string
+  translation: string | null
+  phonetics: string | null
+  isLoading: boolean
+  position: { top: number; left: number }
+  messageIndex: number
 }
 
 export default function PracticePage() {
@@ -23,6 +35,7 @@ export default function PracticePage() {
   const user = useAuthStore((state) => state.user)
   const [userText, setUserText] = useState("")
   const [conversation, setConversation] = useState<ConversationMessage[]>([])
+  const [translationState, setTranslationState] = useState<TranslationState | null>(null)
 
   const sendMessage = useMutation({
     mutationFn: (text: string) =>
@@ -51,10 +64,40 @@ export default function PracticePage() {
           text: data.honzik_text,
           response: data,
           showTranscript: false,
+          translateMode: false,
         },
       ])
 
       setUserText("")
+    },
+  })
+
+  const translateWord = useMutation({
+    mutationFn: (word: string) =>
+      apiClient.translateWord(word, user?.ui_language || "ru"),
+    onSuccess: (data: WordTranslation) => {
+      setTranslationState((prev) =>
+        prev ? {
+          ...prev,
+          translation: data.translation,
+          phonetics: data.phonetics || null,
+          isLoading: false
+        } : null
+      )
+    },
+    onError: () => {
+      setTranslationState((prev) =>
+        prev ? { ...prev, translation: null, isLoading: false } : null
+      )
+    },
+  })
+
+  const saveWord = useMutation({
+    mutationFn: (wordData: { word_czech: string; translation: string }) =>
+      apiClient.saveWord(user!.id, wordData),
+    onSuccess: () => {
+      // Close popup after saving
+      setTranslationState(null)
     },
   })
 
@@ -76,6 +119,37 @@ export default function PracticePage() {
         i === index ? { ...msg, showTranscript: !msg.showTranscript } : msg
       )
     )
+  }
+
+  const toggleTranslateMode = (index: number) => {
+    setConversation((prev) =>
+      prev.map((msg, i) =>
+        i === index ? { ...msg, translateMode: !msg.translateMode } : msg
+      )
+    )
+    // Close any open translation popup
+    setTranslationState(null)
+  }
+
+  const handleWordClick = (word: string, rect: DOMRect, messageIndex: number) => {
+    setTranslationState({
+      word,
+      translation: null,
+      phonetics: null,
+      isLoading: true,
+      position: { top: rect.bottom + window.scrollY, left: rect.left + rect.width / 2 },
+      messageIndex,
+    })
+    translateWord.mutate(word)
+  }
+
+  const handleSaveWord = () => {
+    if (translationState?.translation) {
+      saveWord.mutate({
+        word_czech: translationState.word,
+        translation: translationState.translation,
+      })
+    }
   }
 
   return (
@@ -108,18 +182,25 @@ export default function PracticePage() {
               conversation.map((msg, index) => (
                 <div
                   key={index}
-                  className={`flex ${
-                    msg.role === "user" ? "justify-end" : "justify-start"
-                  }`}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"
+                    }`}
                 >
                   <div
-                    className={`max-w-[80%] ${
-                      msg.role === "user"
+                    className={`max-w-[80%] ${msg.role === "user"
                         ? "rounded-lg bg-blue-500 p-4 text-white"
                         : "rounded-lg bg-gray-100 dark:bg-gray-800 p-4"
-                    }`}
+                      }`}
                   >
-                    <p className="whitespace-pre-wrap">{msg.text}</p>
+                    {/* Message text - use ClickableText in translate mode */}
+                    {msg.role === "assistant" && msg.translateMode ? (
+                      <ClickableText
+                        text={msg.text}
+                        onWordClick={(word, rect) => handleWordClick(word, rect, index)}
+                        className="text-gray-800 dark:text-gray-200"
+                      />
+                    ) : (
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
+                    )}
 
                     {msg.role === "user" && msg.response && (
                       <div className="mt-3 space-y-2 border-t border-blue-400 pt-3">
@@ -144,20 +225,42 @@ export default function PracticePage() {
 
                     {msg.role === "assistant" && msg.response && (
                       <div className="mt-3 space-y-2 border-t border-gray-300 dark:border-gray-600 pt-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleTranscript(index)}
-                          className="flex items-center gap-2 text-xs bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
-                        >
-                          <FileText className="h-4 w-4" />
-                          {msg.showTranscript ? "Скрыть текст" : "Показать текст"}
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleTranscript(index)}
+                            className="flex items-center gap-2 text-xs bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
+                          >
+                            <FileText className="h-4 w-4" />
+                            {msg.showTranscript ? "Скрыть текст" : "Показать текст"}
+                          </Button>
+
+                          {/* Translate by word button */}
+                          <Button
+                            variant={msg.translateMode ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleTranslateMode(index)}
+                            className={`flex items-center gap-2 text-xs ${msg.translateMode
+                                ? "bg-yellow-500 hover:bg-yellow-600 text-black border-yellow-500"
+                                : "bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
+                              }`}
+                          >
+                            <Languages className="h-4 w-4" />
+                            {msg.translateMode ? "Выключить перевод" : "Translate by word"}
+                          </Button>
+                        </div>
 
                         {msg.showTranscript && msg.response.honzik_transcript && (
                           <div className="rounded-md bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 p-3 text-sm text-gray-800 dark:text-gray-200">
                             <p className="font-semibold mb-2 text-xs text-gray-600 dark:text-gray-400">📝 Текст ответа:</p>
                             <p className="whitespace-pre-wrap leading-relaxed">{msg.response.honzik_transcript}</p>
+                          </div>
+                        )}
+
+                        {msg.translateMode && (
+                          <div className="rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-2 text-xs text-yellow-800 dark:text-yellow-200">
+                            💡 Нажмите на любое слово, чтобы увидеть перевод
                           </div>
                         )}
                       </div>
@@ -213,9 +316,23 @@ export default function PracticePage() {
             <li>✅ Don&apos;t be afraid to make mistakes</li>
             <li>✅ Ask Honzík questions about Czech culture</li>
             <li>✅ Practice regularly to maintain your streak</li>
+            <li>✅ Use &quot;Translate by word&quot; to learn new vocabulary</li>
           </ul>
         </div>
       </div>
+
+      {/* Translation Popup */}
+      {translationState && (
+        <TranslationPopup
+          word={translationState.word}
+          translation={translationState.translation}
+          isLoading={translationState.isLoading}
+          position={translationState.position}
+          onClose={() => setTranslationState(null)}
+          onSave={handleSaveWord}
+          phonetics={translationState.phonetics}
+        />
+      )}
     </div>
   )
 }

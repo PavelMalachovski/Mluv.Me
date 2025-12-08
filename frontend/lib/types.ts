@@ -58,3 +58,10 @@ export interface SavedWord {
   times_reviewed: number
   created_at: string
 }
+
+export interface WordTranslation {
+  word: string
+  translation: string
+  target_language: "ru" | "uk"
+  phonetics?: string
+}
