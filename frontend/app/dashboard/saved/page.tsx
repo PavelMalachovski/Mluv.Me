@@ -121,11 +121,11 @@ export default function SavedPage() {
                   <p className="mb-2 text-sm text-gray-700">{word.translation}</p>
 
                   {word.context_sentence && (
-                  <div className="rounded-lg bg-blue-50 p-3">
+                    <div className="rounded-lg bg-blue-50 p-3">
                       <p className="text-sm italic text-blue-900">
                         &ldquo;{word.context_sentence}&rdquo;
                       </p>
-                  </div>
+                    </div>
                   )}
 
                   <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
@@ -145,9 +145,11 @@ export default function SavedPage() {
                     size="icon"
                     variant="ghost"
                     onClick={() => {
-                      const utterance = new SpeechSynthesisUtterance(word.word_czech)
-                      utterance.lang = "cs-CZ"
-                      window.speechSynthesis.speak(utterance)
+                      if (typeof window !== 'undefined' && window.speechSynthesis) {
+                        const utterance = new SpeechSynthesisUtterance(word.word_czech)
+                        utterance.lang = "cs-CZ"
+                        window.speechSynthesis.speak(utterance)
+                      }
                     }}
                   >
                     <Volume2 className="h-5 w-5 text-blue-600" />

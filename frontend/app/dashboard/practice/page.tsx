@@ -132,12 +132,13 @@ export default function PracticePage() {
   }
 
   const handleWordClick = (word: string, rect: DOMRect, messageIndex: number) => {
+    const scrollY = typeof window !== 'undefined' ? window.scrollY : 0
     setTranslationState({
       word,
       translation: null,
       phonetics: null,
       isLoading: true,
-      position: { top: rect.bottom + window.scrollY, left: rect.left + rect.width / 2 },
+      position: { top: rect.bottom + scrollY, left: rect.left + rect.width / 2 },
       messageIndex,
     })
     translateWord.mutate(word)
@@ -187,8 +188,8 @@ export default function PracticePage() {
                 >
                   <div
                     className={`max-w-[80%] ${msg.role === "user"
-                        ? "rounded-lg bg-blue-500 p-4 text-white"
-                        : "rounded-lg bg-gray-100 dark:bg-gray-800 p-4"
+                      ? "rounded-lg bg-blue-500 p-4 text-white"
+                      : "rounded-lg bg-gray-100 dark:bg-gray-800 p-4"
                       }`}
                   >
                     {/* Message text - use ClickableText in translate mode */}
@@ -242,8 +243,8 @@ export default function PracticePage() {
                             size="sm"
                             onClick={() => toggleTranslateMode(index)}
                             className={`flex items-center gap-2 text-xs ${msg.translateMode
-                                ? "bg-yellow-500 hover:bg-yellow-600 text-black border-yellow-500"
-                                : "bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
+                              ? "bg-yellow-500 hover:bg-yellow-600 text-black border-yellow-500"
+                              : "bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
                               }`}
                           >
                             <Languages className="h-4 w-4" />

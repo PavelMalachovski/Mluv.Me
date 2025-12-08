@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { useMutation } from "@tanstack/react-query"
 import { useAuthStore } from "@/lib/auth-store"
@@ -19,7 +19,7 @@ interface TranslationState {
     position: { top: number; left: number }
 }
 
-export default function ResponsePage() {
+function ResponsePageContent() {
     const searchParams = useSearchParams()
     const user = useAuthStore((state) => state.user)
     const [text, setText] = useState("")
@@ -63,12 +63,13 @@ export default function ResponsePage() {
     })
 
     const handleWordClick = (word: string, rect: DOMRect) => {
+        const scrollY = typeof window !== 'undefined' ? window.scrollY : 0
         setTranslationState({
             word,
             translation: null,
             phonetics: null,
             isLoading: true,
-            position: { top: rect.bottom + window.scrollY, left: rect.left + rect.width / 2 },
+            position: { top: rect.bottom + scrollY, left: rect.left + rect.width / 2 },
         })
         translateWord.mutate(word)
     }
@@ -103,8 +104,8 @@ export default function ResponsePage() {
                         size="sm"
                         onClick={() => setTranslateMode(!translateMode)}
                         className={`flex items-center gap-2 ${translateMode
-                                ? "bg-yellow-500 hover:bg-yellow-600 text-black"
-                                : ""
+                            ? "bg-yellow-500 hover:bg-yellow-600 text-black"
+                            : ""
                             }`}
                     >
                         <Languages className="h-4 w-4" />
@@ -158,5 +159,17 @@ export default function ResponsePage() {
                 />
             )}
         </div>
+    )
+}
+
+export default function ResponsePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+                <p className="text-gray-600 dark:text-gray-400">Загрузка...</p>
+            </div>
+        }>
+            <ResponsePageContent />
+        </Suspense>
     )
 }
