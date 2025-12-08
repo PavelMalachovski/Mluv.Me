@@ -52,6 +52,25 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Illustrated Design Theme Colors
+        "purple-header": "hsl(var(--purple-header))",
+        "purple-header-dark": "hsl(var(--purple-header-dark))",
+        cream: {
+          DEFAULT: "hsl(var(--cream-bg))",
+          alt: "hsl(var(--cream-bg-alt))",
+        },
+        parchment: {
+          DEFAULT: "hsl(var(--parchment))",
+          dark: "hsl(var(--parchment-dark))",
+        },
+        wooden: {
+          DEFAULT: "hsl(var(--wooden-brown))",
+          light: "hsl(var(--wooden-brown-light))",
+        },
+        mascot: {
+          orange: "hsl(var(--mascot-orange))",
+          yellow: "hsl(var(--mascot-yellow))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
