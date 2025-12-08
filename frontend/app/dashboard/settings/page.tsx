@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
@@ -9,7 +10,6 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Toast, ToastContainer } from "@/components/ui/toast"
 import { useToast } from "@/lib/use-toast"
-import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { useThemeStore } from "@/lib/theme-store"
 import {
   Settings as SettingsIcon,
@@ -22,6 +22,7 @@ import {
   Loader2,
   Moon,
   Sun,
+  Globe,
 } from "lucide-react"
 
 interface UserSettings {
@@ -35,15 +36,25 @@ export default function SettingsPage() {
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
+  const updateUser = useAuthStore((state) => state.updateUser)
   const queryClient = useQueryClient()
   const { toasts, toast, removeToast } = useToast()
-  const { theme, toggleTheme } = useThemeStore()
+  const { theme, setTheme } = useThemeStore()
 
   const { data: settings, isLoading } = useQuery<UserSettings>({
     queryKey: ["user-settings", user?.id],
     queryFn: () => apiClient.get(`/api/v1/users/${user?.id}/settings`),
     enabled: !!user?.id,
   })
+
+  // Apply theme on mount and when it changes
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement
+      root.classList.remove('light', 'dark')
+      root.classList.add(theme)
+    }
+  }, [theme])
 
   const updateSettingsMutation = useMutation({
     mutationFn: (newSettings: Partial<UserSettings>) =>
@@ -67,23 +78,23 @@ export default function SettingsPage() {
   })
 
   const updateProfileMutation = useMutation({
-    mutationFn: (data: { level: string }) =>
+    mutationFn: (data: { level?: string; ui_language?: string }) =>
       apiClient.patch(`/api/v1/users/${user?.id}`, data),
     onSuccess: (updatedUser) => {
       queryClient.invalidateQueries({ queryKey: ["user-stats"] })
       // Update user in auth store
-      useAuthStore.getState().updateUser({ level: updatedUser.level })
+      updateUser(updatedUser)
       toast({
-        title: "Level updated",
-        description: "Your Czech level has been updated.",
+        title: "Profile updated",
+        description: "Your profile has been updated.",
         variant: "success",
       })
     },
     onError: (error: any) => {
-      console.error("Level update error:", error)
+      console.error("Profile update error:", error)
       toast({
         title: "Error",
-        description: error?.response?.data?.detail || "Failed to update level. Please try again.",
+        description: error?.response?.data?.detail || "Failed to update profile. Please try again.",
         variant: "error",
       })
     },
@@ -372,61 +383,121 @@ export default function SettingsPage() {
         <TabsContent value="appearance" className="space-y-4">
           <Card className="p-6">
             <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/30">
                 {theme === "light" ? (
-                  <Sun className="h-5 w-5 text-indigo-600" />
+                  <Sun className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                 ) : (
-                  <Moon className="h-5 w-5 text-indigo-600" />
+                  <Moon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                 )}
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Theme</h3>
-                <p className="text-sm text-gray-500">Choose your preferred color scheme</p>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Тема / Theme</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Choose your preferred color scheme</p>
               </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <button
-                onClick={() => {
-                  if (theme === "dark") toggleTheme()
-                }}
+                onClick={() => setTheme("light")}
                 className={`rounded-lg border-2 p-4 text-left transition-all ${
                   theme === "light"
-                    ? "border-purple-500 bg-purple-50"
-                    : "border-gray-200 hover:border-purple-300"
+                    ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30"
+                    : "border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600"
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Sun className="h-5 w-5 text-yellow-600" />
+                    <Sun className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
                     <div>
-                      <div className="font-medium text-gray-900">Light</div>
-                      <div className="text-sm text-gray-500">Bright and clear</div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100">Светлая</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Bright theme</div>
                     </div>
                   </div>
-                  {theme === "light" && <Check className="h-5 w-5 text-purple-600" />}
+                  {theme === "light" && <Check className="h-5 w-5 text-purple-600 dark:text-purple-400" />}
                 </div>
               </button>
 
               <button
-                onClick={() => {
-                  if (theme === "light") toggleTheme()
-                }}
+                onClick={() => setTheme("dark")}
                 className={`rounded-lg border-2 p-4 text-left transition-all ${
                   theme === "dark"
-                    ? "border-purple-500 bg-purple-50"
-                    : "border-gray-200 hover:border-purple-300"
+                    ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30"
+                    : "border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600"
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Moon className="h-5 w-5 text-indigo-600" />
+                    <Moon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                     <div>
-                      <div className="font-medium text-gray-900">Dark</div>
-                      <div className="text-sm text-gray-500">Easy on the eyes</div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100">Тёмная</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Dark theme</div>
                     </div>
                   </div>
-                  {theme === "dark" && <Check className="h-5 w-5 text-purple-600" />}
+                  {theme === "dark" && <Check className="h-5 w-5 text-purple-600 dark:text-purple-400" />}
+                </div>
+              </button>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+                <Globe className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Язык интерфейса / Interface Language</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Choose your interface language</p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                onClick={() => updateProfileMutation.mutate({ ui_language: "ru" })}
+                disabled={updateProfileMutation.isPending}
+                className={`rounded-lg border-2 p-4 text-left transition-all disabled:opacity-50 ${
+                  user?.ui_language === "ru"
+                    ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30"
+                    : "border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🇷🇺</span>
+                    <div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100">Русский</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Russian</div>
+                    </div>
+                  </div>
+                  {updateProfileMutation.isPending ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
+                  ) : user?.ui_language === "ru" ? (
+                    <Check className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  ) : null}
+                </div>
+              </button>
+
+              <button
+                onClick={() => updateProfileMutation.mutate({ ui_language: "uk" })}
+                disabled={updateProfileMutation.isPending}
+                className={`rounded-lg border-2 p-4 text-left transition-all disabled:opacity-50 ${
+                  user?.ui_language === "uk"
+                    ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30"
+                    : "border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🇺🇦</span>
+                    <div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100">Українська</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Ukrainian</div>
+                    </div>
+                  </div>
+                  {updateProfileMutation.isPending ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
+                  ) : user?.ui_language === "uk" ? (
+                    <Check className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  ) : null}
                 </div>
               </button>
             </div>

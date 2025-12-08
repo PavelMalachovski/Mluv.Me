@@ -31,6 +31,8 @@ export default function PracticePage() {
         user_id: user?.id,
       }),
     onSuccess: (data, text) => {
+      console.log("Response from backend:", data)
+
       // Add user message
       setConversation((prev) => [
         ...prev,
@@ -41,7 +43,7 @@ export default function PracticePage() {
         },
       ])
 
-      // Add Honzík response
+      // Add Honzík response with transcript
       setConversation((prev) => [
         ...prev,
         {
@@ -77,7 +79,7 @@ export default function PracticePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="container mx-auto max-w-4xl p-6">
         <div className="mb-6">
           <Button variant="outline" onClick={() => router.push("/dashboard")}>
@@ -85,9 +87,9 @@ export default function PracticePage() {
           </Button>
         </div>
 
-        <div className="rounded-lg border bg-white p-6 shadow-sm">
-          <h1 className="mb-2 text-3xl font-bold">Practice Czech with Honzík</h1>
-          <p className="mb-6 text-muted-foreground">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+          <h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-gray-100">Practice Czech with Honzík</h1>
+          <p className="mb-6 text-gray-600 dark:text-gray-400">
             Type in Czech and get instant feedback from your AI teacher
           </p>
 
@@ -114,7 +116,7 @@ export default function PracticePage() {
                     className={`max-w-[80%] ${
                       msg.role === "user"
                         ? "rounded-lg bg-blue-500 p-4 text-white"
-                        : "rounded-lg bg-gray-100 p-4"
+                        : "rounded-lg bg-gray-100 dark:bg-gray-800 p-4"
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{msg.text}</p>
@@ -140,22 +142,22 @@ export default function PracticePage() {
                       </div>
                     )}
 
-                    {msg.role === "assistant" && msg.response?.honzik_transcript && (
-                      <div className="mt-3 space-y-2 border-t border-gray-300 pt-3">
+                    {msg.role === "assistant" && msg.response && (
+                      <div className="mt-3 space-y-2 border-t border-gray-300 dark:border-gray-600 pt-3">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => toggleTranscript(index)}
-                          className="flex items-center gap-2 text-xs text-gray-600 hover:text-gray-900"
+                          className="flex items-center gap-2 text-xs bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
                         >
                           <FileText className="h-4 w-4" />
-                          {msg.showTranscript ? "Hide Transcript" : "Show Transcript"}
+                          {msg.showTranscript ? "Скрыть текст" : "Показать текст"}
                         </Button>
 
-                        {msg.showTranscript && (
-                          <div className="rounded-md bg-gray-200 p-3 text-sm text-gray-800">
-                            <p className="font-semibold mb-1 text-xs text-gray-600">Transcript:</p>
-                            <p className="whitespace-pre-wrap">{msg.response.honzik_transcript}</p>
+                        {msg.showTranscript && msg.response.honzik_transcript && (
+                          <div className="rounded-md bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 p-3 text-sm text-gray-800 dark:text-gray-200">
+                            <p className="font-semibold mb-2 text-xs text-gray-600 dark:text-gray-400">📝 Текст ответа:</p>
+                            <p className="whitespace-pre-wrap leading-relaxed">{msg.response.honzik_transcript}</p>
                           </div>
                         )}
                       </div>
@@ -204,9 +206,9 @@ export default function PracticePage() {
         </div>
 
         {/* Tips Section */}
-        <div className="mt-6 rounded-lg border bg-white p-6 shadow-sm">
-          <h3 className="mb-3 font-semibold">Practice Tips:</h3>
-          <ul className="space-y-2 text-sm text-muted-foreground">
+        <div className="mt-6 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+          <h3 className="mb-3 font-semibold text-gray-900 dark:text-gray-100">Practice Tips:</h3>
+          <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
             <li>✅ Try to write complete sentences</li>
             <li>✅ Don&apos;t be afraid to make mistakes</li>
             <li>✅ Ask Honzík questions about Czech culture</li>
