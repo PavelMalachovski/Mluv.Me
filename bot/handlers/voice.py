@@ -2,10 +2,11 @@
 Обработчик голосовых сообщений.
 """
 
+import base64
 import io
 
 from aiogram import F, Router
-from aiogram.types import BufferedInputFile, Message
+from aiogram.types import BufferedInputFile, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 import structlog
 
 from bot.localization import get_text
@@ -13,6 +14,10 @@ from bot.services.api_client import APIClient
 
 router = Router()
 logger = structlog.get_logger()
+
+# Временное хранилище текстовых ответов Хонзика (telegram_id -> text)
+# Используется для показа текста при нажатии на кнопку "Текст"
+honzik_text_storage: dict[int, str] = {}
 
 
 @router.message(F.voice)
@@ -68,6 +73,9 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
         audio_response = response.get("honzik_response_audio") or response.get(
             "audio_response"
         )
+        honzik_text = response.get("honzik_response_text") or response.get(
+            "honzik_response_transcript", ""
+        )
         corrections = response.get("corrections", {}) or {}
         correctness_score = corrections.get("correctness_score", 0)
         streak = response.get("current_streak", response.get("streak", 0))
@@ -75,8 +83,6 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
 
         # Отправляем голосовой ответ Хонзика
         if audio_response is not None:
-            import base64
-
             audio_bytes_response = None
             if isinstance(audio_response, str):
                 audio_bytes_response = base64.b64decode(audio_response)
@@ -94,7 +100,21 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                 )
                 caption += f"{get_text('voice_streak', language, streak=streak)}"
 
-                await message.answer_voice(voice=voice_file, caption=caption)
+                # Сохраняем текстовый ответ Хонзика для этого пользователя
+                if honzik_text:
+                    honzik_text_storage[telegram_id] = honzik_text
+
+                # Создаем inline кнопку "Текст" (текст скрыт до нажатия)
+                text_button = InlineKeyboardButton(
+                    text=get_text("btn_show_text", language),
+                    callback_data="show_honzik_text"
+                )
+                keyboard = InlineKeyboardMarkup(inline_keyboard=[[text_button]])
+
+                # Отправляем голосовое сообщение с кнопкой
+                await message.answer_voice(
+                    voice=voice_file, caption=caption, reply_markup=keyboard
+                )
 
         # Показываем исправления если есть
         mistakes = corrections.get("mistakes", [])
@@ -139,4 +159,40 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
     except Exception as e:
         logger.error("voice_processing_error", telegram_id=telegram_id, error=str(e))
         await message.answer(get_text("error_general", language))
+
+
+@router.callback_query(F.data == "show_honzik_text")
+async def show_honzik_text_handler(
+    callback: CallbackQuery, api_client: APIClient
+) -> None:
+    """
+    Обработчик нажатия на кнопку "Текст" для показа текстового ответа Хонзика.
+
+    Args:
+        callback: Callback query от кнопки
+        api_client: API клиент для общения с backend
+    """
+    # Получаем пользователя для определения языка
+    telegram_id = callback.from_user.id
+    user = await api_client.get_user(telegram_id)
+    language = user.get("ui_language", "ru") if user else "ru"
+
+    # Получаем текстовый ответ из хранилища
+    honzik_text = honzik_text_storage.get(telegram_id)
+
+    if honzik_text:
+        # Отправляем текстовый ответ
+        text_message = get_text("honzik_text_response", language, text=honzik_text)
+        await callback.message.answer(text_message, parse_mode="HTML")
+        await callback.answer()
+    else:
+        # Текст не найден (возможно, сообщение слишком старое)
+        await callback.answer(
+            get_text("error_general", language), show_alert=False
+        )
+
+    logger.info(
+        "honzik_text_shown",
+        telegram_id=telegram_id,
+    )
 
