@@ -1,6 +1,6 @@
 # 🚨 Critical Fix - API URL in Web App
 
-**Дата**: 8 декабря 2025  
+**Дата**: 8 декабря 2025
 **Проблема**: `ERR_CONNECTION_REFUSED` при обращении к `localhost:8000` из Telegram Web App
 
 ---
