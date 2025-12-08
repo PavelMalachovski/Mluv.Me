@@ -18,6 +18,24 @@ from backend.models.user import User
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 
+def format_datetime(dt) -> str:
+    """
+    Safely format datetime to ISO string.
+    Handles both datetime objects and strings.
+
+    Args:
+        dt: datetime object or ISO string
+
+    Returns:
+        ISO formatted string
+    """
+    if isinstance(dt, str):
+        return dt
+    if isinstance(dt, datetime):
+        return dt.isoformat()
+    return str(dt) if dt else None
+
+
 class TelegramAuthData(BaseModel):
     """Telegram Login Widget auth data"""
     id: int
@@ -118,8 +136,9 @@ async def telegram_web_auth(
             first_name=auth_data.first_name,
             username=auth_data.username,
             ui_language="ru",  # Default language
-            czech_level="beginner"  # Default level
+            level="beginner"  # Default level
         )
+        await db.commit()
 
     # Create session
     session_token = generate_session_token()
@@ -151,8 +170,8 @@ async def telegram_web_auth(
             "first_name": user.first_name,
             "username": user.username,
             "ui_language": user.ui_language,
-            "czech_level": user.czech_level,
-            "created_at": user.created_at.isoformat()
+            "level": user.level,
+            "created_at": format_datetime(user.created_at)
         },
         "access_token": session_token
     }
@@ -213,8 +232,8 @@ async def get_current_user(
         "first_name": user.first_name,
         "username": user.username,
         "ui_language": user.ui_language,
-        "czech_level": user.czech_level,
-        "created_at": user.created_at.isoformat()
+        "level": user.level,
+        "created_at": format_datetime(user.created_at)
     }
 
 
@@ -343,7 +362,7 @@ async def authenticate_web_app(
                 "username": user.username,
                 "ui_language": user.ui_language,
                 "level": user.level,
-                "created_at": user.created_at.isoformat()
+                "created_at": format_datetime(user.created_at)
             }
         }
 

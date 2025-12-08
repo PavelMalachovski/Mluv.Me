@@ -98,7 +98,7 @@ async def process_text_message(
     response = await honzik.generate_response(
         user_text=request.text,
         style=settings.conversation_style if settings else "friendly",
-        level=user.czech_level,
+        level=user.level,
         corrections_level=settings.corrections_level if settings else "balanced",
         ui_language=user.ui_language,
         conversation_history=conversation_history

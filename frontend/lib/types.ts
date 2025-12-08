@@ -4,7 +4,7 @@ export interface User {
   username?: string
   first_name: string
   ui_language: "ru" | "uk"
-  czech_level: string
+  level: string
   created_at: string
 }
 
