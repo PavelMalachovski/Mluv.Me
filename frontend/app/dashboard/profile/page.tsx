@@ -15,9 +15,9 @@ export default function ProfilePage() {
   const user = useAuthStore((state) => state.user)
 
   const { data: stats, isLoading } = useQuery<UserStats>({
-    queryKey: ["user-stats", user?.id],
-    queryFn: () => apiClient.getStats(user!.id),
-    enabled: !!user?.id,
+    queryKey: ["user-stats", user?.telegram_id],
+    queryFn: () => apiClient.getStats(user!.telegram_id),
+    enabled: !!user?.telegram_id,
   })
 
   if (!user) {
@@ -67,13 +67,13 @@ export default function ProfilePage() {
           />
           <IllustratedStatCard
             label="Total Stars"
-            value={stats?.total_stars || 0}
+            value={stats?.stars || 0}
             mascotImage="/images/mascot/honzik-stars.png"
             showNumber={true}
           />
           <IllustratedStatCard
             label="Total Messages"
-            value={stats?.total_messages || 0}
+            value={stats?.messages_count || 0}
             mascotImage="/images/mascot/honzik-waving.png"
             showNumber={true}
           />
@@ -85,11 +85,11 @@ export default function ProfilePage() {
           />
           <IllustratedStatCard
             label="Avg Correctness"
-            value={stats?.correctness_avg || 0}
+            value={stats?.correct_percent || 0}
           />
           <IllustratedStatCard
-            label="Words Learned"
-            value={stats?.words_learned || 0}
+            label="Words Said"
+            value={stats?.words_said || 0}
           />
         </div>
 
@@ -138,7 +138,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {stats?.total_messages && stats.total_messages >= 50 && (
+            {stats?.messages_count && stats.messages_count >= 50 && (
               <div className="flex items-center gap-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 p-3">
                 <div className="text-2xl">💬</div>
                 <div>
@@ -148,7 +148,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {stats?.total_stars && stats.total_stars >= 100 && (
+            {stats?.stars && stats.stars >= 100 && (
               <div className="flex items-center gap-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-3">
                 <div className="text-2xl">⭐</div>
                 <div>
@@ -158,12 +158,12 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {stats?.words_learned && stats.words_learned >= 25 && (
+            {stats?.words_said && stats.words_said >= 100 && (
               <div className="flex items-center gap-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
                 <div className="text-2xl">📚</div>
                 <div>
                   <div className="font-medium text-foreground">Word Master</div>
-                  <div className="text-xs text-muted-foreground">25+ words</div>
+                  <div className="text-xs text-muted-foreground">100+ words</div>
                 </div>
               </div>
             )}
@@ -171,9 +171,9 @@ export default function ProfilePage() {
 
           {/* Empty achievements message */}
           {(!stats?.streak || stats.streak < 7) &&
-            (!stats?.total_messages || stats.total_messages < 50) &&
-            (!stats?.total_stars || stats.total_stars < 100) &&
-            (!stats?.words_learned || stats.words_learned < 25) && (
+            (!stats?.messages_count || stats.messages_count < 50) &&
+            (!stats?.stars || stats.stars < 100) &&
+            (!stats?.words_said || stats.words_said < 100) && (
               <div className="text-center py-8">
                 <div className="text-4xl mb-2">🎯</div>
                 <p className="text-sm text-muted-foreground">Keep practicing to unlock achievements!</p>

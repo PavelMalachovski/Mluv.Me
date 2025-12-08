@@ -2,7 +2,6 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
 import { useAuthStore } from "@/lib/auth-store"
 import { apiClient } from "@/lib/api-client"
 import { Search, Trash2, Volume2, BookmarkCheck } from "lucide-react"
@@ -27,22 +26,22 @@ export default function SavedPage() {
   const [searchQuery, setSearchQuery] = useState("")
 
   const { data: savedWords, isLoading } = useQuery<SavedWord[]>({
-    queryKey: ["saved-words", user?.id],
-    queryFn: () => apiClient.getSavedWords(user!.id),
-    enabled: !!user?.id,
+    queryKey: ["saved-words", user?.telegram_id],
+    queryFn: () => apiClient.getSavedWords(user!.telegram_id),
+    enabled: !!user?.telegram_id,
   })
 
   const deleteMutation = useMutation({
     mutationFn: (wordId: number) => apiClient.deleteWord(wordId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["saved-words", user?.id] })
+      queryClient.invalidateQueries({ queryKey: ["saved-words", user?.telegram_id] })
     },
   })
 
   const reviewMutation = useMutation({
     mutationFn: (wordId: number) => apiClient.patch(`/api/v1/words/${wordId}/review`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["saved-words", user?.id] })
+      queryClient.invalidateQueries({ queryKey: ["saved-words", user?.telegram_id] })
     },
   })
 

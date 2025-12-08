@@ -10,16 +10,10 @@ export interface User {
 
 export interface UserStats {
   streak: number
-  total_stars: number
-  czech_level: string
-  messages_today: number
-  total_messages: number
+  stars: number
   words_said: number
   correct_percent: number
-  progress_data: ProgressData[]
-  correctness_avg?: number
-  words_learned?: number
-  max_streak?: number
+  messages_count: number
 }
 
 export interface ProgressData {

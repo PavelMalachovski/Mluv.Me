@@ -105,10 +105,8 @@ class APIClient {
   }
 
   // Stats endpoints
-  async getStats(userId: number) {
-    const response = await this.client.get(`/api/v1/stats/summary`, {
-      params: { user_id: userId },
-    });
+  async getStats(telegramId: number) {
+    const response = await this.client.get(`/api/v1/stats/${telegramId}/summary`);
     return response.data;
   }
 
@@ -149,10 +147,8 @@ class APIClient {
   }
 
   // Words endpoints
-  async getSavedWords(userId: number) {
-    const response = await this.client.get(`/api/v1/words`, {
-      params: { user_id: userId },
-    });
+  async getSavedWords(telegramId: number) {
+    const response = await this.client.get(`/api/v1/words/${telegramId}`);
     return response.data;
   }
 
