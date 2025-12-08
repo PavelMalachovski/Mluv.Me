@@ -22,8 +22,7 @@ export default function LoginPage() {
     // Check if running in Telegram Web App
     if (isTelegramWebApp()) {
       setIsWebApp(true)
-      // Auto-login with Web App data
-      handleWebAppLogin()
+      setIsLoading(false)  // Don't auto-login, let user click button
     } else {
       setIsWebApp(false)
       setIsLoading(false)
@@ -40,7 +39,12 @@ export default function LoginPage() {
   }, [])
 
   const handleWebAppLogin = async () => {
+    setIsLoading(true)
+    setError(null)
+
     try {
+      console.log("Starting Web App authentication...")
+
       // Initialize Telegram Web App
       const webApp = initTelegramWebApp()
 
@@ -48,14 +52,24 @@ export default function LoginPage() {
         throw new Error("Failed to initialize Telegram Web App")
       }
 
+      console.log("Web App initialized:", {
+        platform: webApp.platform,
+        version: webApp.version
+      })
+
       const user = getTelegramUser()
 
       if (!user) {
-        throw new Error("No user data from Telegram")
+        throw new Error("No user data from Telegram. Please restart the bot.")
       }
 
+      console.log("Telegram user:", user.id, user.first_name)
+
       // Authenticate with backend
+      console.log("Authenticating with backend...")
       const result = await authenticateWebApp()
+
+      console.log("Auth result:", result)
 
       if (!result.success) {
         throw new Error(result.error || "Authentication failed")
@@ -63,6 +77,8 @@ export default function LoginPage() {
 
       // Store user data
       setUser(result.user)
+
+      console.log("User authenticated, redirecting to dashboard...")
 
       // Redirect to dashboard
       router.push("/dashboard")
@@ -121,14 +137,35 @@ export default function LoginPage() {
         )}
 
         {isWebApp ? (
-          // Telegram Web App - auto-authenticating
-          <div className="space-y-4 text-center">
-            <div className="flex items-center justify-center">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
+          // Telegram Web App - show button
+          <div className="space-y-4">
+            <button
+              onClick={handleWebAppLogin}
+              disabled={isLoading}
+              className="flex w-full items-center justify-center gap-3 rounded-lg bg-blue-500 px-4 py-3 text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isLoading ? (
+                <>
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Authenticating...</span>
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="h-6 w-6"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18.717-.962 3.778-1.36 5.016-.168.525-.5 1.15-.877 1.15-.286 0-.637-.124-.907-.291-.502-.31-1.555-.9-2.114-1.243-.142-.087-.142-.28 0-.366.56-.343 2.228-1.928 2.63-2.285.099-.088.049-.145-.062-.086-.75.395-3.26 2.154-3.59 2.388-.1.071-.197.12-.508.037-.502-.133-1.064-.266-1.559-.396-.495-.131-.637-.4-.013-.595 2.873-.894 6.36-1.846 6.968-2.086.558-.22.99-.22 1.134.195z" />
+                  </svg>
+                  <span>Continue with Telegram</span>
+                </>
+              )}
+            </button>
+
+            <div className="text-center text-xs text-gray-500">
+              One tap to start learning Czech!
             </div>
-            <p className="text-gray-600">
-              {isLoading ? "Authenticating with Telegram..." : "Welcome!"}
-            </p>
           </div>
         ) : (
           // Browser - show login button
