@@ -1,4 +1,4 @@
-"""Web authentication endpoints for Telegram Login Widget"""
+"""Web authentication endpoints for Telegram Login Widget and Web App"""
 
 from fastapi import APIRouter, HTTPException, Response, Depends
 from pydantic import BaseModel
@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import secrets
 from datetime import datetime, timedelta
+from urllib.parse import parse_qsl
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.config import get_settings
@@ -14,7 +15,7 @@ from backend.db.database import get_session
 from backend.db.repositories import UserRepository
 from backend.models.user import User
 
-router = APIRouter(prefix="/api/v1/web/auth", tags=["web_auth"])
+router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 
 class TelegramAuthData(BaseModel):
@@ -215,3 +216,138 @@ async def get_current_user(
         "czech_level": user.czech_level,
         "created_at": user.created_at.isoformat()
     }
+
+
+class WebAppAuthData(BaseModel):
+    """Telegram Web App auth data"""
+    initData: str
+
+
+def validate_telegram_web_app_data(init_data: str, bot_token: str) -> dict:
+    """
+    Validate Telegram Web App initData signature
+
+    Args:
+        init_data: initData string from Telegram Web App
+        bot_token: Bot token from BotFather
+
+    Returns:
+        Parsed and validated data
+
+    Raises:
+        ValueError: If signature is invalid
+    """
+    try:
+        # Parse init_data
+        parsed_data = dict(parse_qsl(init_data, keep_blank_values=True))
+
+        # Extract hash
+        hash_value = parsed_data.pop('hash', None)
+        if not hash_value:
+            raise ValueError("No hash in init_data")
+
+        # Create data-check-string
+        data_check_arr = [f"{k}={v}" for k, v in sorted(parsed_data.items())]
+        data_check_string = '\n'.join(data_check_arr)
+
+        # Create secret key
+        secret_key = hmac.new(
+            key=b"WebAppData",
+            msg=bot_token.encode(),
+            digestmod=hashlib.sha256
+        ).digest()
+
+        # Calculate hash
+        calculated_hash = hmac.new(
+            key=secret_key,
+            msg=data_check_string.encode(),
+            digestmod=hashlib.sha256
+        ).hexdigest()
+
+        # Verify hash
+        if calculated_hash != hash_value:
+            raise ValueError("Invalid hash")
+
+        # Check auth_date (not older than 1 hour)
+        if 'auth_date' in parsed_data:
+            auth_date = int(parsed_data['auth_date'])
+            current_time = int(datetime.utcnow().timestamp())
+            if current_time - auth_date > 3600:  # 1 hour
+                raise ValueError("Auth data expired")
+
+        return parsed_data
+
+    except Exception as e:
+        raise ValueError(f"Invalid init_data: {str(e)}")
+
+
+@router.post("/webapp")
+async def authenticate_web_app(
+    auth_data: WebAppAuthData,
+    db: AsyncSession = Depends(get_session)
+):
+    """
+    Authenticate user via Telegram Web App
+
+    This endpoint validates the initData from Telegram Web App
+    and creates a session for the user.
+    """
+    settings = get_settings()
+
+    try:
+        # Validate initData
+        validated_data = validate_telegram_web_app_data(
+            auth_data.initData,
+            settings.telegram_bot_token
+        )
+
+        # Extract user data
+        import json
+        user_data = json.loads(validated_data.get('user', '{}'))
+
+        if not user_data or 'id' not in user_data:
+            raise HTTPException(status_code=400, detail="No user data in initData")
+
+        telegram_id = user_data['id']
+        first_name = user_data.get('first_name', 'User')
+        username = user_data.get('username')
+
+        # Get or create user
+        user_repo = UserRepository(db)
+        user = await user_repo.get_by_telegram_id(telegram_id)
+
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found. Please start the bot first with /start"
+            )
+
+        # Create session
+        session_token = secrets.token_urlsafe(32)
+        session_data = SessionData(
+            user_id=user.id,
+            session_token=session_token,
+            created_at=datetime.utcnow(),
+            expires_at=datetime.utcnow() + timedelta(days=30)
+        )
+
+        sessions[session_token] = session_data
+
+        return {
+            "success": True,
+            "token": session_token,
+            "user": {
+                "id": user.id,
+                "telegram_id": user.telegram_id,
+                "first_name": user.first_name,
+                "username": user.username,
+                "ui_language": user.ui_language,
+                "level": user.level,
+                "created_at": user.created_at.isoformat()
+            }
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
