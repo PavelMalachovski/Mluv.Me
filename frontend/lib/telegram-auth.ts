@@ -120,7 +120,8 @@ export function loginWithTelegram(): Promise<TelegramUser> {
  * Authenticate with backend using Telegram user data
  */
 export async function authenticateWithBackend(telegramUser: TelegramUser): Promise<any> {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  // Use relative URL to work in both browser and Telegram Web App
+  const API_URL = typeof window !== 'undefined' ? window.location.origin : '';
 
   const response = await fetch(`${API_URL}/api/auth/telegram`, {
     method: 'POST',

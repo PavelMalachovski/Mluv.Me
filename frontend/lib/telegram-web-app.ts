@@ -184,7 +184,9 @@ export async function authenticateWebApp(): Promise<{
     };
   }
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  // In Web App, use relative URL (same domain as frontend)
+  // This works because backend proxies frontend on the same port
+  const API_URL = typeof window !== 'undefined' ? window.location.origin : '';
 
   try {
     const response = await fetch(`${API_URL}/api/v1/auth/webapp`, {

@@ -5,8 +5,9 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { useAuthStore } from './auth-store';
 
-// API Base URL from environment or default to localhost
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// API Base URL - use relative URL to work in both browser and Telegram Web App
+// Backend serves frontend via proxy on the same domain
+const API_BASE_URL = typeof window !== 'undefined' ? window.location.origin : '';
 
 class APIClient {
   private client: AxiosInstance;
