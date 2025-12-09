@@ -57,7 +57,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Stats Grid - 2x2 + 1 */}
+        {/* Stats Grid - 2x3 */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <IllustratedStatCard
             label="Day Streak"
@@ -75,6 +75,12 @@ export default function ProfilePage() {
             label="Total Messages"
             value={stats?.messages_count || 0}
             mascotImage="/images/mascot/honzik-waving.png"
+            showNumber={true}
+          />
+          <IllustratedStatCard
+            label="Words Said"
+            value={stats?.words_said || 0}
+            mascotImage="/images/mascot/honzik-reading.png"
             showNumber={true}
           />
           <IllustratedStatCard
