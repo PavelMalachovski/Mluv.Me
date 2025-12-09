@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from backend.models.message import Message
     from backend.models.word import SavedWord
     from backend.models.stats import DailyStats, Stars
+    from backend.models.achievement import UserAchievement
 
 
 class User(Base):
@@ -116,6 +117,12 @@ class User(Base):
         "Stars",
         back_populates="user",
         uselist=False,
+        cascade="all, delete-orphan"
+    )
+
+    achievements: Mapped[list["UserAchievement"]] = relationship(
+        "UserAchievement",
+        back_populates="user",
         cascade="all, delete-orphan"
     )
 

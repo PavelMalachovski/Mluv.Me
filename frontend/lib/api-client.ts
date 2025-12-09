@@ -7,14 +7,19 @@ import { useAuthStore } from './auth-store';
 
 // API Base URL - use relative URL to work in both browser and Telegram Web App
 // Backend serves frontend via proxy on the same domain
-const API_BASE_URL = typeof window !== 'undefined' ? window.location.origin : '';
+function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return process.env.NEXT_PUBLIC_API_URL || '';
+}
 
 class APIClient {
   private client: AxiosInstance;
 
-  constructor(baseURL: string = API_BASE_URL) {
+  constructor(baseURL?: string) {
     this.client = axios.create({
-      baseURL,
+      baseURL: baseURL || getApiBaseUrl(),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -182,6 +187,27 @@ class APIClient {
   // Web auth endpoints (for Telegram Login Widget)
   async authenticateWithTelegram(telegramData: any) {
     const response = await this.client.post('/api/v1/web/auth/telegram', telegramData);
+    return response.data;
+  }
+
+  // ============= Spaced Repetition Endpoints =============
+
+  async getWordsForReview(telegramId: number, limit: number = 20) {
+    const response = await this.client.get(`/api/v1/words/${telegramId}/review`, {
+      params: { limit },
+    });
+    return response.data;
+  }
+
+  async submitReviewAnswer(wordId: number, quality: 0 | 1 | 2 | 3) {
+    const response = await this.client.post(`/api/v1/words/${wordId}/answer`, {
+      quality,
+    });
+    return response.data;
+  }
+
+  async getReviewStats(telegramId: number) {
+    const response = await this.client.get(`/api/v1/words/${telegramId}/review-stats`);
     return response.data;
   }
 }

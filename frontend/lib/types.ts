@@ -59,3 +59,100 @@ export interface WordTranslation {
   target_language: "ru" | "uk"
   phonetics?: string
 }
+
+// Spaced Repetition Types
+export interface ReviewWord {
+  id: number
+  word_czech: string
+  translation: string
+  context_sentence?: string
+  phonetics?: string
+  ease_factor: number
+  interval_days: number
+  sr_review_count: number
+  mastery_level: "new" | "learning" | "familiar" | "known" | "mastered"
+}
+
+export interface ReviewSession {
+  words: ReviewWord[]
+  total_due: number
+  estimated_minutes: number
+}
+
+export interface ReviewAnswerResponse {
+  id: number
+  word_czech: string
+  new_ease_factor: number
+  new_interval_days: number
+  next_review_date: string
+  sr_review_count: number
+  mastery_level: string
+}
+
+export interface ReviewStats {
+  total_words: number
+  due_today: number
+  mastery_breakdown: {
+    new: number
+    learning: number
+    familiar: number
+    known: number
+    mastered: number
+  }
+  next_review_in_days: number
+}
+
+export type ReviewQuality = 0 | 1 | 2 | 3 // again, hard, good, easy
+
+// Analytics Types
+export interface DailyActivity {
+  date: string
+  messages: number
+  words_reviewed: number
+  accuracy: number
+  stars_earned: number
+}
+
+export interface WeeklyStats {
+  week_start: string
+  total_messages: number
+  total_reviews: number
+  average_accuracy: number
+  new_words: number
+}
+
+export interface AnalyticsData {
+  daily_activity: DailyActivity[]
+  weekly_stats: WeeklyStats[]
+  all_time: {
+    total_messages: number
+    total_words: number
+    total_reviews: number
+    average_accuracy: number
+    total_stars: number
+    longest_streak: number
+  }
+}
+
+// Achievement Types
+export interface Achievement {
+  id: number
+  code: string
+  name: string
+  description: string
+  icon: string
+  category: string
+  threshold: number
+  stars_reward: number
+  is_unlocked: boolean
+  unlocked_at: string | null
+  progress: number
+}
+
+export interface AchievementProgress {
+  total_achievements: number
+  unlocked_achievements: number
+  completion_percent: number
+  category_progress: Record<string, number>
+}
+

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { User, BookmarkCheck, Settings } from "lucide-react"
+import { User, BookmarkCheck, Settings, Repeat, BarChart2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface NavigationProps {
@@ -14,6 +14,16 @@ const navigationItems = [
     href: "/dashboard/profile",
     label: "Profile",
     icon: User,
+  },
+  {
+    href: "/dashboard/review",
+    label: "Review",
+    icon: Repeat,
+  },
+  {
+    href: "/dashboard/analytics",
+    label: "Stats",
+    icon: BarChart2,
   },
   {
     href: "/dashboard/saved",
