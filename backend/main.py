@@ -192,9 +192,16 @@ async def proxy_to_frontend(request: Request, path: str):
     Proxy all non-API requests to Next.js frontend.
     This allows Railway to serve both backend and frontend from the same URL.
     """
-    # Skip API routes and special paths
-    if (path.startswith("api/") or path.startswith("docs") or
-        path.startswith("redoc") or path == "health" or path == "openapi.json"):
+    # Skip API routes and special paths - these are already handled by registered routers
+    # If we get here for an API path, it means no router matched, so return proper 404
+    if path.startswith("api/"):
+        return JSONResponse(
+            status_code=404,
+            content={"detail": f"API endpoint not found: /{path}"}
+        )
+
+    if path in ["docs", "redoc", "health", "openapi.json"] or path.startswith("docs") or path.startswith("redoc"):
+        # These are handled by FastAPI directly, but if we somehow get here, skip proxy
         return JSONResponse(
             status_code=404,
             content={"detail": "Not found"}
