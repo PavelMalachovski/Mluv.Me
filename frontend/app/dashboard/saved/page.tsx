@@ -57,7 +57,7 @@ export default function SavedPage() {
   )
 
   return (
-    <div className="min-h-screen cream-bg pb-20">
+    <div className="min-h-screen cream-bg landscape-bg pb-20">
       {/* Purple Header */}
       <IllustratedHeader title="Saved Words" />
 

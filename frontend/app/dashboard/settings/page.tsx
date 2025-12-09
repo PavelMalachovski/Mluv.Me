@@ -125,7 +125,7 @@ export default function SettingsPage() {
         ))}
       </ToastContainer>
 
-      <div className="min-h-screen cream-bg pb-20">
+      <div className="min-h-screen cream-bg landscape-bg pb-20">
         {/* Purple Header with Mascot */}
         <div className="illustrated-header relative pb-16">
           <h1 className="illustrated-header-title">Settings</h1>
@@ -225,8 +225,8 @@ export default function SettingsPage() {
                       onClick={() => updateSettingsMutation.mutate({ corrections_level: level.value })}
                       disabled={updateSettingsMutation.isPending}
                       className={`w-full rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${settings?.corrections_level === level.value
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
                         }`}
                     >
                       <div className="flex items-center justify-between">
@@ -266,8 +266,8 @@ export default function SettingsPage() {
                       onClick={() => updateSettingsMutation.mutate({ conversation_style: style.value })}
                       disabled={updateSettingsMutation.isPending}
                       className={`w-full rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${settings?.conversation_style === style.value
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
                         }`}
                     >
                       <div className="flex items-center justify-between">
@@ -313,8 +313,8 @@ export default function SettingsPage() {
                       onClick={() => updateSettingsMutation.mutate({ voice_speed: speed.value })}
                       disabled={updateSettingsMutation.isPending}
                       className={`rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${settings?.voice_speed === speed.value
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
                         }`}
                     >
                       <div className="flex items-center justify-between">
@@ -350,8 +350,8 @@ export default function SettingsPage() {
                   }
                   disabled={updateSettingsMutation.isPending}
                   className={`w-full rounded-xl border-2 p-4 transition-all disabled:opacity-50 ${settings?.notifications_enabled
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-white dark:bg-gray-800"
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-white dark:bg-gray-800"
                     }`}
                 >
                   <div className="flex items-center justify-between">
@@ -392,8 +392,8 @@ export default function SettingsPage() {
                   <button
                     onClick={() => setTheme("light")}
                     className={`rounded-xl border-2 p-4 text-left transition-all ${theme === "light"
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
                       }`}
                   >
                     <div className="flex items-center justify-between">
@@ -411,8 +411,8 @@ export default function SettingsPage() {
                   <button
                     onClick={() => setTheme("dark")}
                     className={`rounded-xl border-2 p-4 text-left transition-all ${theme === "dark"
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
                       }`}
                   >
                     <div className="flex items-center justify-between">
@@ -445,8 +445,8 @@ export default function SettingsPage() {
                     onClick={() => updateProfileMutation.mutate({ ui_language: "ru" })}
                     disabled={updateProfileMutation.isPending}
                     className={`rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${user?.ui_language === "ru"
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
                       }`}
                   >
                     <div className="flex items-center justify-between">
@@ -465,8 +465,8 @@ export default function SettingsPage() {
                     onClick={() => updateProfileMutation.mutate({ ui_language: "uk" })}
                     disabled={updateProfileMutation.isPending}
                     className={`rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${user?.ui_language === "uk"
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
                       }`}
                   >
                     <div className="flex items-center justify-between">
