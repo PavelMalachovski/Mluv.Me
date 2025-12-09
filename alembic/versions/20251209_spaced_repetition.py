@@ -2,7 +2,7 @@
 Add spaced repetition fields to saved_words.
 
 Revision ID: 20251209_spaced_repetition
-Revises: 20251207_create_materialized_views
+Revises: 003
 Create Date: 2025-12-09
 """
 
@@ -13,7 +13,7 @@ from datetime import date
 
 # revision identifiers, used by Alembic.
 revision = '20251209_spaced_repetition'
-down_revision = '20251207_create_materialized_views'
+down_revision = '003'
 branch_labels = None
 depends_on = None
 
