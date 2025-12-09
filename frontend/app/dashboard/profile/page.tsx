@@ -57,7 +57,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Stats Grid - 2x3 */}
+        {/* Stats Grid - 2x2 + 1 */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <IllustratedStatCard
             label="Day Streak"
@@ -78,50 +78,40 @@ export default function ProfilePage() {
             showNumber={true}
           />
           <IllustratedStatCard
-            label="0-J reading"
-            value={0}
-            mascotImage="/images/mascot/honzik-reading.png"
-            showNumber={false}
-          />
-          <IllustratedStatCard
             label="Avg Correctness"
-            value={stats?.correct_percent || 0}
-          />
-          <IllustratedStatCard
-            label="Words Said"
-            value={stats?.words_said || 0}
+            value={`${stats?.correct_percent || 0}%`}
           />
         </div>
 
-        {/* Czech Level Section */}
+        {/* Czech Level Section - Single Level Display */}
         <div className="illustrated-card p-4 mb-6">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xl">💬</span>
             <h3 className="font-semibold text-foreground">Czech Level</h3>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { value: "beginner", label: "Začátečník", image: "/images/mascot/honzik-waving.png" },
-              { value: "intermediate", label: "Středně pokročilý", image: "/images/mascot/honzik-running.png" },
-              { value: "advanced", label: "Pokročilý", image: "/images/mascot/honzik-reading.png" },
-              { value: "native", label: "Rodilý", image: "/images/mascot/honzik-stars.png" },
-            ].map((level) => (
-              <div
-                key={level.value}
-                className={`level-card ${user.level === level.value ? "active" : ""}`}
-              >
+          {(() => {
+            const levels: Record<string, { label: string; image: string }> = {
+              beginner: { label: "Začátečník", image: "/images/mascot/honzik-waving.png" },
+              intermediate: { label: "Středně pokročilý", image: "/images/mascot/honzik-running.png" },
+              advanced: { label: "Pokročilý", image: "/images/mascot/honzik-reading.png" },
+              native: { label: "Rodilý", image: "/images/mascot/honzik-stars.png" },
+            };
+            const currentLevel = levels[user.level] || levels.beginner;
+
+            return (
+              <div className="level-card active mx-auto w-fit px-8">
                 <Image
-                  src={level.image}
-                  alt={level.label}
+                  src={currentLevel.image}
+                  alt={currentLevel.label}
                   width={80}
                   height={80}
                   className="mx-auto mb-2"
                 />
-                <span className="level-name">{level.label}</span>
+                <span className="level-name">{currentLevel.label}</span>
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </div>
 
         {/* Achievements Section */}

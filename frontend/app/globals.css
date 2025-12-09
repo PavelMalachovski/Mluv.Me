@@ -183,12 +183,13 @@
 
   /* Illustrated Card */
   .illustrated-card {
-    background: white;
+    background: rgba(255, 255, 255, 0.85);
     border-radius: 1rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    border: 2px solid hsl(var(--cream-bg-alt));
+    border: none;
     overflow: hidden;
     transition: transform 0.2s, box-shadow 0.2s;
+    backdrop-filter: blur(10px);
   }
 
   .illustrated-card:hover {
@@ -197,8 +198,8 @@
   }
 
   .dark .illustrated-card {
-    background: hsl(var(--card));
-    border-color: hsl(var(--border));
+    background: rgba(30, 41, 59, 0.85);
+    border: none;
   }
 
   /* Illustrated Stat Card */
@@ -257,17 +258,15 @@
 
   /* Parchment Header */
   .parchment-header {
-    background-image: url('/images/backgrounds/parchment-scroll.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
+    background: transparent;
     padding: 2rem 1.5rem;
     text-align: center;
-    min-height: 180px;
+    min-height: 160px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.15));
   }
 
   /* Landscape Background */
