@@ -226,9 +226,18 @@ class CorrectionEngine:
             words_total=words_stats["words_total"],
         )
 
+        # Fallback for corrected_text if None/empty - use original text
+        corrected_text = response.get("corrected_text")
+        if not corrected_text:
+            self.logger.warning(
+                "corrected_text_fallback_to_original",
+                original_text=original_text[:50] if original_text else "",
+            )
+            corrected_text = original_text
+
         return {
             "honzik_response": response["honzik_response"],
-            "corrected_text": response["corrected_text"],
+            "corrected_text": corrected_text,
             "formatted_mistakes": formatted_mistakes,
             "formatted_suggestion": formatted_suggestion,
             "correctness_score": score,

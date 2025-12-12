@@ -326,6 +326,14 @@ Analyzuj text studenta a odpověz ve formátu JSON podle instrukcí výše."""
                 )
                 response_data["correctness_score"] = max(0, min(100, int(score)))
 
+            # Fallback for corrected_text if None or empty
+            if not response_data.get("corrected_text"):
+                self.logger.warning(
+                    "corrected_text_missing_using_original",
+                    original_text=user_text[:50],
+                )
+                response_data["corrected_text"] = user_text
+
             self.logger.info(
                 "honzik_response_generated",
                 correctness_score=response_data["correctness_score"],
