@@ -6,6 +6,8 @@ import asyncio
 import structlog
 from deep_translator import GoogleTranslator
 
+from backend.cache.redis_client import redis_client
+
 logger = structlog.get_logger(__name__)
 
 
@@ -18,6 +20,9 @@ class TranslationService:
         "uk": "ukrainian",
         "cs": "czech",
     }
+
+    # Cache TTL: 7 days
+    CACHE_TTL = 86400 * 7
 
     def __init__(self):
         """Инициализация сервиса перевода."""
@@ -49,6 +54,13 @@ class TranslationService:
                 f"Supported: {list(self.LANGUAGE_MAP.keys())}"
             )
 
+        # Check cache first
+        cache_key = f"translation:{word.lower()}:{target_language}"
+        cached = await redis_client.get(cache_key)
+        if cached:
+            self.log.debug("translation_cache_hit", word=word)
+            return cached
+
         try:
             # Создаем переводчик: чешский -> целевой язык
             target_lang = self.LANGUAGE_MAP[target_language]
@@ -64,10 +76,15 @@ class TranslationService:
                 translation=translation,
             )
 
-            return {
+            result = {
                 "translation": translation,
                 "phonetics": None,  # TODO: добавить фонетику если нужно
             }
+
+            # Cache the result for 7 days
+            await redis_client.set(cache_key, result, ttl=self.CACHE_TTL)
+
+            return result
 
         except Exception as e:
             self.log.error(

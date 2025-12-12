@@ -56,12 +56,19 @@ class OpenAIClient:
         self.settings = settings
         self.logger = logger.bind(service="openai_client")
 
-        # Initialize tokenizer for token counting
-        try:
-            self.encoding = tiktoken.encoding_for_model(settings.openai_model)
-        except KeyError:
-            # Fallback to cl100k_base if model not found
-            self.encoding = tiktoken.get_encoding("cl100k_base")
+        # Lazy load tokenizer (initialized on first use)
+        self._encoding = None
+
+    @property
+    def encoding(self):
+        """Lazy load tiktoken encoder."""
+        if self._encoding is None:
+            try:
+                self._encoding = tiktoken.encoding_for_model(self.settings.openai_model)
+            except KeyError:
+                # Fallback to cl100k_base if model not found
+                self._encoding = tiktoken.get_encoding("cl100k_base")
+        return self._encoding
 
     async def _call_with_retry(
         self,

@@ -6,7 +6,7 @@ Message model.
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -35,6 +35,11 @@ class Message(Base):
     """
 
     __tablename__ = "messages"
+
+    # Performance: Composite index for efficient message history queries
+    __table_args__ = (
+        Index('idx_messages_user_created', 'user_id', 'created_at'),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 

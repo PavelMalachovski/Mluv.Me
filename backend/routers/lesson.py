@@ -65,9 +65,16 @@ async def read_audio_file_async(filepath: str) -> bytes:
         return await f.read()
 
 
+# Global singleton for OpenAI client (avoids recreating on each request)
+_openai_client: OpenAIClient | None = None
+
+
 def get_openai_client(settings: Settings = Depends(get_settings)) -> OpenAIClient:
-    """Dependency для OpenAI клиента."""
-    return OpenAIClient(settings)
+    """Dependency для OpenAI клиента (Singleton pattern)."""
+    global _openai_client
+    if _openai_client is None:
+        _openai_client = OpenAIClient(settings)
+    return _openai_client
 
 
 def get_honzik_personality(

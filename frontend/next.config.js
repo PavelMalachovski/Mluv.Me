@@ -23,6 +23,10 @@ const nextConfig = {
       },
     ];
   },
+  // Experimental optimizations for better performance
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@tanstack/react-query'],
+  },
 }
 
 module.exports = nextConfig

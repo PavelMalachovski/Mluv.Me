@@ -7,7 +7,7 @@ from datetime import datetime, date
 from typing import TYPE_CHECKING, List, Optional
 import json
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Float, Date
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Float, Date, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -41,6 +41,11 @@ class SavedWord(Base):
     """
 
     __tablename__ = "saved_words"
+
+    # Performance: Composite index for efficient word lookup by user
+    __table_args__ = (
+        Index('idx_saved_words_user_word', 'user_id', 'word_czech'),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 

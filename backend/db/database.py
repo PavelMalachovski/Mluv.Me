@@ -144,6 +144,10 @@ def get_session_maker() -> async_sessionmaker[AsyncSession]:
             class_=AsyncSession,
             expire_on_commit=False,
             autocommit=False,
+            # autoflush=False is correct for async sessions:
+            # - Avoids unexpected DB queries during attribute access
+            # - Explicit flush/commit provides better control in async context
+            # - Prevents potential race conditions with concurrent operations
             autoflush=False,
         )
     return _async_session_maker
