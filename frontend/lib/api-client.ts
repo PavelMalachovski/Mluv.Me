@@ -129,6 +129,13 @@ class APIClient {
     return response.data;
   }
 
+  async getDailyRange(telegramId: number, days: number = 7) {
+    const response = await this.client.get(`/api/v1/stats/${telegramId}/daily-range`, {
+      params: { days },
+    });
+    return response.data;
+  }
+
   // Lessons endpoints
   async processVoice(userId: number, audioBlob: Blob) {
     const formData = new FormData();

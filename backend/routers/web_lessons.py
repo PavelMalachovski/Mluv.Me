@@ -10,7 +10,8 @@ from backend.db.database import get_session
 from backend.db.repositories import (
     UserRepository,
     MessageRepository,
-    UserSettingsRepository
+    UserSettingsRepository,
+    StatsRepository,
 )
 from backend.services.honzik_personality import HonzikPersonality
 from backend.services.gamification import GamificationService
@@ -123,19 +124,35 @@ async def process_text_message(
         text=response["honzik_response"]
     )
 
-    # Calculate stars
-    gamification = GamificationService(db)
-    stars = await gamification.calculate_stars(
-        correctness_score=response.get("correctness_score", 0)
+    # Calculate stars and update gamification
+    stats_repo = StatsRepository(db)
+    gamification = GamificationService(stats_repo, user_repo)
+
+    # Get user timezone from settings if available
+    user_timezone = settings.timezone if settings else None
+    user_date = gamification.get_user_date(user_timezone)
+
+    # Calculate stars based on correctness
+    current_streak = (await stats_repo.get_user_summary(request.user_id)).get("current_streak", 0)
+    stars = gamification.calculate_stars_for_message(
+        correctness_score=int(response.get("correctness_score", 0)),
+        current_streak=current_streak
     )
 
-    # Update user stats
-    await gamification.update_daily_stats(
+    # Award stars
+    await gamification.award_stars(db, request.user_id, stars)
+
+    # Update daily stats
+    daily_stats = await stats_repo.get_or_create_daily(request.user_id, user_date)
+    await stats_repo.update_daily(
         user_id=request.user_id,
-        messages_count=1,
-        words_said=len(request.text.split()),
-        correct_percent=response.get("correctness_score", 0)
+        date_value=user_date,
+        messages_count=daily_stats.messages_count + 1,
+        words_said=daily_stats.words_said + len(request.text.split()),
+        correct_percent=int(response.get("correctness_score", 0)),
     )
+
+    await db.commit()
 
     return TextMessageResponse(
         honzik_text=response["honzik_response"],

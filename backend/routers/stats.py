@@ -88,3 +88,64 @@ async def get_stats_summary(
 
     return result
 
+
+@router.get(
+    "/{telegram_id}/daily-range",
+    summary="Получить статистику за период",
+    description="Получить ежедневную статистику за последние N дней для графиков",
+)
+async def get_daily_range(
+    telegram_id: int,
+    days: int = 7,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Получить статистику за период для аналитики.
+
+    Args:
+        telegram_id: Telegram ID пользователя
+        days: Количество дней (по умолчанию 7)
+        session: Database session
+
+    Returns:
+        Список статистики по дням
+
+    Raises:
+        HTTPException: Если пользователь не найден
+    """
+    user_repo = UserRepository(session)
+    user = await user_repo.get_by_telegram_id(telegram_id)
+
+    if not user:
+        logger.warning("user_not_found", telegram_id=telegram_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with telegram_id {telegram_id} not found",
+        )
+
+    stats_repo = StatsRepository(session)
+    today = datetime.now().date()
+    start_date = today - timedelta(days=days - 1)
+
+    daily_stats = await stats_repo.get_stats_range(user.id, start_date, today)
+
+    # Fill in missing days with zeros
+    result = []
+    current = start_date
+    stats_by_date = {s["date"]: s for s in daily_stats}
+
+    while current <= today:
+        date_str = current.isoformat()
+        if date_str in stats_by_date:
+            result.append(stats_by_date[date_str])
+        else:
+            result.append({
+                "date": date_str,
+                "messages_count": 0,
+                "words_said": 0,
+                "correct_percent": 0,
+                "streak_day": 0,
+            })
+        current += timedelta(days=1)
+
+    return result

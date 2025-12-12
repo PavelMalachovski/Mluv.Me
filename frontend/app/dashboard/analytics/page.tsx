@@ -12,24 +12,20 @@ import {
 } from "recharts"
 import { ArrowLeft, TrendingUp, Target, Flame, Star, MessageCircle, BookOpen } from "lucide-react"
 
-// Mock data for demo - in production this would come from API
-const mockDailyData = [
-    { date: "Mon", messages: 12, accuracy: 78 },
-    { date: "Tue", messages: 8, accuracy: 85 },
-    { date: "Wed", messages: 15, accuracy: 72 },
-    { date: "Thu", messages: 6, accuracy: 90 },
-    { date: "Fri", messages: 20, accuracy: 82 },
-    { date: "Sat", messages: 5, accuracy: 88 },
-    { date: "Sun", messages: 10, accuracy: 75 },
-]
+// Helper to format date as day name
+function formatDayName(dateStr: string): string {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-US', { weekday: 'short' })
+}
 
-const mockMasteryData = [
-    { name: "New", value: 15, color: "#9CA3AF" },
-    { name: "Learning", value: 25, color: "#F59E0B" },
-    { name: "Familiar", value: 20, color: "#3B82F6" },
-    { name: "Known", value: 12, color: "#10B981" },
-    { name: "Mastered", value: 8, color: "#8B5CF6" },
-]
+// Helper to transform API data for charts
+function transformDailyData(data: any[]) {
+    return data.map(d => ({
+        date: formatDayName(d.date),
+        messages: d.messages_count,
+        accuracy: d.correct_percent,
+    }))
+}
 
 export default function AnalyticsPage() {
     const router = useRouter()
@@ -41,11 +37,20 @@ export default function AnalyticsPage() {
         enabled: !!user?.telegram_id,
     })
 
+    const { data: dailyData } = useQuery({
+        queryKey: ["daily-stats", user?.telegram_id],
+        queryFn: () => apiClient.getDailyRange(user!.telegram_id, 7),
+        enabled: !!user?.telegram_id,
+    })
+
     const { data: reviewStats } = useQuery({
         queryKey: ["review-stats", user?.telegram_id],
         queryFn: () => apiClient.getReviewStats(user!.telegram_id),
         enabled: !!user?.telegram_id,
     })
+
+    // Transform daily data for charts
+    const chartData = dailyData ? transformDailyData(dailyData) : []
 
     if (!user) {
         router.push("/login")
@@ -107,7 +112,7 @@ export default function AnalyticsPage() {
                             </h3>
                             <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={mockDailyData}>
+                                    <BarChart data={chartData}>
                                         <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                                         <XAxis dataKey="date" fontSize={12} />
                                         <YAxis fontSize={12} />
@@ -137,7 +142,7 @@ export default function AnalyticsPage() {
                             </h3>
                             <div className="h-48">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={mockDailyData}>
+                                    <AreaChart data={chartData}>
                                         <defs>
                                             <linearGradient id="colorAccuracy" x1="0" y1="0" x2="0" y2="1">
                                                 <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
@@ -187,7 +192,13 @@ export default function AnalyticsPage() {
                                                     paddingAngle={2}
                                                     dataKey="value"
                                                 >
-                                                    {mockMasteryData.map((entry, index) => (
+                                                    {[
+                                                        { name: "New", color: "#9CA3AF" },
+                                                        { name: "Learning", color: "#F59E0B" },
+                                                        { name: "Familiar", color: "#3B82F6" },
+                                                        { name: "Known", color: "#10B981" },
+                                                        { name: "Mastered", color: "#8B5CF6" },
+                                                    ].map((entry, index) => (
                                                         <Cell key={`cell-${index}`} fill={entry.color} />
                                                     ))}
                                                 </Pie>

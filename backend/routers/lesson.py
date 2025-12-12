@@ -255,17 +255,13 @@ async def process_voice_message(
         user_date = gamification.get_user_date(user.settings.timezone)
 
         # Обновляем daily_stats
+        daily_stats = await stats_repo.get_or_create_daily(user.id, user_date)
         await stats_repo.update_daily(
             user_id=user.id,
             date_value=user_date,
-            messages_count=(
-                await stats_repo.get_or_create_daily(user.id, user_date)
-            ).messages_count
-            + 1,
-            words_said=(
-                await stats_repo.get_or_create_daily(user.id, user_date)
-            ).words_said
-            + processed["words_total"],
+            messages_count=daily_stats.messages_count + 1,
+            words_said=daily_stats.words_said + processed["words_total"],
+            correct_percent=processed["correctness_score"],
         )
 
         # 10. Геймификация
