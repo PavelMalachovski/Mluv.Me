@@ -11,7 +11,7 @@ interface NavigationProps {
 
 const navigationItems = [
   {
-    href: "/dashboard/profile",
+    href: "/dashboard",
     label: "Profile",
     icon: User,
   },
@@ -49,7 +49,7 @@ export function Navigation({ className }: NavigationProps) {
     >
       <div className="flex h-16 items-center justify-around md:h-full md:flex-col md:py-8">
         {navigationItems.map((item) => {
-          const isActive = pathname === item.href || (pathname === "/dashboard" && item.href === "/dashboard/profile")
+          const isActive = pathname === item.href
           const Icon = item.icon
 
           return (

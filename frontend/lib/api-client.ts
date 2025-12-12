@@ -137,10 +137,10 @@ class APIClient {
   }
 
   // Lessons endpoints
-  async processVoice(userId: number, audioBlob: Blob) {
+  async processVoice(telegramId: number, audioBlob: Blob) {
     const formData = new FormData();
     formData.append('audio', audioBlob, 'recording.ogg');
-    formData.append('user_id', userId.toString());
+    formData.append('user_id', telegramId.toString());
 
     const response = await this.client.post('/api/v1/lessons/process', formData, {
       headers: {

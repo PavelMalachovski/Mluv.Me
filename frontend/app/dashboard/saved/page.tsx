@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
 import { apiClient } from "@/lib/api-client"
 import { Search, Trash2, Volume2, BookmarkCheck } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { IllustratedHeader } from "@/components/ui/IllustratedHeader"
 import { IllustratedEmptyState } from "@/components/ui/IllustratedEmptyState"
 
@@ -24,6 +24,60 @@ export default function SavedPage() {
   const user = useAuthStore((state) => state.user)
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState("")
+  const [voicesLoaded, setVoicesLoaded] = useState(false)
+
+  // Load voices on mount (required for mobile browsers)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      const loadVoices = () => {
+        window.speechSynthesis.getVoices()
+        setVoicesLoaded(true)
+      }
+
+      // Load immediately
+      loadVoices()
+
+      // Also listen for voices changed event (some browsers load async)
+      window.speechSynthesis.onvoiceschanged = loadVoices
+
+      return () => {
+        window.speechSynthesis.onvoiceschanged = null
+      }
+    }
+  }, [])
+
+  // Mobile-compatible speech synthesis
+  const speakWord = useCallback((word: string) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      console.warn('Speech synthesis not available')
+      return
+    }
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel()
+
+    const utterance = new SpeechSynthesisUtterance(word)
+
+    // Try to find Czech voice, fallback to default
+    const voices = window.speechSynthesis.getVoices()
+    const czechVoice = voices.find(v => v.lang.startsWith('cs'))
+
+    if (czechVoice) {
+      utterance.voice = czechVoice
+      utterance.lang = 'cs-CZ'
+    } else {
+      // Fallback: use slower rate for clarity
+      utterance.lang = 'cs-CZ'
+      utterance.rate = 0.8
+    }
+
+    // Handle errors silently
+    utterance.onerror = (e) => {
+      console.error('Speech error:', e)
+    }
+
+    window.speechSynthesis.speak(utterance)
+  }, [])
 
   const { data: savedWords, isLoading } = useQuery<SavedWord[]>({
     queryKey: ["saved-words", user?.telegram_id],
@@ -118,13 +172,7 @@ export default function SavedPage() {
 
                   <div className="flex flex-col gap-2">
                     <button
-                      onClick={() => {
-                        if (typeof window !== 'undefined' && window.speechSynthesis) {
-                          const utterance = new SpeechSynthesisUtterance(word.word_czech)
-                          utterance.lang = "cs-CZ"
-                          window.speechSynthesis.speak(utterance)
-                        }
-                      }}
+                      onClick={() => speakWord(word.word_czech)}
                       className="p-2 rounded-full hover:bg-primary/10 transition-colors"
                     >
                       <Volume2 className="h-5 w-5 text-primary" />

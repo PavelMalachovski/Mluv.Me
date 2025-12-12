@@ -121,7 +121,7 @@ export default function PracticePage() {
 
   // Voice processing mutation
   const processVoice = useMutation({
-    mutationFn: (audioBlob: Blob) => apiClient.processVoice(user!.id, audioBlob),
+    mutationFn: (audioBlob: Blob) => apiClient.processVoice(user!.telegram_id, audioBlob),
     onSuccess: (data) => {
       console.log("Voice response from backend:", data)
 
