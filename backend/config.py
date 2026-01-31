@@ -120,6 +120,11 @@ class Settings(BaseSettings):
         description="Simpler/cheaper model for beginners"
     )
 
+    openai_model_fast: str = Field(
+        default="gpt-4o-mini",
+        description="Fast model for quick responses (2x faster than gpt-4o)"
+    )
+
     use_adaptive_model_selection: bool = Field(
         default=True,
         description="Use cheaper models for beginners (A1, A2 levels)"

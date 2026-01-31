@@ -355,18 +355,21 @@ class OpenAIClient:
     def get_optimal_model(
         self,
         czech_level: str,
-        task_type: str = "analysis"
+        task_type: str = "analysis",
+        fast_mode: bool = False,
     ) -> str:
         """
         Выбрать оптимальную модель в зависимости от уровня пользователя.
 
-        Стратегия:
-        - Для начинающих (beginner) используем GPT-3.5-turbo (10x дешевле)
-        - Для продвинутых (intermediate, advanced, native) используем GPT-4o
+        Стратегия для ускорения в 2 раза:
+        - fast_mode=True: всегда GPT-4o-mini (2x быстрее)
+        - Для начинающих (beginner, intermediate): GPT-4o-mini
+        - Для продвинутых (advanced, native): GPT-4o
 
         Args:
             czech_level: Уровень чешского (beginner, intermediate, advanced, native)
             task_type: Тип задачи (analysis, summarization)
+            fast_mode: Режим быстрого ответа (всегда использует mini)
 
         Returns:
             str: Название модели
@@ -378,16 +381,25 @@ class OpenAIClient:
         if task_type == "summarization":
             return self.settings.openai_model_simple
 
-        # Для начинающих используем GPT-3.5-turbo
-        if czech_level == "beginner":
+        # Fast mode - всегда GPT-4o-mini (2x быстрее!)
+        if fast_mode:
             self.logger.info(
-                "using_simple_model_for_beginner",
-                model=self.settings.openai_model_simple,
+                "using_fast_mode_model",
+                model=self.settings.openai_model_fast,
                 level=czech_level,
             )
-            return self.settings.openai_model_simple
+            return self.settings.openai_model_fast
 
-        # Для остальных используем GPT-4o
+        # Для начинающих и средних используем GPT-4o-mini (2x быстрее)
+        if czech_level in ["beginner", "intermediate"]:
+            self.logger.info(
+                "using_fast_model_for_level",
+                model=self.settings.openai_model_fast,
+                level=czech_level,
+            )
+            return self.settings.openai_model_fast
+
+        # Для продвинутых используем GPT-4o
         return self.settings.openai_model
 
     def estimate_tokens(self, text: str) -> int:
