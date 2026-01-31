@@ -317,34 +317,36 @@ async def process_voice_message(
                 timezone_str=user.settings.timezone,
             )
 
-        # Кеширование типичных фраз (если применимо)
-        async def cache_if_common_phrase():
-            """Кешируем ответ если это типичная фраза"""
-            if cache_service.is_common_phrase(transcript):
-                await cache_service.cache_common_phrase(
-                    transcript,
-                    user.level,
-                    user.settings.conversation_style,
-                    honzik_response,
-                )
-
         # ========================================
-        # ЗАПУСК ВСЕХ ЗАДАЧ ПАРАЛЛЕЛЬНО
-        # Это экономит 2-3 секунды на каждый запрос!
+        # ОПТИМИЗИРОВАННАЯ ОБРАБОТКА
+        # TTS запускаем параллельно (самый долгий - 2-4 сек)
+        # DB операции выполняем последовательно (SQLAlchemy ограничение)
         # ========================================
-        log.info("executing_parallel_tasks")
+        log.info("starting_optimized_processing")
 
-        audio_response, _, gamification_result, _ = await asyncio.gather(
-            generate_tts(),            # ~2-4 сек
-            save_messages(),           # ~0.1-0.3 сек
-            update_stats_and_gamification(),  # ~0.2-0.5 сек
-            cache_if_common_phrase(),  # ~0.05 сек
-        )
+        # 1. Запускаем TTS в фоне (не блокирует)
+        tts_task = asyncio.create_task(generate_tts())
+
+        # 2. Пока TTS генерируется, выполняем DB операции последовательно
+        await save_messages()
+        gamification_result = await update_stats_and_gamification()
+
+        # 3. Кешируем если типичная фраза (Redis, не DB)
+        if cache_service.is_common_phrase(transcript):
+            await cache_service.cache_common_phrase(
+                transcript,
+                user.level,
+                user.settings.conversation_style,
+                honzik_response,
+            )
+
+        # 4. Ждём завершения TTS
+        audio_response = await tts_task
 
         await db.commit()
 
         log.info(
-            "parallel_processing_completed",
+            "optimized_processing_completed",
             audio_size=len(audio_response),
             stars_earned=gamification_result["stars_earned"],
             streak=gamification_result["current_streak"],
