@@ -221,25 +221,41 @@ class OpenAIClient:
             model=self.settings.whisper_model,
         )
 
-        # Конвертация bytes в file-like объект если нужно
-        if isinstance(audio_file, bytes):
-            audio_file = io.BytesIO(audio_file)
+        # Конвертация в bytes для возможности retry
+        if hasattr(audio_file, 'read'):
+            audio_bytes = audio_file.read()
+            if hasattr(audio_file, 'seek'):
+                audio_file.seek(0)
+        else:
+            audio_bytes = audio_file
 
         async def _transcribe():
-            # Whisper API требует file-like объект с атрибутом name
-            if not hasattr(audio_file, 'name'):
-                audio_file.name = 'audio.ogg'
+            # Создаём новый BytesIO для каждой попытки (важно для retry!)
+            file_obj = io.BytesIO(audio_bytes)
+            file_obj.name = 'audio.ogg'
 
             # Без параметра language - Whisper автоматически определит язык
             # verbose_json возвращает дополнительную информацию включая язык
             transcript = await self.client.audio.transcriptions.create(
                 model=self.settings.whisper_model,
-                file=audio_file,
+                file=file_obj,
                 response_format="verbose_json",  # Включает detected language
             )
+
+            # Обработка разных форматов ответа
+            if hasattr(transcript, 'text'):
+                text = transcript.text
+                language = getattr(transcript, 'language', 'cs') or 'cs'
+            elif isinstance(transcript, dict):
+                text = transcript.get('text', '')
+                language = transcript.get('language', 'cs') or 'cs'
+            else:
+                text = str(transcript)
+                language = 'cs'
+
             return {
-                "text": transcript.text,
-                "language": transcript.language or "cs",  # Fallback на чешский
+                "text": text,
+                "language": language,
             }
 
         try:
