@@ -192,6 +192,16 @@ class LessonProcessResponse(BaseModel):
     words_total: int = Field(description="Всего слов")
     words_correct: int = Field(description="Правильных слов")
 
+    # Определение языка (Неделя 2)
+    detected_language: str = Field(
+        default="cs",
+        description="Определённый язык речи пользователя (cs, ru, uk, en и т.д.)"
+    )
+    language_notice: str | None = Field(
+        default=None,
+        description="Сообщение о языке, если пользователь говорил не на чешском"
+    )
+
 
 class VoiceSettingsSchema(BaseModel):
     """

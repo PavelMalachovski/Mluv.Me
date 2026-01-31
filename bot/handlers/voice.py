@@ -1,5 +1,7 @@
 """
 Обработчик голосовых сообщений.
+
+Неделя 2: Добавлена поддержка определения языка и inline кнопки "Текст".
 """
 
 import base64
@@ -9,6 +11,7 @@ import urllib.parse
 from aiogram import F, Router
 from aiogram.types import (
     BufferedInputFile,
+    CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
@@ -24,7 +27,7 @@ router = Router()
 logger = structlog.get_logger()
 
 # Временное хранилище текстовых ответов Хонзика (telegram_id -> text)
-# Используется для передачи текста в WebUI через URL
+# Используется для показа текста через callback кнопку
 honzik_text_storage: dict[int, str] = {}
 
 
@@ -90,6 +93,19 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
         streak = response.get("current_streak", response.get("streak", 0))
         stars_earned = response.get("stars_earned", 0)
 
+        # Неделя 2: Получаем информацию о языке
+        language_notice = response.get("language_notice")
+        detected_language = response.get("detected_language", "cs")
+
+        # Если пользователь говорил не на чешском - показываем уведомление
+        if language_notice:
+            await message.answer(language_notice)
+            logger.info(
+                "language_notice_shown",
+                telegram_id=telegram_id,
+                detected_language=detected_language,
+            )
+
         # Отправляем голосовой ответ Хонзика
         if audio_response is not None:
             audio_bytes_response = None
@@ -113,13 +129,11 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                 if honzik_text:
                     honzik_text_storage[telegram_id] = honzik_text
 
-                # Создаем кнопку "Текст" которая открывает WebUI
-                encoded_text = urllib.parse.quote(honzik_text)
-                webui_url_with_text = f"{config.webui_url}/response?text={encoded_text}"
-
+                # Неделя 2: Создаем callback кнопку "Текст" для показа текста прямо в Telegram
+                # Это быстрее чем открытие WebApp!
                 text_button = InlineKeyboardButton(
                     text=get_text("btn_show_text", language),
-                    web_app=WebAppInfo(url=webui_url_with_text)
+                    callback_data=f"show_text:{telegram_id}"
                 )
                 keyboard = InlineKeyboardMarkup(
                     inline_keyboard=[[text_button]]
@@ -175,3 +189,42 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
         await message.answer(get_text("error_general", language))
 
 
+@router.callback_query(F.data.startswith("show_text:"))
+async def show_honzik_text(callback: CallbackQuery, api_client: APIClient) -> None:
+    """
+    Callback handler для кнопки "Текст".
+
+    Показывает текстовый ответ Хонзика прямо в Telegram без открытия WebApp.
+    Это быстрее и удобнее для пользователя!
+
+    Args:
+        callback: Callback query от кнопки
+        api_client: API клиент для получения языка пользователя
+    """
+    telegram_id = callback.from_user.id
+
+    # Получаем сохранённый текст
+    honzik_text = honzik_text_storage.get(telegram_id)
+
+    if honzik_text:
+        # Получаем язык пользователя для локализации
+        user = await api_client.get_user(telegram_id)
+        language = user.get("ui_language", "ru") if user else "ru"
+
+        # Отправляем текст как reply на голосовое сообщение
+        await callback.message.reply(
+            get_text("honzik_text_response", language, text=honzik_text),
+            parse_mode="HTML",
+        )
+
+        logger.info(
+            "text_shown_via_callback",
+            telegram_id=telegram_id,
+            text_length=len(honzik_text),
+        )
+    else:
+        # Текст не найден (возможно истёк)
+        await callback.answer("Текст недоступен. Отправьте новое голосовое сообщение!", show_alert=True)
+
+    # Закрываем callback (убираем loading)
+    await callback.answer()

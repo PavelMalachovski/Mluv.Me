@@ -195,6 +195,68 @@ class OpenAIClient:
             )
             raise
 
+    async def transcribe_audio_with_detection(
+        self,
+        audio_file: BinaryIO | bytes,
+    ) -> dict[str, str]:
+        """
+        Транскрибировать аудио с автоопределением языка.
+
+        Используется для определения, говорит ли пользователь на чешском
+        или на другом языке (русский, украинский, английский и т.д.)
+
+        Args:
+            audio_file: Аудио файл (file-like объект или байты)
+
+        Returns:
+            dict: {"text": str, "language": str}
+                - text: транскрибированный текст
+                - language: определённый язык ("cs", "ru", "uk", "en" и т.д.)
+
+        Raises:
+            APIError: При ошибке API OpenAI
+        """
+        self.logger.info(
+            "transcribing_audio_with_language_detection",
+            model=self.settings.whisper_model,
+        )
+
+        # Конвертация bytes в file-like объект если нужно
+        if isinstance(audio_file, bytes):
+            audio_file = io.BytesIO(audio_file)
+
+        async def _transcribe():
+            # Whisper API требует file-like объект с атрибутом name
+            if not hasattr(audio_file, 'name'):
+                audio_file.name = 'audio.ogg'
+
+            # Без параметра language - Whisper автоматически определит язык
+            # verbose_json возвращает дополнительную информацию включая язык
+            transcript = await self.client.audio.transcriptions.create(
+                model=self.settings.whisper_model,
+                file=audio_file,
+                response_format="verbose_json",  # Включает detected language
+            )
+            return {
+                "text": transcript.text,
+                "language": transcript.language or "cs",  # Fallback на чешский
+            }
+
+        try:
+            result = await self._call_with_retry(_transcribe)
+            self.logger.info(
+                "transcription_with_detection_success",
+                text_length=len(result["text"]),
+                detected_language=result["language"],
+            )
+            return result
+        except Exception as e:
+            self.logger.error(
+                "transcription_with_detection_failed",
+                error=str(e),
+            )
+            raise
+
     async def generate_chat_completion(
         self,
         messages: list[dict[str, str]],
