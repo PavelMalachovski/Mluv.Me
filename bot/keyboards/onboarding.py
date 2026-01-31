@@ -11,6 +11,8 @@ def get_language_keyboard() -> InlineKeyboardMarkup:
     """
     Клавиатура выбора языка интерфейса.
 
+    Неделя 3: Добавлен чешский язык.
+
     Returns:
         Inline клавиатура
     """
@@ -26,6 +28,12 @@ def get_language_keyboard() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(
                     text=get_text("lang_ukrainian", "uk"),
                     callback_data="lang:uk",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=get_text("lang_czech", "cs"),
+                    callback_data="lang:cs",
                 )
             ],
         ]
