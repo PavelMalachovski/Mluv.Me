@@ -1,5 +1,7 @@
 """
 Обработчики команд бота.
+
+Language Immersion: Все сообщения на чешском.
 """
 
 from aiogram import F, Router
@@ -10,11 +12,12 @@ import structlog
 from bot.keyboards import (
     get_corrections_keyboard,
     get_level_keyboard,
+    get_native_language_keyboard,
     get_reset_confirm_keyboard,
     get_style_keyboard,
     get_voice_speed_keyboard,
 )
-from bot.localization import get_days_word, get_text
+from bot.localization import get_days_word, get_text, get_native_language_name
 from bot.services.api_client import APIClient
 
 router = Router()
@@ -26,6 +29,8 @@ async def command_help(message: Message, api_client: APIClient) -> None:
     """
     Обработчик команды /help.
 
+    Language Immersion: Все на чешском.
+
     Args:
         message: Сообщение от пользователя
         api_client: API клиент
@@ -34,14 +39,13 @@ async def command_help(message: Message, api_client: APIClient) -> None:
     user = await api_client.get_user(telegram_id)
 
     if not user:
-        await message.answer(get_text("error_general", "ru"))
+        await message.answer(get_text("error_general"))
         return
 
-    language = user.get("ui_language", "ru")
-
-    help_text = get_text("help_header", language)
-    help_text += get_text("help_commands", language)
-    help_text += get_text("help_tips", language)
+    # Language Immersion: UI всегда на чешском
+    help_text = get_text("help_header")
+    help_text += get_text("help_commands")
+    help_text += get_text("help_tips")
 
     await message.answer(help_text, parse_mode="HTML")
 
@@ -51,6 +55,8 @@ async def command_stats(message: Message, api_client: APIClient) -> None:
     """
     Обработчик команды /stats.
 
+    Language Immersion: Все на чешском.
+
     Args:
         message: Сообщение от пользователя
         api_client: API клиент
@@ -59,40 +65,33 @@ async def command_stats(message: Message, api_client: APIClient) -> None:
     user = await api_client.get_user(telegram_id)
 
     if not user:
-        await message.answer(get_text("error_general", "ru"))
+        await message.answer(get_text("error_general"))
         return
-
-    language = user.get("ui_language", "ru")
 
     # Получаем статистику
     stats = await api_client.get_stats(telegram_id)
 
     if not stats:
-        await message.answer(get_text("error_backend", language))
+        await message.answer(get_text("error_backend"))
         return
 
-    # Формируем сообщение со статистикой
+    # Формируем сообщение со статистикой (на чешском)
     streak = stats.get("streak", 0)
     words = stats.get("words_said", 0)
     correct = stats.get("correct_percent", 0)
     messages_count = stats.get("messages_count", 0)
     stars = stats.get("stars", 0)
 
-    stats_text = get_text("stats_header", language)
+    stats_text = get_text("stats_header")
     stats_text += get_text(
         "stats_streak",
-        language,
         streak=streak,
-        days=get_days_word(streak, language),
+        days=get_days_word(streak),
     )
-    stats_text += get_text("stats_words", language, words=words)
-    stats_text += get_text("stats_correct", language, correct=correct)
-    stats_text += get_text("stats_messages", language, messages=messages_count)
-    stats_text += get_text("stats_stars", language, stars=stars)
-
-    # TODO: Добавить календарь последних 7 дней
-    # calendar = format_calendar(stats.get("calendar", []))
-    # stats_text += get_text("stats_calendar", language, calendar=calendar)
+    stats_text += get_text("stats_words", words=words)
+    stats_text += get_text("stats_correct", correct=correct)
+    stats_text += get_text("stats_messages", messages=messages_count)
+    stats_text += get_text("stats_stars", stars=stars)
 
     await message.answer(stats_text, parse_mode="HTML")
 
@@ -102,6 +101,8 @@ async def command_saved(message: Message, api_client: APIClient) -> None:
     """
     Обработчик команды /saved.
 
+    Language Immersion: Все на чешском.
+
     Args:
         message: Сообщение от пользователя
         api_client: API клиент
@@ -110,25 +111,23 @@ async def command_saved(message: Message, api_client: APIClient) -> None:
     user = await api_client.get_user(telegram_id)
 
     if not user:
-        await message.answer(get_text("error_general", "ru"))
+        await message.answer(get_text("error_general"))
         return
-
-    language = user.get("ui_language", "ru")
 
     # Получаем сохраненные слова
     words = await api_client.get_saved_words(telegram_id, limit=10)
 
     if not words:
-        await message.answer(get_text("saved_empty", language))
+        await message.answer(get_text("saved_empty"))
         return
 
-    # Формируем список слов
-    saved_text = get_text("saved_header", language)
+    # Формируем список слов (на чешском)
+    saved_text = get_text("saved_header")
 
     for word_data in words:
         word = word_data.get("word_czech", "")
         translation = word_data.get("translation", "")
-        saved_text += get_text("saved_word", language, word=word, translation=translation)
+        saved_text += get_text("saved_word", word=word, translation=translation)
 
     await message.answer(saved_text, parse_mode="HTML")
 
@@ -138,6 +137,8 @@ async def command_reset(message: Message, api_client: APIClient) -> None:
     """
     Обработчик команды /reset.
 
+    Language Immersion: Все на чешском.
+
     Args:
         message: Сообщение от пользователя
         api_client: API клиент
@@ -146,15 +147,13 @@ async def command_reset(message: Message, api_client: APIClient) -> None:
     user = await api_client.get_user(telegram_id)
 
     if not user:
-        await message.answer(get_text("error_general", "ru"))
+        await message.answer(get_text("error_general"))
         return
 
-    language = user.get("ui_language", "ru")
-
-    # Запрашиваем подтверждение
+    # Запрашиваем подтверждение (на чешском)
     await message.answer(
-        get_text("reset_confirm", language),
-        reply_markup=get_reset_confirm_keyboard(language),
+        get_text("reset_confirm"),
+        reply_markup=get_reset_confirm_keyboard(),
     )
 
 
@@ -174,16 +173,14 @@ async def reset_confirmed(callback: CallbackQuery, api_client: APIClient) -> Non
         await callback.answer()
         return
 
-    language = user.get("ui_language", "ru")
-
     # Сбрасываем контекст разговора
     success = await api_client.reset_conversation(telegram_id)
 
     if success:
-        await callback.message.edit_text(get_text("reset_done", language))
+        await callback.message.edit_text(get_text("reset_done"))
         logger.info("conversation_reset", telegram_id=telegram_id)
     else:
-        await callback.message.edit_text(get_text("error_backend", language))
+        await callback.message.edit_text(get_text("error_backend"))
 
     await callback.answer()
 
@@ -197,15 +194,6 @@ async def reset_cancelled(callback: CallbackQuery, api_client: APIClient) -> Non
         callback: Callback query
         api_client: API клиент
     """
-    telegram_id = callback.from_user.id
-    user = await api_client.get_user(telegram_id)
-
-    if not user:
-        await callback.answer()
-        return
-
-    language = user.get("ui_language", "ru")
-
     await callback.message.delete()
     await callback.answer()
 
@@ -218,6 +206,8 @@ async def command_level(message: Message, api_client: APIClient) -> None:
     """
     Обработчик команды /level.
 
+    Language Immersion: Все на чешском.
+
     Args:
         message: Сообщение от пользователя
         api_client: API клиент
@@ -226,15 +216,14 @@ async def command_level(message: Message, api_client: APIClient) -> None:
     user = await api_client.get_user(telegram_id)
 
     if not user:
-        await message.answer(get_text("error_general", "ru"))
+        await message.answer(get_text("error_general"))
         return
 
-    language = user.get("ui_language", "ru")
     current_level = user.get("level", "beginner")
 
     await message.answer(
-        get_text("settings_level", language, current=current_level),
-        reply_markup=get_level_keyboard(language),
+        get_text("settings_level", current=current_level),
+        reply_markup=get_level_keyboard(),
         parse_mode="HTML",
     )
 
@@ -255,24 +244,25 @@ async def level_changed(callback: CallbackQuery, api_client: APIClient) -> None:
         await callback.answer()
         return
 
-    language = user.get("ui_language", "ru")
     level = callback.data.split(":")[1]
 
     # Обновляем настройки
     await api_client.update_user_settings(telegram_id, level=level)
 
     await callback.message.edit_text(
-        get_text("settings_level_changed", language, level=level), parse_mode="HTML"
+        get_text("settings_level_changed", level=level), parse_mode="HTML"
     )
     await callback.answer()
 
     logger.info("level_changed", telegram_id=telegram_id, level=level)
 
 
-@router.message(Command("voice_speed"))
-async def command_voice_speed(message: Message, api_client: APIClient) -> None:
+@router.message(Command("native"))
+async def command_native(message: Message, api_client: APIClient) -> None:
     """
-    Обработчик команды /voice_speed.
+    Обработчик команды /native - выбор родного языка для объяснений.
+
+    Language Immersion: UI на чешском, меняем только язык объяснений.
 
     Args:
         message: Сообщение от пользователя
@@ -282,16 +272,73 @@ async def command_voice_speed(message: Message, api_client: APIClient) -> None:
     user = await api_client.get_user(telegram_id)
 
     if not user:
-        await message.answer(get_text("error_general", "ru"))
+        await message.answer(get_text("error_general"))
         return
 
-    language = user.get("ui_language", "ru")
+    current_native = user.get("native_language", "ru")
+    current_name = get_native_language_name(current_native)
+
+    await message.answer(
+        get_text("settings_native", current=current_name),
+        reply_markup=get_native_language_keyboard(),
+        parse_mode="HTML",
+    )
+
+
+@router.callback_query(F.data.startswith("native:"))
+async def native_language_changed(callback: CallbackQuery, api_client: APIClient) -> None:
+    """
+    Изменение родного языка для объяснений.
+
+    Args:
+        callback: Callback query
+        api_client: API клиент
+    """
+    telegram_id = callback.from_user.id
+    user = await api_client.get_user(telegram_id)
+
+    if not user:
+        await callback.answer()
+        return
+
+    native_language = callback.data.split(":")[1]
+    lang_name = get_native_language_name(native_language)
+
+    # Обновляем настройки
+    await api_client.update_user_settings(telegram_id, native_language=native_language)
+
+    await callback.message.edit_text(
+        get_text("settings_native_changed", language=lang_name), parse_mode="HTML"
+    )
+    await callback.answer()
+
+    logger.info("native_language_changed", telegram_id=telegram_id, native_language=native_language)
+
+
+@router.message(Command("voice_speed"))
+async def command_voice_speed(message: Message, api_client: APIClient) -> None:
+    """
+    Обработчик команды /voice_speed.
+
+    Language Immersion: Все на чешском.
+
+    Args:
+        message: Сообщение от пользователя
+        api_client: API клиент
+    """
+    telegram_id = message.from_user.id
+    user = await api_client.get_user(telegram_id)
+
+    if not user:
+        await message.answer(get_text("error_general"))
+        return
+
     settings = user.get("settings", {})
     current_speed = settings.get("voice_speed", "normal")
 
     await message.answer(
-        get_text("settings_voice_speed", language, current=current_speed),
-        reply_markup=get_voice_speed_keyboard(language),
+        get_text("settings_voice_speed", current=current_speed),
+        reply_markup=get_voice_speed_keyboard(),
         parse_mode="HTML",
     )
 
@@ -312,14 +359,13 @@ async def voice_speed_changed(callback: CallbackQuery, api_client: APIClient) ->
         await callback.answer()
         return
 
-    language = user.get("ui_language", "ru")
     speed = callback.data.split(":")[1]
 
     # Обновляем настройки
     await api_client.update_user_settings(telegram_id, voice_speed=speed)
 
     await callback.message.edit_text(
-        get_text("settings_voice_speed_changed", language, speed=speed),
+        get_text("settings_voice_speed_changed", speed=speed),
         parse_mode="HTML",
     )
     await callback.answer()
@@ -332,6 +378,8 @@ async def command_corrections(message: Message, api_client: APIClient) -> None:
     """
     Обработчик команды /corrections.
 
+    Language Immersion: Все на чешском.
+
     Args:
         message: Сообщение от пользователя
         api_client: API клиент
@@ -340,16 +388,15 @@ async def command_corrections(message: Message, api_client: APIClient) -> None:
     user = await api_client.get_user(telegram_id)
 
     if not user:
-        await message.answer(get_text("error_general", "ru"))
+        await message.answer(get_text("error_general"))
         return
 
-    language = user.get("ui_language", "ru")
     settings = user.get("settings", {})
     current_corrections = settings.get("corrections_level", "balanced")
 
     await message.answer(
-        get_text("settings_corrections", language, current=current_corrections),
-        reply_markup=get_corrections_keyboard(language),
+        get_text("settings_corrections", current=current_corrections),
+        reply_markup=get_corrections_keyboard(),
         parse_mode="HTML",
     )
 
@@ -370,14 +417,13 @@ async def corrections_changed(callback: CallbackQuery, api_client: APIClient) ->
         await callback.answer()
         return
 
-    language = user.get("ui_language", "ru")
     corrections_level = callback.data.split(":")[1]
 
     # Обновляем настройки
     await api_client.update_user_settings(telegram_id, corrections_level=corrections_level)
 
     await callback.message.edit_text(
-        get_text("settings_corrections_changed", language, level=corrections_level),
+        get_text("settings_corrections_changed", level=corrections_level),
         parse_mode="HTML",
     )
     await callback.answer()
@@ -392,6 +438,8 @@ async def command_style(message: Message, api_client: APIClient) -> None:
     """
     Обработчик команды /style.
 
+    Language Immersion: Все на чешском.
+
     Args:
         message: Сообщение от пользователя
         api_client: API клиент
@@ -400,16 +448,15 @@ async def command_style(message: Message, api_client: APIClient) -> None:
     user = await api_client.get_user(telegram_id)
 
     if not user:
-        await message.answer(get_text("error_general", "ru"))
+        await message.answer(get_text("error_general"))
         return
 
-    language = user.get("ui_language", "ru")
     settings = user.get("settings", {})
     current_style = settings.get("conversation_style", "friendly")
 
     await message.answer(
-        get_text("settings_style", language, current=current_style),
-        reply_markup=get_style_keyboard(language),
+        get_text("settings_style", current=current_style),
+        reply_markup=get_style_keyboard(),
         parse_mode="HTML",
     )
 
@@ -430,14 +477,13 @@ async def style_changed(callback: CallbackQuery, api_client: APIClient) -> None:
         await callback.answer()
         return
 
-    language = user.get("ui_language", "ru")
     style = callback.data.split(":")[1]
 
     # Обновляем настройки
     await api_client.update_user_settings(telegram_id, conversation_style=style)
 
     await callback.message.edit_text(
-        get_text("settings_style_changed", language, style=style), parse_mode="HTML"
+        get_text("settings_style_changed", style=style), parse_mode="HTML"
     )
     await callback.answer()
 
@@ -457,43 +503,40 @@ async def command_translate(message: Message, api_client: APIClient) -> None:
     user = await api_client.get_user(telegram_id)
 
     if not user:
-        await message.answer(get_text("error_general", "ru"))
+        await message.answer(get_text("error_general"))
         return
 
-    language = user.get("ui_language", "ru")
+    native_language = user.get("native_language", "ru")
 
     # Получаем слово из команды
     command_parts = message.text.split(maxsplit=1)
     if len(command_parts) < 2:
         await message.answer(
-            get_text("translate_usage", language), parse_mode="HTML"
+            get_text("translate_usage"), parse_mode="HTML"
         )
         return
 
     word = command_parts[1].strip()
 
-    # Переводим слово
-    translation_result = await api_client.translate_word(word, target_language=language)
+    # Переводим слово на родной язык пользователя
+    translation_result = await api_client.translate_word(word, target_language=native_language)
 
     if not translation_result:
-        await message.answer(get_text("translate_error", language))
+        await message.answer(get_text("translate_error"))
         return
 
     translation = translation_result.get("translation", "")
     phonetics = translation_result.get("phonetics")
 
-    # Формируем ответ
+    # Формируем ответ (на чешском)
     response_text = get_text(
         "translate_result",
-        language,
         word=word,
         translation=translation,
     )
 
     if phonetics:
-        response_text += f"\n📝 {get_text('phonetics', language)}: {phonetics}"
+        response_text += f"\n📝 {get_text('phonetics')}: {phonetics}"
 
     await message.answer(response_text, parse_mode="HTML")
     logger.info("word_translated", telegram_id=telegram_id, word=word)
-
-

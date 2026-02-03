@@ -196,7 +196,6 @@ async def process_voice_message(
         # Генерируем сообщение о языке (если не чешский)
         language_notice = honzik.get_language_notice(
             detected_language=detected_language,
-            ui_language=user.ui_language,
         )
 
         # 4. Получаем историю разговора (последние 5 сообщений)
@@ -236,7 +235,7 @@ async def process_voice_message(
                 level=user.level,
                 style=user.settings.conversation_style,
                 corrections_level=user.settings.corrections_level,
-                ui_language=user.ui_language,
+                native_language=user.native_language,
                 conversation_history=conversation_history,
             )
 
@@ -249,7 +248,7 @@ async def process_voice_message(
         processed = correction_engine.process_honzik_response(
             response=honzik_response,
             original_text=transcript,
-            ui_language=user.ui_language,
+            native_language=user.native_language,
         )
 
         # ========================================

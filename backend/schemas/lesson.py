@@ -11,10 +11,17 @@ class MistakeSchema(BaseModel):
     """
     Схема для одной ошибки в речи.
 
+    Language Immersion format:
+    - explanation_cs: Объяснение на простом чешском (A2)
+    - explanation_native: Перевод на родной язык пользователя
+    - explanation: Fallback для обратной совместимости
+
     Attributes:
         original: Оригинальный текст (с ошибкой)
         corrected: Исправленный текст
-        explanation: Объяснение ошибки на языке пользователя
+        explanation_cs: Объяснение на чешском (A2 уровень)
+        explanation_native: Перевод объяснения на родной язык
+        explanation: Legacy поле (для обратной совместимости)
     """
 
     model_config = ConfigDict(
@@ -26,7 +33,20 @@ class MistakeSchema(BaseModel):
 
     original: str = Field(description="Оригинальный текст с ошибкой")
     corrected: str = Field(description="Исправленный текст")
-    explanation: str = Field(description="Объяснение ошибки")
+    # Новый формат с двуязычными объяснениями
+    explanation_cs: str | None = Field(
+        default=None,
+        description="Объяснение на простом чешском (A2 уровень)"
+    )
+    explanation_native: str | None = Field(
+        default=None,
+        description="Перевод объяснения на родной язык"
+    )
+    # Fallback для обратной совместимости
+    explanation: str | None = Field(
+        default=None,
+        description="Legacy: Объяснение ошибки"
+    )
 
 
 class CorrectionSchema(BaseModel):

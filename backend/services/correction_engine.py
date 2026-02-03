@@ -71,52 +71,61 @@ class CorrectionEngine:
             return 0
 
     def format_mistakes_for_display(
-        self, mistakes: list[dict], ui_language: str
+        self, mistakes: list[dict], native_language: str = "ru"
     ) -> str:
         """
         Форматировать список ошибок для отображения пользователю.
 
+        Новая концепция: Language Immersion.
+        - Заголовок на чешском
+        - Объяснения на простом чешском + перевод на родной язык
+
         Args:
             mistakes: Список ошибок от Хонзика
-            ui_language: Язык интерфейса (ru/uk)
+            native_language: Родной язык для перевода (ru/uk/pl/sk)
 
         Returns:
             str: Отформатированный текст с ошибками
         """
         if not mistakes:
-            praise = {
-                "ru": "🎉 Отлично! Ошибок не найдено!",
-                "uk": "🎉 Чудово! Помилок не знайдено!",
-            }
-            return praise.get(ui_language, praise["ru"])
+            # Похвала на чешском (Language Immersion)
+            return "🎉 Výborně! Žádné chyby!"
 
-        header = {
-            "ru": "📝 Исправления от Хонзика:\n\n",
-            "uk": "📝 Виправлення від Хонзіка:\n\n",
-        }
-
-        formatted = header.get(ui_language, header["ru"])
+        # Заголовок на чешском
+        formatted = "📝 Opravy od Honzíka:\n\n"
 
         for i, mistake in enumerate(mistakes, 1):
             original = mistake.get("original", "")
             corrected = mistake.get("corrected", "")
-            explanation = mistake.get("explanation", "")
+
+            # Новый формат с двумя объяснениями
+            explanation_cs = mistake.get("explanation_cs", "")
+            explanation_native = mistake.get("explanation_native", "")
+
+            # Fallback на старый формат (для совместимости)
+            if not explanation_cs and "explanation" in mistake:
+                explanation_cs = mistake.get("explanation", "")
+                explanation_native = ""
 
             formatted += f"{i}. ❌ {original}\n"
             formatted += f"   ✅ {corrected}\n"
-            if explanation:
-                formatted += f"   💡 {explanation}\n"
+            if explanation_cs:
+                formatted += f"   💡 {explanation_cs}\n"
+            if explanation_native:
+                formatted += f"   🌐 {explanation_native}\n"
             formatted += "\n"
 
         return formatted.strip()
 
-    def format_suggestion(self, suggestion: str, ui_language: str) -> str:
+    def format_suggestion(self, suggestion: str, native_language: str = "ru") -> str:
         """
         Форматировать подсказку от Хонзика.
 
+        Теперь на чешском (Language Immersion).
+
         Args:
             suggestion: Подсказка от Хонзика
-            ui_language: Язык интерфейса (ru/uk)
+            native_language: Родной язык (для будущих переводов)
 
         Returns:
             str: Отформатированная подсказка
@@ -124,12 +133,8 @@ class CorrectionEngine:
         if not suggestion:
             return ""
 
-        prefix = {
-            "ru": "💬 Совет от Хонзика:",
-            "uk": "💬 Порада від Хонзіка:",
-        }
-
-        return f"\n{prefix.get(ui_language, prefix['ru'])} {suggestion}"
+        # Заголовок на чешском
+        return f"\n💬 Tip od Honzíka: {suggestion}"
 
     def validate_honzik_response(self, response: dict) -> bool:
         """
@@ -174,7 +179,7 @@ class CorrectionEngine:
         return True
 
     def process_honzik_response(
-        self, response: dict, original_text: str, ui_language: str
+        self, response: dict, original_text: str, native_language: str = "ru"
     ) -> dict:
         """
         Обработать ответ от Хонзика и подготовить данные для сохранения.
@@ -182,7 +187,7 @@ class CorrectionEngine:
         Args:
             response: Ответ от HonzikPersonality
             original_text: Оригинальный текст пользователя
-            ui_language: Язык интерфейса (ru/uk)
+            native_language: Родной язык пользователя (ru/uk/pl/sk)
 
         Returns:
             dict: Обработанные данные {
@@ -211,12 +216,12 @@ class CorrectionEngine:
         # Нормализуем оценку
         score = self.normalize_correctness_score(response["correctness_score"])
 
-        # Форматируем для отображения
+        # Форматируем для отображения (чешский UI с переводами)
         formatted_mistakes = self.format_mistakes_for_display(
-            mistakes, ui_language
+            mistakes, native_language
         )
         formatted_suggestion = self.format_suggestion(
-            response["suggestion"], ui_language
+            response["suggestion"], native_language
         )
 
         self.logger.info(

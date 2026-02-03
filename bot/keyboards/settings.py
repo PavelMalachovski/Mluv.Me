@@ -1,5 +1,7 @@
 """
 Клавиатуры для настроек.
+
+Language Immersion: Все тексты на чешском.
 """
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
@@ -7,12 +9,11 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from bot.localization import get_text
 
 
-def get_voice_speed_keyboard(language: str = "ru") -> InlineKeyboardMarkup:
+def get_voice_speed_keyboard() -> InlineKeyboardMarkup:
     """
     Клавиатура выбора скорости голоса.
 
-    Args:
-        language: Язык интерфейса
+    Language Immersion: Все на чешском.
 
     Returns:
         Inline клавиатура
@@ -21,25 +22,25 @@ def get_voice_speed_keyboard(language: str = "ru") -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=get_text("voice_speed_very_slow", language),
+                    text=get_text("voice_speed_very_slow"),
                     callback_data="voice_speed:very_slow",
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text=get_text("voice_speed_slow", language),
+                    text=get_text("voice_speed_slow"),
                     callback_data="voice_speed:slow",
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text=get_text("voice_speed_normal", language),
+                    text=get_text("voice_speed_normal"),
                     callback_data="voice_speed:normal",
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text=get_text("voice_speed_native", language),
+                    text=get_text("voice_speed_native"),
                     callback_data="voice_speed:native",
                 )
             ],
@@ -48,12 +49,11 @@ def get_voice_speed_keyboard(language: str = "ru") -> InlineKeyboardMarkup:
     return keyboard
 
 
-def get_corrections_keyboard(language: str = "ru") -> InlineKeyboardMarkup:
+def get_corrections_keyboard() -> InlineKeyboardMarkup:
     """
     Клавиатура выбора уровня исправлений.
 
-    Args:
-        language: Язык интерфейса
+    Language Immersion: Все на чешском.
 
     Returns:
         Inline клавиатура
@@ -62,19 +62,19 @@ def get_corrections_keyboard(language: str = "ru") -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=get_text("corrections_minimal", language),
+                    text=get_text("corrections_minimal"),
                     callback_data="corrections:minimal",
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text=get_text("corrections_balanced", language),
+                    text=get_text("corrections_balanced"),
                     callback_data="corrections:balanced",
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text=get_text("corrections_detailed", language),
+                    text=get_text("corrections_detailed"),
                     callback_data="corrections:detailed",
                 )
             ],
@@ -83,12 +83,11 @@ def get_corrections_keyboard(language: str = "ru") -> InlineKeyboardMarkup:
     return keyboard
 
 
-def get_style_keyboard(language: str = "ru") -> InlineKeyboardMarkup:
+def get_style_keyboard() -> InlineKeyboardMarkup:
     """
     Клавиатура выбора стиля общения.
 
-    Args:
-        language: Язык интерфейса
+    Language Immersion: Все на чешском.
 
     Returns:
         Inline клавиатура
@@ -97,19 +96,19 @@ def get_style_keyboard(language: str = "ru") -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=get_text("style_friendly", language),
+                    text=get_text("style_friendly"),
                     callback_data="style:friendly",
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text=get_text("style_tutor", language),
+                    text=get_text("style_tutor"),
                     callback_data="style:tutor",
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text=get_text("style_casual", language),
+                    text=get_text("style_casual"),
                     callback_data="style:casual",
                 )
             ],
@@ -118,12 +117,11 @@ def get_style_keyboard(language: str = "ru") -> InlineKeyboardMarkup:
     return keyboard
 
 
-def get_reset_confirm_keyboard(language: str = "ru") -> InlineKeyboardMarkup:
+def get_reset_confirm_keyboard() -> InlineKeyboardMarkup:
     """
     Клавиатура подтверждения сброса разговора.
 
-    Args:
-        language: Язык интерфейса
+    Language Immersion: Все на чешском.
 
     Returns:
         Inline клавиатура
@@ -132,18 +130,16 @@ def get_reset_confirm_keyboard(language: str = "ru") -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=get_text("reset_yes", language),
+                    text=get_text("reset_yes"),
                     callback_data="reset:yes",
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text=get_text("reset_no", language),
+                    text=get_text("reset_no"),
                     callback_data="reset:no",
                 )
             ],
         ]
     )
     return keyboard
-
-

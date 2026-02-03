@@ -28,9 +28,9 @@ class UserCreate(BaseModel):
     first_name: str = Field(
         description="Имя пользователя"
     )
-    ui_language: Literal["ru", "uk"] = Field(
+    native_language: Literal["ru", "uk", "pl", "sk"] = Field(
         default="ru",
-        description="Язык интерфейса"
+        description="Родной язык (для объяснений ошибок)"
     )
     level: Literal["beginner", "intermediate", "advanced", "native"] = Field(
         default="beginner",
@@ -50,7 +50,7 @@ class UserUpdate(BaseModel):
 
     username: str | None = None
     first_name: str | None = None
-    ui_language: Literal["ru", "uk"] | None = None
+    native_language: Literal["ru", "uk", "pl", "sk"] | None = None
     level: Literal["beginner", "intermediate", "advanced", "native"] | None = None
 
 
@@ -69,7 +69,7 @@ class UserResponse(BaseModel):
     telegram_id: int
     username: str | None
     first_name: str
-    ui_language: Literal["ru", "uk"]
+    native_language: Literal["ru", "uk", "pl", "sk"]
     level: Literal["beginner", "intermediate", "advanced", "native"]
     created_at: datetime
     updated_at: datetime

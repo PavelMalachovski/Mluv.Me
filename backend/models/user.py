@@ -28,7 +28,7 @@ class User(Base):
         telegram_id: Telegram user ID (unique)
         username: Telegram username
         first_name: Имя пользователя
-        ui_language: Язык интерфейса (ru, uk)
+        native_language: Родной язык пользователя (для объяснений)
         level: Уровень чешского языка
         created_at: Дата регистрации
         updated_at: Дата последнего обновления
@@ -58,11 +58,11 @@ class User(Base):
         comment="Имя пользователя"
     )
 
-    ui_language: Mapped[str] = mapped_column(
-        Enum("ru", "uk", name="ui_language_enum"),
+    native_language: Mapped[str] = mapped_column(
+        Enum("ru", "uk", "pl", "sk", name="native_language_enum"),
         nullable=False,
         default="ru",
-        comment="Язык интерфейса (русский или украинский)"
+        comment="Родной язык пользователя (для объяснения ошибок)"
     )
 
     level: Mapped[str] = mapped_column(
@@ -133,7 +133,7 @@ class User(Base):
             "telegram_id": self.telegram_id,
             "username": self.username,
             "first_name": self.first_name,
-            "ui_language": self.ui_language,
+            "native_language": self.native_language,
             "level": self.level,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

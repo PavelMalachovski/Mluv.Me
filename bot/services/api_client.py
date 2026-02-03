@@ -76,17 +76,19 @@ class APIClient:
         telegram_id: int,
         username: Optional[str],
         first_name: str,
-        ui_language: str,
+        native_language: str,
         level: str,
     ) -> Optional[dict[str, Any]]:
         """
         Создать нового пользователя.
 
+        Language Immersion: UI всегда на чешском, native_language для объяснений.
+
         Args:
             telegram_id: Telegram ID
             username: Username
             first_name: Имя
-            ui_language: Язык интерфейса (ru/uk)
+            native_language: Родной язык для объяснений (ru/uk/pl/sk)
             level: Уровень чешского
 
         Returns:
@@ -98,7 +100,7 @@ class APIClient:
                 "telegram_id": telegram_id,
                 "username": username,
                 "first_name": first_name,
-                "ui_language": ui_language,
+                "native_language": native_language,
                 "level": level,
             }
             async with session.post(

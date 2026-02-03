@@ -23,7 +23,7 @@ logger = structlog.get_logger(__name__)
 ConversationStyle = Literal["friendly", "tutor", "casual"]
 CorrectionsLevel = Literal["minimal", "balanced", "detailed"]
 CzechLevel = Literal["beginner", "intermediate", "advanced", "native"]
-UILanguage = Literal["ru", "uk"]
+NativeLanguage = Literal["ru", "uk", "pl", "sk"]
 
 
 class HonzikPersonality:
@@ -48,16 +48,20 @@ class HonzikPersonality:
         self,
         level: CzechLevel,
         corrections_level: CorrectionsLevel,
-        ui_language: UILanguage,
+        native_language: NativeLanguage,
         style: ConversationStyle,
     ) -> str:
         """
         Получить базовый промпт Хонзика с учётом параметров.
 
+        Новая концепция: полное погружение в чешский язык.
+        - Весь интерфейс на чешском
+        - Объяснения ошибок на простом чешском + перевод на родной язык
+
         Args:
             level: Уровень чешского языка студента
             corrections_level: Уровень детализации исправлений
-            ui_language: Язык интерфейса (ru или uk)
+            native_language: Родной язык пользователя (для объяснений)
             style: Стиль общения Хонзика
 
         Returns:
@@ -88,7 +92,7 @@ class HonzikPersonality:
                      "DŮLEŽITÉ: Vždy dodržuj tento styl - NEMĚŇ ho během konverzace!",
         }
 
-        # Описание уровней исправлений (улучшенная версия для minimal)
+        # Описание уровней исправлений
         corrections_descriptions = {
             "minimal": "Opravuj POUZE kritické chyby, které VÝRAZNĚ brání porozumění. "
                       "IGNORUJ: drobné gramatické chyby, chybějící čárky, volbu slov (pokud je význam jasný), "
@@ -103,8 +107,14 @@ class HonzikPersonality:
                        "Věnuj pozornost i drobným chybám v interpunkci a stylu.",
         }
 
-        # Язык для объяснений
-        explanation_lang = "ruštině" if ui_language == "ru" else "ukrajinštině"
+        # Название родного языка для объяснений
+        native_lang_names = {
+            "ru": "ruština",
+            "uk": "ukrajinština",
+            "pl": "polština",
+            "sk": "slovenština",
+        }
+        native_lang_name = native_lang_names.get(native_language, "ruština")
 
         base_prompt = f"""Ty jsi Honzík - typický veselý Čech, který pomáhá lidem učit se česky.
 
@@ -120,7 +130,7 @@ INFORMACE O STUDENTOVI:
 - Úroveň češtiny: {level_descriptions[level]}
 - Styl konverzace: {style}
 - Úroveň oprav: {corrections_level}
-- Jazyk vysvětlení: {explanation_lang}
+- Rodný jazyk studenta: {native_lang_name} (pro překlad vysvětlení)
 
 TVŮJ STYL KOMUNIKACE:
 {style_descriptions[style]}
@@ -128,15 +138,20 @@ TVŮJ STYL KOMUNIKACE:
 JAK OPRAVOVAT CHYBY:
 {corrections_descriptions[corrections_level]}
 
+DŮLEŽITÉ - NOVÝ FORMÁT VYSVĚTLENÍ (Language Immersion):
+Piš vysvětlení JEDNODUŠE v češtině na úrovni A2, aby se student učil i z oprav!
+Používej základní slovní zásobu.
+PŘIDEJ také překlad do rodného jazyka studenta ({native_lang_name}).
+
 TVŮJ ÚKOL:
 1. Analyzuj text studenta v češtině
-2. Identifikuj gramatické a výslovnostní chyby podle úrovně oprav (viz instrukce výše)
-3. Poskytni opravy s vysvětlením v jazyce studenta ({explanation_lang})
+2. Identifikuj gramatické a výslovnostní chyby podle úrovně oprav
+3. Poskytni opravy ve DVOJJAZYČNÉM formátu (jednoduchá čeština + {native_lang_name})
 4. Ohodnoť správnost od 0-100 (0 = hodně chyb, 100 = perfektní)
 5. Odpověz přirozeně jako Honzík a pokračuj v zajímavé konverzaci
 6. Buď pozitivní a povzbuzující!
-7. DŮLEŽITÉ: Používej slovní zásobu odpovídající úrovni studenta - viz informace o úrovni výše
-8. DŮLEŽITÉ: Vždy dodržuj styl konverzace - NEMĚŇ ho během rozhovoru! Styl je nastaven na: {style}
+7. DŮLEŽITÉ: Používej slovní zásobu odpovídající úrovni studenta
+8. DŮLEŽITÉ: Vždy dodržuj styl konverzace - NEMĚŇ ho během rozhovoru!
 
 ODPOVĚZ VE FORMÁTU JSON:
 {{
@@ -146,11 +161,20 @@ ODPOVĚZ VE FORMÁTU JSON:
     {{
       "original": "špatný text",
       "corrected": "správný text",
-      "explanation": "vysvětlení v jazyce studenta ({explanation_lang}) proč je to špatně"
+      "explanation_cs": "Jednoduché vysvětlení česky na úrovni A2 (max 15 slov)",
+      "explanation_native": "Překlad vysvětlení do {native_lang_name}"
     }}
   ],
   "correctness_score": 85,
-  "suggestion": "jeden krátký tip pro studenta v jazyce studenta"
+  "suggestion": "jeden krátký tip pro studenta v {native_lang_name}"
+}}
+
+Příklad formátu opravy:
+{{
+  "original": "já jsem student",
+  "corrected": "jsem student",
+  "explanation_cs": "V češtině nemusíme říkat 'já'. Je to jasné ze slovesa.",
+  "explanation_native": "В чешском не нужно говорить 'já' - это понятно из глагола."
 }}
 
 Pamatuj: Buď Honzík - veselý, přátelský Čech, který miluje svou zemi a rád pomáhá! 🇨🇿"""
@@ -185,7 +209,7 @@ Pamatuj: Buď Honzík - veselý, přátelský Čech, který miluje svou zemi a r
         level: CzechLevel,
         style: ConversationStyle,
         corrections_level: CorrectionsLevel,
-        ui_language: UILanguage,
+        native_language: NativeLanguage,
         conversation_history: list[dict[str, str]] | None = None,
     ) -> dict:
         """
@@ -196,7 +220,7 @@ Pamatuj: Buď Honzík - veselý, přátelský Čech, který miluje svou zemi a r
             level: Уровень чешского языка
             style: Стиль общения (friendly/tutor/casual)
             corrections_level: Уровень исправлений (minimal/balanced/detailed)
-            ui_language: Язык интерфейса (ru/uk)
+            native_language: Родной язык пользователя (ru/uk/pl/sk)
             conversation_history: История разговора (последние 5 сообщений)
 
         Returns:
@@ -217,7 +241,7 @@ Pamatuj: Buď Honzík - veselý, přátelský Čech, který miluje svou zemi a r
             level=level,
             style=style,
             corrections_level=corrections_level,
-            ui_language=ui_language,
+            native_language=native_language,
             user_text_length=len(user_text),
         )
 
@@ -245,7 +269,7 @@ Pamatuj: Buď Honzík - veselý, přátelský Čech, který miluje svou zemi a r
         system_prompt = self._get_base_prompt(
             level=level,
             corrections_level=corrections_level,
-            ui_language=ui_language,
+            native_language=native_language,
             style=style,
         )
 
@@ -364,46 +388,32 @@ Analyzuj text studenta a odpověz ve formátu JSON podle instrukcí výše."""
             )
             raise
 
-    def get_welcome_message(self, ui_language: UILanguage) -> str:
+    def get_welcome_message(self) -> str:
         """
         Получить приветственное сообщение от Хонзика.
 
-        Args:
-            ui_language: Язык интерфейса (ru/uk)
+        Теперь всегда на чешском (Language Immersion).
 
         Returns:
-            str: Приветственное сообщение
+            str: Приветственное сообщение на чешском
         """
-        messages = {
-            "ru": (
-                "Ahoj! 🇨🇿 Я Хонзик - твой веселый чешский друг!\n\n"
-                "Я помогу тебе выучить чешский язык через живое общение. "
-                "Говори со мной по-чешски, и я буду тебя поправлять и поддерживать!\n\n"
-                "Люблю пиво 🍺, кнедлики 🥟, хоккей 🏒 и Прагу ❤️\n\n"
-                "Давай практиковать! Отправь мне голосовое сообщение на чешском! 🎤"
-            ),
-            "uk": (
-                "Ahoj! 🇨🇿 Я Хонзік - твій веселий чеський друг!\n\n"
-                "Я допоможу тобі вивчити чеську мову через живе спілкування. "
-                "Говори зі мною чеською, і я буду тебе виправляти та підтримувати!\n\n"
-                "Люблю пиво 🍺, кнедлики 🥟, хокей 🏒 і Прагу ❤️\n\n"
-                "Давай практикувати! Надішли мені голосове повідомлення чеською! 🎤"
-            ),
-        }
-        return messages[ui_language]
+        return (
+            "Ahoj! 🇨🇿 Jsem Honzík - tvůj veselý český kamarád!\n\n"
+            "Pomohu ti naučit se česky přes živou konverzaci. "
+            "Mluv se mnou česky a já tě budu opravovat a podporovat!\n\n"
+            "Miluji pivo 🍺, knedlíky 🥟, hokej 🏒 a Prahu ❤️\n\n"
+            "Pojďme procvičovat! Pošli mi hlasovou zprávu v češtině! 🎤"
+        )
 
-    def get_language_notice(
-        self, detected_language: str, ui_language: UILanguage
-    ) -> str | None:
+    def get_language_notice(self, detected_language: str) -> str | None:
         """
         Сгенерировать сообщение о распознанном языке.
 
         Если пользователь говорил НЕ на чешском, возвращает сообщение
-        "Я тебя понял, но отвечу на чешском" на языке интерфейса пользователя.
+        на чешском (Language Immersion).
 
         Args:
             detected_language: Определённый язык речи ("cs", "ru", "uk", "en" и т.д.)
-            ui_language: Язык интерфейса пользователя
 
         Returns:
             str | None: Сообщение о языке или None если язык был чешский
@@ -412,31 +422,19 @@ Analyzuj text studenta a odpověz ve formátu JSON podle instrukcí výše."""
         if detected_language == "cs":
             return None
 
-        # Карта языков на названия
-        lang_names = {
-            "ru": {"ru": "русском", "uk": "російською"},
-            "uk": {"ru": "украинском", "uk": "українською"},
-            "en": {"ru": "английском", "uk": "англійською"},
-            "de": {"ru": "немецком", "uk": "німецькою"},
-            "pl": {"ru": "польском", "uk": "польською"},
-            "sk": {"ru": "словацком", "uk": "словацькою"},
+        # Названия языков на чешском
+        lang_names_cs = {
+            "ru": "rusky",
+            "uk": "ukrajinsky",
+            "en": "anglicky",
+            "de": "německy",
+            "pl": "polsky",
+            "sk": "slovensky",
         }
 
-        # Получаем название языка на языке UI пользователя
-        detected_name = lang_names.get(detected_language, {}).get(
-            ui_language, detected_language
+        detected_name = lang_names_cs.get(detected_language, detected_language)
+
+        return (
+            f"🎧 Slyšel jsem, že jsi mluvil {detected_name}. "
+            "Rozuměl jsem ti, ale odpovím česky! 🇨🇿"
         )
-
-        # Сообщения на разных языках UI
-        messages = {
-            "ru": (
-                f"🎧 Я услышал, что ты говорил на {detected_name}. "
-                "Я тебя понял, но отвечу на чешском! 🇨🇿"
-            ),
-            "uk": (
-                f"🎧 Я почув, що ти говорив {detected_name}. "
-                "Я тебе зрозумів, але відповім чеською! 🇨🇿"
-            ),
-        }
-
-        return messages.get(ui_language, messages["ru"])

@@ -1,12 +1,11 @@
 """
 Обработчик голосовых сообщений.
 
-Неделя 2: Добавлена поддержка определения языка и inline кнопки "Текст".
+Language Immersion: Все сообщения бота на чешском.
+Объяснения ошибок на простом чешском + перевод на родной язык.
 """
 
 import base64
-import io
-import urllib.parse
 
 from aiogram import F, Router
 from aiogram.types import (
@@ -15,11 +14,9 @@ from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
-    WebAppInfo,
 )
 import structlog
 
-from bot.config import config
 from bot.localization import get_text
 from bot.services.api_client import APIClient
 
@@ -37,6 +34,8 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
     """
     Обработчик голосовых сообщений.
 
+    Language Immersion: Все сообщения на чешском.
+
     Args:
         message: Сообщение с голосовым
         api_client: API клиент для общения с backend
@@ -46,14 +45,12 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
     # Получаем пользователя
     user = await api_client.get_user(telegram_id)
     if not user:
-        await message.answer(get_text("error_general", "ru"))
+        await message.answer(get_text("error_general"))
         return
-
-    language = user.get("ui_language", "ru")
 
     # Проверяем длительность голосового (максимум 60 секунд)
     if message.voice.duration > 60:
-        await message.answer(get_text("error_voice_too_long", language))
+        await message.answer(get_text("error_voice_too_long"))
         return
 
     # Показываем что Хонзик записывает голосовой ответ
@@ -78,7 +75,7 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
         )
 
         if not response:
-            await message.answer(get_text("error_backend", language))
+            await message.answer(get_text("error_backend"))
             return
 
         # Получаем данные из ответа
@@ -93,11 +90,11 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
         streak = response.get("current_streak", response.get("streak", 0))
         stars_earned = response.get("stars_earned", 0)
 
-        # Неделя 2: Получаем информацию о языке
+        # Получаем информацию о языке
         language_notice = response.get("language_notice")
         detected_language = response.get("detected_language", "cs")
 
-        # Если пользователь говорил не на чешском - показываем уведомление
+        # Если пользователь говорил не на чешском - показываем уведомление (на чешском)
         if language_notice:
             await message.answer(language_notice)
             logger.info(
@@ -119,20 +116,17 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                     audio_bytes_response, filename="honzik.ogg"
                 )
 
-                # Создаем caption с результатами
-                caption = (
-                    f"{get_text('voice_correctness', language, score=correctness_score)}\n"
-                )
-                caption += f"{get_text('voice_streak', language, streak=streak)}"
+                # Создаем caption с результатами (на чешском)
+                caption = f"{get_text('voice_correctness', score=correctness_score)}\n"
+                caption += get_text("voice_streak", streak=streak)
 
                 # Сохраняем текстовый ответ Хонзика для этого пользователя
                 if honzik_text:
                     honzik_text_storage[telegram_id] = honzik_text
 
-                # Неделя 2: Создаем callback кнопку "Текст" для показа текста прямо в Telegram
-                # Это быстрее чем открытие WebApp!
+                # Callback кнопка "Text" для показа текста
                 text_button = InlineKeyboardButton(
-                    text=get_text("btn_show_text", language),
+                    text=get_text("btn_show_text"),
                     callback_data=f"show_text:{telegram_id}"
                 )
                 keyboard = InlineKeyboardMarkup(
@@ -144,36 +138,47 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                     voice=voice_file, caption=caption, reply_markup=keyboard
                 )
 
-        # Показываем исправления если есть
+        # Показываем исправления если есть (новый формат с двуязычными объяснениями)
         mistakes = corrections.get("mistakes", [])
         if mistakes:
-            corrections_text = get_text("corrections_header", language)
+            corrections_text = get_text("corrections_header")
 
             for mistake in mistakes[:3]:  # Показываем только первые 3 ошибки
-                corrections_text += get_text(
-                    "correction_item",
-                    language,
-                    original=mistake.get("original", ""),
-                    corrected=mistake.get("corrected", ""),
-                    explanation=mistake.get("explanation", ""),
-                )
+                original = mistake.get("original", "")
+                corrected = mistake.get("corrected", "")
+
+                # Новый формат с explanation_cs и explanation_native
+                explanation_cs = mistake.get("explanation_cs", "")
+                explanation_native = mistake.get("explanation_native", "")
+
+                # Fallback на старый формат
+                if not explanation_cs and "explanation" in mistake:
+                    explanation_cs = mistake.get("explanation", "")
+
+                corrections_text += f"❌ <i>{original}</i>\n"
+                corrections_text += f"✅ <b>{corrected}</b>\n"
+                if explanation_cs:
+                    corrections_text += f"💡 {explanation_cs}\n"
+                if explanation_native:
+                    corrections_text += f"🌐 {explanation_native}\n"
+                corrections_text += "\n"
 
             await message.answer(corrections_text, parse_mode="HTML")
         else:
-            await message.answer(get_text("no_corrections", language))
+            await message.answer(get_text("no_corrections"))
 
         # Показываем совет если есть
         suggestion = corrections.get("suggestion")
         if suggestion:
             await message.answer(
-                get_text("suggestion", language, suggestion=suggestion),
+                get_text("suggestion", suggestion=suggestion),
                 parse_mode="HTML",
             )
 
         # Если заработали звезды - показываем
         if stars_earned > 0:
             await message.answer(
-                get_text("voice_stars_earned", language, stars=stars_earned)
+                get_text("voice_stars_earned", stars=stars_earned)
             )
 
         logger.info(
@@ -186,20 +191,20 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
 
     except Exception as e:
         logger.error("voice_processing_error", telegram_id=telegram_id, error=str(e))
-        await message.answer(get_text("error_general", language))
+        await message.answer(get_text("error_general"))
 
 
 @router.callback_query(F.data.startswith("show_text:"))
 async def show_honzik_text(callback: CallbackQuery, api_client: APIClient) -> None:
     """
-    Callback handler для кнопки "Текст".
+    Callback handler для кнопки "Text".
 
     Показывает текстовый ответ Хонзика прямо в Telegram без открытия WebApp.
-    Это быстрее и удобнее для пользователя!
+    Language Immersion: Сообщение на чешском.
 
     Args:
         callback: Callback query от кнопки
-        api_client: API клиент для получения языка пользователя
+        api_client: API клиент
     """
     telegram_id = callback.from_user.id
 
@@ -207,13 +212,9 @@ async def show_honzik_text(callback: CallbackQuery, api_client: APIClient) -> No
     honzik_text = honzik_text_storage.get(telegram_id)
 
     if honzik_text:
-        # Получаем язык пользователя для локализации
-        user = await api_client.get_user(telegram_id)
-        language = user.get("ui_language", "ru") if user else "ru"
-
-        # Отправляем текст как reply на голосовое сообщение
+        # Отправляем текст как reply на голосовое сообщение (на чешском)
         await callback.message.reply(
-            get_text("honzik_text_response", language, text=honzik_text),
+            get_text("honzik_text_response", text=honzik_text),
             parse_mode="HTML",
         )
 
@@ -223,8 +224,11 @@ async def show_honzik_text(callback: CallbackQuery, api_client: APIClient) -> No
             text_length=len(honzik_text),
         )
     else:
-        # Текст не найден (возможно истёк)
-        await callback.answer("Текст недоступен. Отправьте новое голосовое сообщение!", show_alert=True)
+        # Текст не найден - сообщение на чешском
+        await callback.answer(
+            "Text není k dispozici. Pošli novou zprávu!",
+            show_alert=True
+        )
 
     # Закрываем callback (убираем loading)
     await callback.answer()

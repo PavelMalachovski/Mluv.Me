@@ -1,5 +1,7 @@
 """
 Обработчик команды /start и онбординга.
+
+Language Immersion: UI на чешском, выбираем только родной язык для объяснений.
 """
 
 from aiogram import F, Router
@@ -7,7 +9,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import CallbackQuery, Message
 import structlog
 
-from bot.keyboards import get_language_keyboard, get_level_keyboard
+from bot.keyboards import get_native_language_keyboard, get_level_keyboard
 from bot.localization import get_text
 from bot.services.api_client import APIClient
 
@@ -23,6 +25,8 @@ async def command_start_handler(message: Message, api_client: APIClient) -> None
     """
     Обработчик команды /start.
 
+    Language Immersion: Приветствие на чешском.
+
     Args:
         message: Сообщение от пользователя
         api_client: API клиент для общения с backend
@@ -33,9 +37,8 @@ async def command_start_handler(message: Message, api_client: APIClient) -> None
     user = await api_client.get_user(telegram_id)
 
     if user:
-        # Пользователь уже зарегистрирован
-        language = user.get("ui_language", "ru")
-        await message.answer(get_text("already_registered", language))
+        # Пользователь уже зарегистрирован (сообщение на чешском)
+        await message.answer(get_text("already_registered"))
         return
 
     # Начинаем онбординг
@@ -44,43 +47,72 @@ async def command_start_handler(message: Message, api_client: APIClient) -> None
         "first_name": message.from_user.first_name or "User",
     }
 
+    # Приветствие на чешском + выбор родного языка
     await message.answer(
-        get_text("welcome", "ru"),
-        reply_markup=get_language_keyboard(),
+        get_text("welcome"),
+        reply_markup=get_native_language_keyboard(),
     )
 
     logger.info("onboarding_started", telegram_id=telegram_id)
 
 
-@router.callback_query(F.data.startswith("lang:"))
-async def language_selected_handler(
+@router.callback_query(F.data.startswith("native:"))
+async def native_language_selected_handler(
     callback: CallbackQuery, api_client: APIClient
 ) -> None:
     """
-    Обработчик выбора языка интерфейса.
+    Обработчик выбора родного языка (для объяснений).
+
+    Language Immersion: UI остается на чешском.
 
     Args:
         callback: Callback query от кнопки
         api_client: API клиент
     """
     telegram_id = callback.from_user.id
-    language = callback.data.split(":")[1]  # ru или uk
+    native_language = callback.data.split(":")[1]  # ru, uk, pl, sk
 
-    # Сохраняем язык в данные онбординга
+    # Сохраняем родной язык в данные онбординга
     if telegram_id not in onboarding_data:
         onboarding_data[telegram_id] = {}
 
-    onboarding_data[telegram_id]["ui_language"] = language
+    onboarding_data[telegram_id]["native_language"] = native_language
 
-    # Обновляем сообщение
+    # Обновляем сообщение - переходим к выбору уровня (на чешском)
     await callback.message.edit_text(
-        get_text("language_selected", language),
-        reply_markup=get_level_keyboard(language),
+        get_text("language_selected"),  # Чешский текст
+        reply_markup=get_level_keyboard(),  # Уровни на чешском
     )
 
     await callback.answer()
 
-    logger.info("language_selected", telegram_id=telegram_id, language=language)
+    logger.info("native_language_selected", telegram_id=telegram_id, native_language=native_language)
+
+
+# Backward compatibility: обработка старого формата lang:
+@router.callback_query(F.data.startswith("lang:"))
+async def language_selected_handler_legacy(
+    callback: CallbackQuery, api_client: APIClient
+) -> None:
+    """
+    Legacy обработчик для обратной совместимости.
+    Перенаправляет на новый native: формат.
+    """
+    telegram_id = callback.from_user.id
+    language = callback.data.split(":")[1]
+
+    # Сохраняем как native_language
+    if telegram_id not in onboarding_data:
+        onboarding_data[telegram_id] = {}
+
+    onboarding_data[telegram_id]["native_language"] = language
+
+    await callback.message.edit_text(
+        get_text("language_selected"),
+        reply_markup=get_level_keyboard(),
+    )
+
+    await callback.answer()
 
 
 @router.callback_query(F.data.startswith("level:"))
@@ -99,14 +131,14 @@ async def level_selected_handler(
 
     # Получаем данные онбординга
     data = onboarding_data.get(telegram_id, {})
-    language = data.get("ui_language", "ru")
+    native_language = data.get("native_language", "ru")
 
     # Создаем пользователя в backend
     user = await api_client.create_user(
         telegram_id=telegram_id,
         username=data.get("username"),
         first_name=data.get("first_name", "User"),
-        ui_language=language,
+        native_language=native_language,
         level=level,
     )
 
@@ -114,23 +146,20 @@ async def level_selected_handler(
         # Удаляем данные онбординга
         onboarding_data.pop(telegram_id, None)
 
-        # Отправляем приветственное сообщение
-        await callback.message.edit_text(get_text("onboarding_complete", language))
-
-        # TODO: В будущем здесь можно отправить приветственное аудио от Хонзика
-        # через OpenAI TTS
+        # Приветственное сообщение на чешском
+        await callback.message.edit_text(get_text("onboarding_complete"))
 
         await callback.answer()
 
         logger.info(
             "user_registered",
             telegram_id=telegram_id,
-            language=language,
+            native_language=native_language,
             level=level,
         )
     else:
-        # Ошибка создания пользователя
-        await callback.message.edit_text(get_text("error_general", language))
+        # Ошибка создания пользователя (на чешском)
+        await callback.message.edit_text(get_text("error_general"))
         await callback.answer()
 
         logger.error("user_registration_failed", telegram_id=telegram_id)

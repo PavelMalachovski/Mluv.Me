@@ -68,7 +68,7 @@ async def create_user(
         "user_created",
         user_id=user.id,
         telegram_id=user.telegram_id,
-        ui_language=user.ui_language,
+        native_language=user.native_language,
         level=user.level
     )
 

@@ -1,17 +1,28 @@
 """
 Česká lokalizace pro Telegram bota.
 
-Všechny texty jsou v češtině pro uživatele, kteří preferují český interface.
+Koncepce: Language Immersion (Ponoření do jazyka)
+- Celé rozhraní je v češtině
+- Student se učí i z rozhraní
+- Vysvětlení chyb jsou na jednoduchém A2 úrovni
 """
 
 TEXTS_CS = {
-    # Uvítání a onboarding
+    # Uvítání a onboarding (NOVÉ - bez výběru jazyka UI)
     "welcome": "Ahoj! Jsem Honzík 🇨🇿\n\n"
     "Pomohu ti naučit se česky přes živou konverzaci!\n\n"
     "🍺 Miluji pivo, knedlíky a hokej\n"
     "🗣️ Budu opravovat tvoje chyby a učit tě nová slova\n"
     "💬 Prostě se mnou mluv česky!\n\n"
-    "Pojďme začít! Vyber jazyk rozhraní:",
+    "Pojďme začít! Vyber svůj rodný jazyk (pro vysvětlení):",
+
+    # Výběr rodného jazyka (NOVÉ)
+    "choose_native_language": "Jaký je tvůj rodný jazyk?\n\n"
+    "Vysvětlení chyb budu psát v jednoduché češtině + překlad do tvého jazyka.",
+    "native_russian": "🇷🇺 Ruština",
+    "native_ukrainian": "🇺🇦 Ukrajinština",
+    "native_polish": "🇵🇱 Polština",
+    "native_slovak": "🇸🇰 Slovenština",
 
     "language_selected": "Výborně! Teď vyber svoji úroveň češtiny:",
 
@@ -21,23 +32,19 @@ TEXTS_CS = {
     "💡 Tip: Mluv hodně, neboj se chybovat - tak se učíš rychleji!",
 
     # Úrovně
-    "level_beginner": "Začátečník",
-    "level_intermediate": "Středně pokročilý",
-    "level_advanced": "Pokročilý",
-    "level_native": "Rodilý mluvčí",
-
-    # Jazyky
-    "lang_russian": "🇷🇺 Rusky",
-    "lang_ukrainian": "🇺🇦 Ukrajinsky",
-    "lang_czech": "🇨🇿 Česky",
+    "level_beginner": "🌱 Začátečník",
+    "level_intermediate": "📚 Středně pokročilý",
+    "level_advanced": "🎓 Pokročilý",
+    "level_native": "🏆 Rodilý mluvčí",
 
     # Příkaz /help
-    "help_header": "📚 Dostupné příkazy:\n\n",
+    "help_header": "📚 <b>Dostupné příkazy:</b>\n\n",
     "help_commands": "⚙️ <b>Nastavení:</b>\n"
     "/level - Změnit úroveň češtiny\n"
     "/voice_speed - Rychlost hlasových odpovědí\n"
     "/corrections - Úroveň oprav\n"
-    "/style - Styl komunikace Honzíka\n\n"
+    "/style - Styl komunikace Honzíka\n"
+    "/native - Rodný jazyk (pro vysvětlení)\n\n"
     "📊 <b>Pokrok:</b>\n"
     "/stats - Statistiky učení\n"
     "/saved - Uložená slova\n\n"
@@ -46,7 +53,7 @@ TEXTS_CS = {
     "/help - Zobrazit tuto nápovědu",
 
     "help_tips": "\n\n💡 <b>Tipy od Honzíka:</b>\n\n"
-    "🎤 Používej hlasové zprávy místo textu\n"
+    "🎤 Používej hlasové zprávy nebo psaný text\n"
     "🤔 Neboj se chybovat - tak se učíš rychleji!\n"
     "🗣️ Mluv hodně a podrobně\n"
     "❤️ Ptej se na cokoliv - znám všechno o Česku!\n"
@@ -75,7 +82,7 @@ TEXTS_CS = {
     "reset_confirm": "Opravdu chceš začít novou konverzaci?\n\n"
     "Předchozí zprávy budou smazány z kontextu, "
     "ale historie a statistiky zůstanou.",
-    "reset_yes": "✅ Ano, začít novou konverzaci",
+    "reset_yes": "✅ Ano, začít novou",
     "reset_no": "❌ Ne, pokračovat",
     "reset_done": "Hotovo! Začínáme novou konverzaci 🎉\n\n"
     "O čem si dnes promluvíme?",
@@ -84,6 +91,12 @@ TEXTS_CS = {
     "settings_level": "Vyber svoji úroveň češtiny:\n\n"
     "Aktuální: <b>{current}</b>",
     "settings_level_changed": "Úroveň změněna na: <b>{level}</b> ✅",
+
+    # Nastavení - rodný jazyk (NOVÉ)
+    "settings_native": "Vyber svůj rodný jazyk:\n\n"
+    "Aktuální: <b>{current}</b>\n\n"
+    "Vysvětlení chyb ti budu překládat do tohoto jazyka.",
+    "settings_native_changed": "Rodný jazyk změněn na: <b>{language}</b> ✅",
 
     # Nastavení - rychlost hlasu
     "settings_voice_speed": "Vyber rychlost hlasu Honzíka:\n\n"
@@ -99,7 +112,7 @@ TEXTS_CS = {
     "Aktuální: <b>{current}</b>\n\n"
     "• <b>Minimální</b> - pouze kritické chyby\n"
     "• <b>Vyvážený</b> - vyvážený (doporučeno)\n"
-    "• <b>Detailní</b> - všechny chyby s podrobným vysvětlením",
+    "• <b>Detailní</b> - všechny chyby s vysvětlením",
     "corrections_minimal": "📝 Minimální",
     "corrections_balanced": "⚖️ Vyvážený",
     "corrections_detailed": "📚 Detailní",
@@ -110,24 +123,27 @@ TEXTS_CS = {
     "Aktuální: <b>{current}</b>\n\n"
     "• <b>Přátelský</b> - přátelský, neformální\n"
     "• <b>Učitel</b> - jako učitel, více oprav\n"
-    "• <b>Kamarád</b> - jako kamarád, minimum oprav",
+    "• <b>Kamarád</b> - jako kamarád v hospodě",
     "style_friendly": "😊 Přátelský",
     "style_tutor": "👨‍🏫 Učitel",
     "style_casual": "🤝 Kamarád",
     "settings_style_changed": "Styl komunikace změněn na: <b>{style}</b> ✅",
 
-    # Zpracování hlasových
+    # Zpracování hlasových a textových zpráv
     "voice_processing": "Honzík přemýšlí... 🤔",
     "voice_correctness": "✅ Správnost: {score}%",
     "voice_streak": "🔥 Série: {streak}",
     "voice_stars_earned": "⭐ Hvězd získáno: +{stars}",
 
-    # Opravy
+    # Opravy (NOVÝ formát s dvojjazyčným vysvětlením)
     "corrections_header": "\n📝 <b>Opravy:</b>\n\n",
     "correction_item": "❌ <i>{original}</i>\n✅ <b>{corrected}</b>\n"
+    "💡 {explanation_cs}\n"
+    "🌐 {explanation_native}\n",
+    "correction_item_simple": "❌ <i>{original}</i>\n✅ <b>{corrected}</b>\n"
     "💡 {explanation}\n",
     "no_corrections": "🎉 Výborně! Žádné chyby!",
-    "suggestion": "\n💭 <b>Tip:</b> {suggestion}",
+    "suggestion": "\n💬 <b>Tip:</b> {suggestion}",
 
     # Chyby
     "error_general": "Jejda! Něco se pokazilo 😅\n\n"
@@ -135,9 +151,10 @@ TEXTS_CS = {
     "error_voice_too_long": "To je příliš dlouhá zpráva! 😅\n\n"
     "Zkus něco kratšího (do 60 sekund).",
     "error_no_audio": "Tohle nemůžu zpracovat.\n\n"
-    "Pošli mi hlasovou zprávu v češtině!",
+    "Pošli mi hlasovou zprávu nebo napiš text v češtině!",
     "error_backend": "Honzík je dočasně nedostupný 🔧\n\n"
     "Už na tom pracujeme, zkus později!",
+    "error_text_too_short": "Napiš alespoň pár slov v češtině! 📝",
 
     # Transkripce
     "show_transcript": "📄 Zobrazit přepis",
@@ -160,7 +177,7 @@ TEXTS_CS = {
     "translate_usage": "Použití: <code>/translate &lt;slovo&gt;</code>\n\n"
     "Příklad: <code>/translate ahoj</code>",
     "translate_result": "📖 <b>Překlad:</b>\n\n"
-    "🇨🇿 <b>{word}</b> → 🇷🇺 <b>{translation}</b>",
+    "🇨🇿 <b>{word}</b> → <b>{translation}</b>",
     "translate_error": "Nepodařilo se přeložit slovo 😅\n\n"
     "Zkus znovu nebo použij tlačítko 'Přejít na WEBUI'.",
     "phonetics": "Fonetika",
@@ -169,7 +186,25 @@ TEXTS_CS = {
     "already_registered": "Už jsi zaregistrovaný!\n\n"
     "Použij /help pro zobrazení co umím.",
 
-    # Detekce jazyka (Týden 2)
+    # Detekce jazyka
     "language_detected_notice": "🎧 Slyšel jsem, že jsi mluvil {lang_name}. "
     "Rozuměl jsem ti, ale odpovím česky! 🇨🇿",
+
+    # Názvy jazyků v češtině (pro detekci)
+    "lang_names": {
+        "ru": "rusky",
+        "uk": "ukrajinsky",
+        "en": "anglicky",
+        "de": "německy",
+        "pl": "polsky",
+        "sk": "slovensky",
+    },
+
+    # Názvy rodných jazyků
+    "native_lang_names": {
+        "ru": "Ruština",
+        "uk": "Ukrajinština",
+        "pl": "Polština",
+        "sk": "Slovenština",
+    },
 }
