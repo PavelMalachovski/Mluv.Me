@@ -43,10 +43,10 @@ def upgrade() -> None:
         )
     )
 
-    # Копируем данные из ui_language в native_language
+    # Копируем данные из ui_language в native_language (через text для конвертации enum)
     op.execute("""
         UPDATE users
-        SET native_language = ui_language
+        SET native_language = ui_language::text::native_language_enum
         WHERE ui_language IS NOT NULL
     """)
 
