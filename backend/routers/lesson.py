@@ -415,3 +415,277 @@ async def process_voice_message(
             detail=detail,
         )
 
+
+@router.post("/process/text", response_model=LessonProcessResponse)
+async def process_text_message(
+    user_id: int = Form(..., description="Telegram ID пользователя"),
+    text: str = Form(..., description="Текст сообщения на чешском"),
+    include_audio: bool = Form(True, description="Включить голосовой ответ Хонзика"),
+    db: AsyncSession = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+    openai_client: OpenAIClient = Depends(get_openai_client),
+    honzik: HonzikPersonality = Depends(get_honzik_personality),
+    correction_engine: CorrectionEngine = Depends(get_correction_engine),
+    gamification: GamificationService = Depends(get_gamification_service),
+):
+    """
+    Обработать текстовое сообщение пользователя.
+
+    В отличие от голосового:
+    1. НЕТ этапа STT (текст уже есть)
+    2. Опционально TTS (можно отключить для экономии)
+    3. Быстрее на 1-2 секунды
+
+    Args:
+        user_id: Telegram ID пользователя
+        text: Текст сообщения на чешском
+        include_audio: Генерировать ли голосовой ответ
+        db: Сессия БД
+        settings: Настройки приложения
+        openai_client: OpenAI клиент
+        honzik: Личность Хонзика
+        correction_engine: Движок исправлений
+        gamification: Сервис геймификации
+
+    Returns:
+        LessonProcessResponse: Полный ответ с исправлениями и опционально аудио
+
+    Raises:
+        HTTPException: При ошибках валидации или обработки
+    """
+    log = logger.bind(user_id=user_id, mode="text")
+    log.info("processing_text_message", text_length=len(text))
+
+    # 1. Валидация пользователя
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_telegram_id(user_id)
+
+    if not user:
+        log.error("user_not_found")
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # 2. Валидация текста
+    text = text.strip()
+    if len(text) < 2:
+        log.error("text_too_short", text_length=len(text))
+        raise HTTPException(status_code=400, detail="Text too short (min 2 chars)")
+
+    if len(text) > 2000:
+        log.error("text_too_long", text_length=len(text))
+        raise HTTPException(status_code=400, detail="Text too long (max 2000 chars)")
+
+    log.info("text_validated", text_length=len(text))
+
+    try:
+        # 3. Получаем историю разговора (последние 10 сообщений)
+        message_repo = MessageRepository(db)
+        recent_messages = await message_repo.get_user_messages(
+            user_id=user.id, limit=10
+        )
+
+        # Форматируем историю для Хонзика
+        conversation_history = []
+        for msg in reversed(recent_messages):  # От старых к новым
+            conversation_history.append(
+                {"role": msg.role, "text": msg.text or msg.transcript_raw or ""}
+            )
+
+        # 4. Проверка кеша для типичных фраз
+        cached_response = await cache_service.get_cached_common_phrase(
+            text,
+            user.level,
+            user.settings.conversation_style,
+        )
+
+        if cached_response:
+            log.info(
+                "using_cached_common_phrase",
+                phrase=text[:30],
+                level=user.level,
+            )
+            honzik_response = cached_response
+        else:
+            # 5. Анализ Хонзика (без STT - быстрее!)
+            log.info("generating_honzik_response")
+
+            honzik_response = await honzik.generate_response(
+                user_text=text,
+                level=user.level,
+                style=user.settings.conversation_style,
+                corrections_level=user.settings.corrections_level,
+                native_language=user.native_language,
+                conversation_history=conversation_history,
+            )
+
+        log.info(
+            "honzik_response_generated",
+            correctness_score=honzik_response["correctness_score"],
+        )
+
+        # 6. Обработка исправлений
+        processed = correction_engine.process_honzik_response(
+            response=honzik_response,
+            original_text=text,
+            native_language=user.native_language,
+        )
+
+        # ========================================
+        # ПАРАЛЛЕЛЬНАЯ ОБРАБОТКА
+        # TTS (опционально) + DB + Gamification
+        # ========================================
+
+        log.info("starting_parallel_processing")
+
+        # Определяем все задачи
+        async def generate_tts():
+            """Генерация TTS (если включено)"""
+            if not include_audio:
+                return None
+
+            voice_speed = openai_client.get_voice_speed_mapping(
+                user.settings.voice_speed
+            )
+            return await openai_client.generate_speech(
+                text=processed["honzik_response"],
+                voice=settings.tts_voice,
+                speed=voice_speed,
+            )
+
+        async def save_messages():
+            """Сохранение сообщений в БД"""
+            # Сообщение пользователя
+            await message_repo.create(
+                user_id=user.id,
+                role="user",
+                text=processed["corrected_text"],
+                transcript_raw=text,  # Для текстовых - оригинальный текст
+                transcript_normalized=processed["corrected_text"],
+                audio_file_path=None,
+                correctness_score=processed["correctness_score"],
+                words_total=processed["words_total"],
+                words_correct=processed["words_correct"],
+            )
+            # Сообщение Хонзика
+            await message_repo.create(
+                user_id=user.id,
+                role="assistant",
+                text=processed["honzik_response"],
+                audio_file_path=None,
+            )
+
+        async def update_stats_and_gamification():
+            """Обновление статистики и геймификации"""
+            stats_repo = StatsRepository(db)
+            user_date = gamification.get_user_date(user.settings.timezone)
+
+            # Обновляем daily_stats
+            daily_stats = await stats_repo.get_or_create_daily(user.id, user_date)
+            await stats_repo.update_daily(
+                user_id=user.id,
+                date_value=user_date,
+                messages_count=daily_stats.messages_count + 1,
+                words_said=daily_stats.words_said + processed["words_total"],
+                correct_percent=processed["correctness_score"],
+            )
+
+            # Геймификация
+            return await gamification.process_message_gamification(
+                db=db,
+                user_id=user.id,
+                correctness_score=processed["correctness_score"],
+                timezone_str=user.settings.timezone,
+            )
+
+        # Запускаем TTS в фоне
+        tts_task = asyncio.create_task(generate_tts())
+
+        # DB операции последовательно
+        await save_messages()
+        gamification_result = await update_stats_and_gamification()
+
+        # Кешируем если типичная фраза
+        if cache_service.is_common_phrase(text):
+            await cache_service.cache_common_phrase(
+                text,
+                user.level,
+                user.settings.conversation_style,
+                honzik_response,
+            )
+
+        # Ждём завершения TTS
+        audio_response = await tts_task
+
+        await db.commit()
+
+        # Кодируем аудио в base64 (если есть)
+        audio_base64 = ""
+        if audio_response:
+            audio_base64 = base64.b64encode(audio_response).decode('utf-8')
+            log.info("tts_generated", audio_size=len(audio_response))
+        else:
+            log.info("tts_skipped")
+
+        log.info(
+            "text_processing_completed",
+            stars_earned=gamification_result["stars_earned"],
+            streak=gamification_result["current_streak"],
+        )
+
+        # Формируем ответ
+        return LessonProcessResponse(
+            transcript=text,  # Для текстовых - это и есть "транскрипт"
+            honzik_response_text=processed["honzik_response"],
+            honzik_response_transcript=processed["honzik_response"],
+            honzik_response_audio=audio_base64,  # Пустая строка если include_audio=False
+            corrections=CorrectionSchema(
+                corrected_text=processed["corrected_text"],
+                mistakes=[
+                    MistakeSchema(**mistake)
+                    for mistake in honzik_response["mistakes"]
+                ],
+                correctness_score=processed["correctness_score"],
+                suggestion=honzik_response["suggestion"],
+            ),
+            formatted_mistakes=processed["formatted_mistakes"],
+            formatted_suggestion=processed["formatted_suggestion"],
+            stars_earned=gamification_result["stars_earned"],
+            total_stars=gamification_result["total_stars"],
+            current_streak=gamification_result["current_streak"],
+            max_streak=gamification_result["max_streak"],
+            daily_challenge=DailyChallengeSchema(
+                **gamification_result["daily_challenge"]
+            ),
+            words_total=processed["words_total"],
+            words_correct=processed["words_correct"],
+            detected_language="cs",  # Для текста - предполагаем чешский
+            language_notice=None,
+        )
+
+    except ValueError as e:
+        log.error("validation_error", error=str(e), exc_info=True)
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+
+    except HTTPException:
+        await db.rollback()
+        raise
+
+    except Exception as e:
+        log.error(
+            "text_processing_error",
+            error=str(e),
+            error_type=type(e).__name__,
+            exc_info=True
+        )
+        await db.rollback()
+
+        detail = f"Failed to process text message: {str(e)}"
+        if settings.is_development:
+            import traceback
+            detail += f"\n\nTraceback:\n{traceback.format_exc()}"
+
+        raise HTTPException(
+            status_code=500,
+            detail=detail,
+        )
+

@@ -151,6 +151,34 @@ class APIClient {
     return response.data;
   }
 
+  /**
+   * Process text message with Honzík.
+   *
+   * Unlike voice processing:
+   * 1. No STT step (text is already provided)
+   * 2. Optional TTS (can be disabled to save costs)
+   * 3. Faster by 1-2 seconds
+   *
+   * @param telegramId - Telegram user ID
+   * @param text - Czech text message
+   * @param includeAudio - Whether to generate voice response (default: true)
+   * @returns Lesson response with corrections and optionally audio
+   */
+  async processText(telegramId: number, text: string, includeAudio: boolean = true) {
+    const formData = new FormData();
+    formData.append('user_id', telegramId.toString());
+    formData.append('text', text);
+    formData.append('include_audio', includeAudio.toString());
+
+    const response = await this.client.post('/api/v1/lessons/process/text', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 30000, // 30 seconds for text processing (faster than voice)
+    });
+    return response.data;
+  }
+
   async getRecentLessons(userId: number, limit: number = 10) {
     const response = await this.client.get(`/api/v1/lessons`, {
       params: { user_id: userId, limit },

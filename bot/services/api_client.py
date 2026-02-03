@@ -195,6 +195,56 @@ class APIClient:
             logger.error("process_voice_error", user_id=user_id, error=str(e))
             return None
 
+    async def process_text(
+        self,
+        user_id: int,
+        text: str,
+        include_audio: bool = True,
+    ) -> Optional[dict[str, Any]]:
+        """
+        Обработать текстовое сообщение.
+
+        В отличие от голосового:
+        1. НЕТ этапа STT (текст уже есть)
+        2. Опционально TTS (можно отключить для экономии)
+        3. Быстрее на 1-2 секунды
+
+        Args:
+            user_id: Telegram ID пользователя
+            text: Текст сообщения на чешском
+            include_audio: Генерировать ли голосовой ответ
+
+        Returns:
+            Результат обработки (honzik_response, corrections, audio_response, score)
+        """
+        session = await self._get_session()
+        try:
+            # Создаем multipart form data
+            data = FormData()
+            data.add_field("user_id", str(user_id))
+            data.add_field("text", text)
+            data.add_field("include_audio", str(include_audio).lower())
+
+            async with session.post(
+                f"{self.base_url}/api/v1/lessons/process/text",
+                data=data,
+                timeout=30,
+            ) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    error_body = await resp.text()
+                    logger.error(
+                        "process_text_failed",
+                        user_id=user_id,
+                        status=resp.status,
+                        body=error_body[:200],
+                    )
+                    return None
+        except Exception as e:
+            logger.error("process_text_error", user_id=user_id, error=str(e))
+            return None
+
     async def get_stats(self, telegram_id: int) -> Optional[dict[str, Any]]:
         """
         Получить статистику пользователя.

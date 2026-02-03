@@ -4,7 +4,7 @@
 
 from aiogram import Router
 
-from . import commands, start, voice
+from . import commands, start, text, voice
 
 
 def get_main_router() -> Router:
@@ -16,10 +16,15 @@ def get_main_router() -> Router:
     """
     main_router = Router()
 
-    # Порядок важен! start должен быть первым
+    # Порядок важен!
+    # 1. start - регистрация и онбординг
+    # 2. commands - команды /help, /stats и т.д.
+    # 3. voice - голосовые сообщения
+    # 4. text - текстовые сообщения (должен быть последним, т.к. ловит все текстовые)
     main_router.include_router(start.router)
     main_router.include_router(commands.router)
     main_router.include_router(voice.router)
+    main_router.include_router(text.router)
 
     return main_router
 

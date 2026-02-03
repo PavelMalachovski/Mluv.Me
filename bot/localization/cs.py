@@ -27,9 +27,11 @@ TEXTS_CS = {
     "language_selected": "Výborně! Teď vyber svoji úroveň češtiny:",
 
     "onboarding_complete": "Super! Jsme připraveni začít 🎉\n\n"
-    "Pošli mi hlasovou zprávu v češtině a "
-    "já ti pomohu zlepšit výslovnost a gramatiku!\n\n"
-    "💡 Tip: Mluv hodně, neboj se chybovat - tak se učíš rychleji!",
+    "Pošli mi hlasovou zprávu nebo napiš text v češtině "
+    "a já ti pomohu zlepšit gramatiku!\n\n"
+    "🎤 Hlasové zprávy - opravím výslovnost\n"
+    "✍️ Textové zprávy - opravím psaní\n\n"
+    "💡 Tip: Neboj se chybovat - tak se učíš rychleji!",
 
     # Úrovně
     "level_beginner": "🌱 Začátečník",

@@ -1,19 +1,19 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import dynamic from "next/dynamic"
 import { useMutation } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
 import { apiClient } from "@/lib/api-client"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { ClickableText } from "@/components/ui/ClickableText"
 import { TranslationPopup } from "@/components/ui/TranslationPopup"
+import { CzechTextInput } from "@/components/ui/CzechTextInput"
 import { TopicSelector, TOPICS } from "@/components/features/TopicSelector"
 import { LessonResponse, WordTranslation } from "@/lib/types"
-import { FileText, Languages, Mic, Keyboard, X, Loader2 } from "lucide-react"
+import { FileText, Languages, X, Loader2 } from "lucide-react"
 
 // Dynamic import to avoid SSR issues with react-media-recorder (uses Web Workers)
 const VoiceRecorder = dynamic(
@@ -57,12 +57,19 @@ export default function PracticePage() {
 
   const sendMessage = useMutation({
     mutationFn: (text: string) =>
-      apiClient.post<LessonResponse>("/api/v1/web/lessons/text", {
-        text,
-        user_id: user?.id,
-      }),
+      apiClient.processText(user!.telegram_id, text, false), // No audio for web - faster
     onSuccess: (data, text) => {
       console.log("Response from backend:", data)
+
+      // Create lesson response from text response
+      const lessonResponse: LessonResponse = {
+        honzik_text: data.honzik_response_text || "",
+        honzik_transcript: data.honzik_response_transcript || data.honzik_response_text || "",
+        user_mistakes: data.corrections?.mistakes?.map((m: { original: string }) => m.original) || [],
+        suggestions: data.corrections?.suggestion ? [data.corrections.suggestion] : [],
+        stars_earned: data.stars_earned || 0,
+        correctness_score: data.corrections?.correctness_score || 0,
+      }
 
       // Add user message
       setConversation((prev) => [
@@ -70,7 +77,7 @@ export default function PracticePage() {
         {
           role: "user",
           text: text,
-          response: data,
+          response: lessonResponse,
         },
       ])
 
@@ -79,8 +86,8 @@ export default function PracticePage() {
         ...prev,
         {
           role: "assistant",
-          text: data.honzik_text,
-          response: data,
+          text: lessonResponse.honzik_text,
+          response: lessonResponse,
           showTranscript: false,
           translateMode: false,
         },
@@ -390,55 +397,28 @@ export default function PracticePage() {
           {/* Input Mode Toggle - only show when not selecting topic */}
           {!showTopicSelector && (
             <>
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <Button
-                  type="button"
-                  variant={inputMode === "text" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setInputMode("text")}
-                  className="flex items-center gap-2"
-                >
-                  <Keyboard className="h-4 w-4" />
-                  Text
-                </Button>
-                <Button
-                  type="button"
-                  variant={inputMode === "voice" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setInputMode("voice")}
-                  className="flex items-center gap-2"
-                >
-                  <Mic className="h-4 w-4" />
-                  Voice
-                </Button>
-              </div>
-
-              {/* Input Area */}
+              {/* Input Area with Czech Keyboard */}
               {inputMode === "text" ? (
-                <form onSubmit={handleSubmit} className="space-y-3">
-                  <Textarea
-                    value={userText}
-                    onChange={(e) => setUserText(e.target.value)}
-                    placeholder="Napište svou zprávu v češtině... (Type your message in Czech...)"
-                    rows={4}
-                    className="resize-none"
-                    disabled={sendMessage.isPending}
-                  />
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
-                      Tip: Don&apos;t worry about mistakes - that&apos;s how you learn! 💪
-                    </p>
-                    <Button
-                      type="submit"
-                      disabled={!userText.trim() || sendMessage.isPending}
-                      size="lg"
-                    >
-                      {sendMessage.isPending ? "Sending..." : "Send Message"}
-                    </Button>
-                  </div>
-                </form>
+                <CzechTextInput
+                  onSubmit={(text) => sendMessage.mutate(text)}
+                  isLoading={sendMessage.isPending}
+                  mode={inputMode}
+                  onModeChange={setInputMode}
+                  placeholder="Napiš zprávu v češtině..."
+                  maxLength={2000}
+                />
               ) : (
                 <div className="space-y-3">
+                  {/* Mode Toggle */}
+                  <CzechTextInput
+                    onSubmit={(text) => sendMessage.mutate(text)}
+                    onVoiceStart={() => {/* VoiceRecorder handles this */}}
+                    isLoading={processVoice.isPending}
+                    mode={inputMode}
+                    onModeChange={setInputMode}
+                  />
+
+                  {/* Voice Recorder */}
                   <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-4">
                     <VoiceRecorder
                       onRecordComplete={(blob) => processVoice.mutate(blob)}
@@ -446,9 +426,6 @@ export default function PracticePage() {
                       maxDurationSeconds={60}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    🎤 Tap to record your Czech message (max 60 seconds)
-                  </p>
                 </div>
               )}
             </>
