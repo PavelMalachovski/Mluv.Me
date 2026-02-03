@@ -33,7 +33,7 @@ export function DashboardStats({ telegramId }: DashboardStatsProps) {
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {stats?.streak || 0}
           </div>
-          <div className="text-xs text-gray-500">Day Streak</div>
+          <div className="text-xs text-gray-500">Denní série</div>
         </div>
       </div>
 
@@ -46,7 +46,7 @@ export function DashboardStats({ telegramId }: DashboardStatsProps) {
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {stats?.stars || 0}
           </div>
-          <div className="text-xs text-gray-500">Total Stars</div>
+          <div className="text-xs text-gray-500">Celkem hvězd</div>
         </div>
       </div>
     </div>

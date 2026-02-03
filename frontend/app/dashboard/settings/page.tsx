@@ -62,16 +62,16 @@ export default function SettingsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-settings", user?.id] })
       toast({
-        title: "Settings updated",
-        description: "Your preferences have been saved successfully.",
+        title: "Nastavení uloženo",
+        description: "Tvé preference byly úspěšně uloženy.",
         variant: "success",
       })
     },
     onError: (error: any) => {
       console.error("Settings update error:", error)
       toast({
-        title: "Error",
-        description: error?.response?.data?.detail || "Failed to update settings. Please try again.",
+        title: "Chyba",
+        description: error?.response?.data?.detail || "Nepodařilo se uložit nastavení. Zkus to znovu.",
         variant: "error",
       })
     },
@@ -84,16 +84,16 @@ export default function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["user-stats"] })
       updateUser(updatedUser)
       toast({
-        title: "Profile updated",
-        description: "Your profile has been updated.",
+        title: "Profil upraven",
+        description: "Tvůj profil byl upraven.",
         variant: "success",
       })
     },
     onError: (error: any) => {
       console.error("Profile update error:", error)
       toast({
-        title: "Error",
-        description: error?.response?.data?.detail || "Failed to update profile. Please try again.",
+        title: "Chyba",
+        description: error?.response?.data?.detail || "Nepodařilo se upravit profil. Zkus to znovu.",
         variant: "error",
       })
     },
@@ -128,7 +128,7 @@ export default function SettingsPage() {
       <div className="min-h-screen cream-bg landscape-bg pb-20">
         {/* Purple Header with Mascot */}
         <div className="illustrated-header relative pb-16">
-          <h1 className="illustrated-header-title">Settings</h1>
+          <h1 className="illustrated-header-title">Nastavení</h1>
           <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
             <Image
               src="/images/mascot/honzik-waving.png"
@@ -144,16 +144,16 @@ export default function SettingsPage() {
           <Tabs defaultValue="learning" className="space-y-6">
             <TabsList className="w-full grid grid-cols-4 bg-white dark:bg-gray-800 rounded-xl p-1 shadow-sm">
               <TabsTrigger value="learning" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
-                Learning
+                Učení
               </TabsTrigger>
               <TabsTrigger value="voice" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
-                Voice
+                Hlas
               </TabsTrigger>
               <TabsTrigger value="appearance" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
-                Appearance
+                Vzhled
               </TabsTrigger>
               <TabsTrigger value="account" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
-                Account
+                Účet
               </TabsTrigger>
             </TabsList>
 
@@ -166,8 +166,8 @@ export default function SettingsPage() {
                     <span className="text-xl">💬</span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">Czech Level</h3>
-                    <p className="text-sm text-muted-foreground">Your current proficiency</p>
+                    <h3 className="font-semibold text-foreground">Úroveň češtiny</h3>
+                    <p className="text-sm text-muted-foreground">Tvá aktuální úroveň</p>
                   </div>
                 </div>
 
@@ -209,16 +209,16 @@ export default function SettingsPage() {
                     <SettingsIcon className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">Correction Level</h3>
-                    <p className="text-sm text-muted-foreground">How much feedback you want</p>
+                    <h3 className="font-semibold text-foreground">Úroveň oprav</h3>
+                    <p className="text-sm text-muted-foreground">Kolik zpětné vazby chceš</p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   {[
-                    { value: "minimal", label: "Minimální", description: "Only critical mistakes" },
-                    { value: "balanced", label: "Vyvážený", description: "Important mistakes with explanations" },
-                    { value: "detailed", label: "Detailní", description: "All mistakes corrected" },
+                    { value: "minimal", label: "Minimální", description: "Pouze kritické chyby" },
+                    { value: "balanced", label: "Vyvážený", description: "Důležité chyby s vysvětlením" },
+                    { value: "detailed", label: "Detailní", description: "Všechny chyby opravené" },
                   ].map((level) => (
                     <button
                       key={level.value}
@@ -250,16 +250,16 @@ export default function SettingsPage() {
                     <MessageSquare className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">Conversation Style</h3>
-                    <p className="text-sm text-muted-foreground">Honzík&apos;s personality</p>
+                    <h3 className="font-semibold text-foreground">Styl konverzace</h3>
+                    <p className="text-sm text-muted-foreground">Osobnost Honzíka</p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   {[
-                    { value: "friendly", label: "Přátelský", emoji: "😊", description: "Casual and supportive" },
-                    { value: "tutor", label: "Učitel", emoji: "👨‍🏫", description: "More corrections and tips" },
-                    { value: "casual", label: "Kamarád", emoji: "🍺", description: "Like chatting with a friend" },
+                    { value: "friendly", label: "Přátelský", emoji: "😊", description: "Přátelský a podporující" },
+                    { value: "tutor", label: "Učitel", emoji: "👨‍🏫", description: "Více oprav a tipů" },
+                    { value: "casual", label: "Kamarád", emoji: "🍺", description: "Jako s kamarádem" },
                   ].map((style) => (
                     <button
                       key={style.value}
@@ -296,17 +296,17 @@ export default function SettingsPage() {
                     <Volume2 className="h-5 w-5 text-orange-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">Voice Speed</h3>
-                    <p className="text-sm text-muted-foreground">Honzík&apos;s speaking speed</p>
+                    <h3 className="font-semibold text-foreground">Rychlost hlasu</h3>
+                    <p className="text-sm text-muted-foreground">Rychlost řeči Honzíka</p>
                   </div>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   {[
-                    { value: "very_slow", label: "Velmi pomalu", sublabel: "Very Slow" },
-                    { value: "slow", label: "Pomalu", sublabel: "Slow" },
-                    { value: "normal", label: "Normálně", sublabel: "Normal" },
-                    { value: "native", label: "Rodilý", sublabel: "Native Speed" },
+                    { value: "very_slow", label: "Velmi pomalu", sublabel: "0.7×" },
+                    { value: "slow", label: "Pomalu", sublabel: "0.85×" },
+                    { value: "normal", label: "Normálně", sublabel: "1×" },
+                    { value: "native", label: "Rodilý", sublabel: "1.2×" },
                   ].map((speed) => (
                     <button
                       key={speed.value}
@@ -337,8 +337,8 @@ export default function SettingsPage() {
                     <Bell className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">Notifications</h3>
-                    <p className="text-sm text-muted-foreground">Daily practice reminders</p>
+                    <h3 className="font-semibold text-foreground">Upozornění</h3>
+                    <p className="text-sm text-muted-foreground">Denní připomínky procvičování</p>
                   </div>
                 </div>
 
@@ -357,10 +357,10 @@ export default function SettingsPage() {
                   <div className="flex items-center justify-between">
                     <div className="text-left">
                       <div className="font-medium text-foreground">
-                        {settings?.notifications_enabled ? "Enabled" : "Disabled"}
+                        {settings?.notifications_enabled ? "Zapnuto" : "Vypnuto"}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Get daily reminders to practice Czech
+                        Dostávej denní připomínky procvičovat češtinu
                       </div>
                     </div>
                     {settings?.notifications_enabled && (
@@ -383,8 +383,8 @@ export default function SettingsPage() {
                     )}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">Тема / Theme</h3>
-                    <p className="text-sm text-muted-foreground">Choose your preferred color scheme</p>
+                    <h3 className="font-semibold text-foreground">Téma</h3>
+                    <p className="text-sm text-muted-foreground">Vyber si preferované barevné schéma</p>
                   </div>
                 </div>
 
@@ -400,8 +400,8 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-3">
                         <Sun className="h-5 w-5 text-yellow-600" />
                         <div>
-                          <div className="font-medium text-foreground">Светлая</div>
-                          <div className="text-sm text-muted-foreground">Bright theme</div>
+                          <div className="font-medium text-foreground">Světlé</div>
+                          <div className="text-sm text-muted-foreground">Světlé téma</div>
                         </div>
                       </div>
                       {theme === "light" && <Check className="h-5 w-5 text-primary" />}
@@ -419,8 +419,8 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-3">
                         <Moon className="h-5 w-5 text-indigo-600" />
                         <div>
-                          <div className="font-medium text-foreground">Тёмная</div>
-                          <div className="text-sm text-muted-foreground">Dark theme</div>
+                          <div className="font-medium text-foreground">Tmavé</div>
+                          <div className="text-sm text-muted-foreground">Tmavé téma</div>
                         </div>
                       </div>
                       {theme === "dark" && <Check className="h-5 w-5 text-primary" />}
@@ -435,8 +435,8 @@ export default function SettingsPage() {
                     <Globe className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">Язык интерфейса / Interface Language</h3>
-                    <p className="text-sm text-muted-foreground">Choose your interface language</p>
+                    <h3 className="font-semibold text-foreground">Rodný jazyk</h3>
+                    <p className="text-sm text-muted-foreground">Pro vysvětlení chyb</p>
                   </div>
                 </div>
 
@@ -453,8 +453,8 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">🇷🇺</span>
                         <div>
-                          <div className="font-medium text-foreground">Русский</div>
-                          <div className="text-sm text-muted-foreground">Russian</div>
+                          <div className="font-medium text-foreground">Ruština</div>
+                          <div className="text-sm text-muted-foreground">Русский</div>
                         </div>
                       </div>
                       {user?.ui_language === "ru" && <Check className="h-5 w-5 text-primary" />}
@@ -473,8 +473,8 @@ export default function SettingsPage() {
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">🇺🇦</span>
                         <div>
-                          <div className="font-medium text-foreground">Українська</div>
-                          <div className="text-sm text-muted-foreground">Ukrainian</div>
+                          <div className="font-medium text-foreground">Ukrajinština</div>
+                          <div className="text-sm text-muted-foreground">Українська</div>
                         </div>
                       </div>
                       {user?.ui_language === "uk" && <Check className="h-5 w-5 text-primary" />}
@@ -492,15 +492,15 @@ export default function SettingsPage() {
                     <User className="h-5 w-5 text-gray-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">Account Information</h3>
-                    <p className="text-sm text-muted-foreground">Your profile details</p>
+                    <h3 className="font-semibold text-foreground">Informace o účtu</h3>
+                    <p className="text-sm text-muted-foreground">Tvoje údaje profilu</p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
                     <label className="mb-1 block text-sm font-medium text-muted-foreground">
-                      Name
+                      Jméno
                     </label>
                     <input
                       type="text"
@@ -512,7 +512,7 @@ export default function SettingsPage() {
 
                   <div>
                     <label className="mb-1 block text-sm font-medium text-muted-foreground">
-                      Username
+                      Uživatelské jméno
                     </label>
                     <input
                       type="text"
@@ -536,11 +536,11 @@ export default function SettingsPage() {
 
                   <div>
                     <label className="mb-1 block text-sm font-medium text-muted-foreground">
-                      Interface Language
+                      Rodný jazyk
                     </label>
                     <input
                       type="text"
-                      value={user.ui_language === "ru" ? "Русский" : "Українська"}
+                      value={user.ui_language === "ru" ? "Ruština" : "Ukrajinština"}
                       disabled
                       className="w-full rounded-xl border border-border bg-cream-alt px-4 py-2 text-sm text-foreground"
                     />
@@ -554,8 +554,8 @@ export default function SettingsPage() {
                     <LogOut className="h-5 w-5 text-red-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">Danger Zone</h3>
-                    <p className="text-sm text-muted-foreground">Irreversible actions</p>
+                    <h3 className="font-semibold text-foreground">Nebezpečná zóna</h3>
+                    <p className="text-sm text-muted-foreground">Nevratné akce</p>
                   </div>
                 </div>
 
@@ -564,7 +564,7 @@ export default function SettingsPage() {
                   className="w-full rounded-xl border-2 border-red-300 dark:border-red-700 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 py-3 font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   <LogOut className="h-4 w-4" />
-                  Log Out
+                  Odhlásit se
                 </button>
               </div>
             </TabsContent>

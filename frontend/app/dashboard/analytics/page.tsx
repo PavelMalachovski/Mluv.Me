@@ -15,7 +15,7 @@ import { ArrowLeft, TrendingUp, Target, Flame, Star, MessageCircle, BookOpen } f
 // Helper to format date as day name
 function formatDayName(dateStr: string): string {
     const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', { weekday: 'short' })
+    return date.toLocaleDateString('cs-CZ', { weekday: 'short' })
 }
 
 // Helper to transform API data for charts
@@ -59,7 +59,7 @@ export default function AnalyticsPage() {
 
     return (
         <div className="min-h-screen cream-bg landscape-bg pb-24">
-            <IllustratedHeader title="Analytics" />
+            <IllustratedHeader title="Statistiky" />
 
             <div className="mx-auto max-w-4xl px-4 pt-6">
                 {/* Back button */}
@@ -69,7 +69,7 @@ export default function AnalyticsPage() {
                     className="mb-4"
                 >
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back
+                    Zpět
                 </Button>
 
                 {isLoading ? (
@@ -82,23 +82,23 @@ export default function AnalyticsPage() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <StatCard
                                 icon={<Flame className="h-5 w-5 text-orange-500" />}
-                                label="Current Streak"
+                                label="Aktuální série"
                                 value={stats?.streak || 0}
-                                suffix=" days"
+                                suffix=" dní"
                             />
                             <StatCard
                                 icon={<Star className="h-5 w-5 text-yellow-500" />}
-                                label="Total Stars"
+                                label="Celkem hvězd"
                                 value={stats?.stars || 0}
                             />
                             <StatCard
                                 icon={<MessageCircle className="h-5 w-5 text-blue-500" />}
-                                label="Messages"
+                                label="Zpráv"
                                 value={stats?.messages_count || 0}
                             />
                             <StatCard
                                 icon={<Target className="h-5 w-5 text-green-500" />}
-                                label="Accuracy"
+                                label="Přesnost"
                                 value={stats?.correct_percent || 0}
                                 suffix="%"
                             />
@@ -108,7 +108,7 @@ export default function AnalyticsPage() {
                         <div className="illustrated-card p-4">
                             <h3 className="font-semibold mb-4 flex items-center gap-2">
                                 <TrendingUp className="h-5 w-5 text-primary" />
-                                Weekly Activity
+                                Týdenní aktivita
                             </h3>
                             <div className="h-64">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -127,7 +127,7 @@ export default function AnalyticsPage() {
                                             dataKey="messages"
                                             fill="#8B5CF6"
                                             radius={[4, 4, 0, 0]}
-                                            name="Messages"
+                                            name="Zpráv"
                                         />
                                     </BarChart>
                                 </ResponsiveContainer>
@@ -138,7 +138,7 @@ export default function AnalyticsPage() {
                         <div className="illustrated-card p-4">
                             <h3 className="font-semibold mb-4 flex items-center gap-2">
                                 <Target className="h-5 w-5 text-green-500" />
-                                Accuracy Trend
+                                Trend přesnosti
                             </h3>
                             <div className="h-48">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -159,7 +159,7 @@ export default function AnalyticsPage() {
                                             stroke="#10B981"
                                             fillOpacity={1}
                                             fill="url(#colorAccuracy)"
-                                            name="Accuracy %"
+                                            name="Přesnost %"
                                         />
                                     </AreaChart>
                                 </ResponsiveContainer>
@@ -171,7 +171,7 @@ export default function AnalyticsPage() {
                             <div className="illustrated-card p-4">
                                 <h3 className="font-semibold mb-4 flex items-center gap-2">
                                     <BookOpen className="h-5 w-5 text-blue-500" />
-                                    Vocabulary Mastery
+                                    Ovládání slovíček
                                 </h3>
                                 <div className="flex flex-col md:flex-row items-center gap-6">
                                     <div className="h-48 w-48">
@@ -179,11 +179,11 @@ export default function AnalyticsPage() {
                                             <PieChart>
                                                 <Pie
                                                     data={[
-                                                        { name: "New", value: reviewStats.mastery_breakdown?.new || 0, color: "#9CA3AF" },
-                                                        { name: "Learning", value: reviewStats.mastery_breakdown?.learning || 0, color: "#F59E0B" },
-                                                        { name: "Familiar", value: reviewStats.mastery_breakdown?.familiar || 0, color: "#3B82F6" },
-                                                        { name: "Known", value: reviewStats.mastery_breakdown?.known || 0, color: "#10B981" },
-                                                        { name: "Mastered", value: reviewStats.mastery_breakdown?.mastered || 0, color: "#8B5CF6" },
+                                                        { name: "Nové", value: reviewStats.mastery_breakdown?.new || 0, color: "#9CA3AF" },
+                                                        { name: "Učím se", value: reviewStats.mastery_breakdown?.learning || 0, color: "#F59E0B" },
+                                                        { name: "Známé", value: reviewStats.mastery_breakdown?.familiar || 0, color: "#3B82F6" },
+                                                        { name: "Osvojené", value: reviewStats.mastery_breakdown?.known || 0, color: "#10B981" },
+                                                        { name: "Mistr", value: reviewStats.mastery_breakdown?.mastered || 0, color: "#8B5CF6" },
                                                     ]}
                                                     cx="50%"
                                                     cy="50%"
@@ -193,11 +193,11 @@ export default function AnalyticsPage() {
                                                     dataKey="value"
                                                 >
                                                     {[
-                                                        { name: "New", color: "#9CA3AF" },
-                                                        { name: "Learning", color: "#F59E0B" },
-                                                        { name: "Familiar", color: "#3B82F6" },
-                                                        { name: "Known", color: "#10B981" },
-                                                        { name: "Mastered", color: "#8B5CF6" },
+                                                        { name: "Nové", color: "#9CA3AF" },
+                                                        { name: "Učím se", color: "#F59E0B" },
+                                                        { name: "Známé", color: "#3B82F6" },
+                                                        { name: "Osvojené", color: "#10B981" },
+                                                        { name: "Mistr", color: "#8B5CF6" },
                                                     ].map((entry, index) => (
                                                         <Cell key={`cell-${index}`} fill={entry.color} />
                                                     ))}
@@ -210,11 +210,11 @@ export default function AnalyticsPage() {
                                     {/* Legend */}
                                     <div className="flex-1 grid grid-cols-2 gap-2">
                                         {[
-                                            { name: "New", color: "#9CA3AF", value: reviewStats.mastery_breakdown?.new || 0 },
-                                            { name: "Learning", color: "#F59E0B", value: reviewStats.mastery_breakdown?.learning || 0 },
-                                            { name: "Familiar", color: "#3B82F6", value: reviewStats.mastery_breakdown?.familiar || 0 },
-                                            { name: "Known", color: "#10B981", value: reviewStats.mastery_breakdown?.known || 0 },
-                                            { name: "Mastered", color: "#8B5CF6", value: reviewStats.mastery_breakdown?.mastered || 0 },
+                                            { name: "Nové", color: "#9CA3AF", value: reviewStats.mastery_breakdown?.new || 0 },
+                                            { name: "Učím se", color: "#F59E0B", value: reviewStats.mastery_breakdown?.learning || 0 },
+                                            { name: "Známé", color: "#3B82F6", value: reviewStats.mastery_breakdown?.familiar || 0 },
+                                            { name: "Osvojené", color: "#10B981", value: reviewStats.mastery_breakdown?.known || 0 },
+                                            { name: "Mistr", color: "#8B5CF6", value: reviewStats.mastery_breakdown?.mastered || 0 },
                                         ].map((item) => (
                                             <div key={item.name} className="flex items-center gap-2">
                                                 <div
@@ -234,37 +234,37 @@ export default function AnalyticsPage() {
                                     <span className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                                         {reviewStats.total_words || 0}
                                     </span>
-                                    <span className="text-sm text-gray-500 ml-2">total words</span>
+                                    <span className="text-sm text-gray-500 ml-2">celkem slov</span>
                                 </div>
                             </div>
                         )}
 
                         {/* Study Recommendations */}
                         <div className="illustrated-card p-4">
-                            <h3 className="font-semibold mb-3">📈 Recommendations</h3>
+                            <h3 className="font-semibold mb-3">📈 Doporučení</h3>
                             <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                                 {stats?.streak === 0 && (
                                     <li className="flex items-start gap-2">
                                         <span className="text-orange-500">🔥</span>
-                                        Start a streak! Practice daily to build consistency.
+                                        Začni sérii! Procvičuj každý den.
                                     </li>
                                 )}
                                 {(reviewStats?.due_today || 0) > 0 && (
                                     <li className="flex items-start gap-2">
                                         <span className="text-blue-500">📚</span>
-                                        You have {reviewStats?.due_today} words due for review today.
+                                        Dnes máš {reviewStats?.due_today} slov k opakování.
                                     </li>
                                 )}
                                 {(stats?.correct_percent || 0) < 70 && (
                                     <li className="flex items-start gap-2">
                                         <span className="text-green-500">🎯</span>
-                                        Focus on accuracy - try shorter, more careful messages.
+                                        Zaměř se na přesnost - zkus kratší, pečlivější zprávy.
                                     </li>
                                 )}
                                 {(stats?.messages_count || 0) < 50 && (
                                     <li className="flex items-start gap-2">
                                         <span className="text-purple-500">💬</span>
-                                        Practice more! The more you write, the faster you learn.
+                                        Procvičuj více! Čím víc píšeš, tím rychleji se učíš.
                                     </li>
                                 )}
                             </ul>

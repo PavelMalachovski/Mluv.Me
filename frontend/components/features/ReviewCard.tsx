@@ -75,7 +75,7 @@ export function ReviewCard({ word, onAnswer, isSubmitting }: ReviewCardProps) {
 
                         {/* Hint */}
                         <p className="absolute bottom-6 text-sm opacity-60">
-                            Tap to reveal translation
+                            Klepni pro zobrazení překladu
                         </p>
                     </div>
                 )}
@@ -113,7 +113,7 @@ export function ReviewCard({ word, onAnswer, isSubmitting }: ReviewCardProps) {
 
                         {/* Review count */}
                         <p className="absolute bottom-6 text-xs text-gray-400">
-                            Reviewed {word.sr_review_count} times
+                            Opakováno {word.sr_review_count}×
                         </p>
                     </div>
                 )}
@@ -129,7 +129,7 @@ export function ReviewCard({ word, onAnswer, isSubmitting }: ReviewCardProps) {
                         className="flex flex-col py-4 h-auto border-red-300 hover:bg-red-50 hover:border-red-400 dark:border-red-800 dark:hover:bg-red-900/20"
                     >
                         <span className="text-2xl mb-1">😔</span>
-                        <span className="text-xs font-medium text-red-600 dark:text-red-400">Again</span>
+                        <span className="text-xs font-medium text-red-600 dark:text-red-400">Znovu</span>
                     </Button>
 
                     <Button
@@ -139,7 +139,7 @@ export function ReviewCard({ word, onAnswer, isSubmitting }: ReviewCardProps) {
                         className="flex flex-col py-4 h-auto border-orange-300 hover:bg-orange-50 hover:border-orange-400 dark:border-orange-800 dark:hover:bg-orange-900/20"
                     >
                         <span className="text-2xl mb-1">🤔</span>
-                        <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Hard</span>
+                        <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Těžké</span>
                     </Button>
 
                     <Button
@@ -149,7 +149,7 @@ export function ReviewCard({ word, onAnswer, isSubmitting }: ReviewCardProps) {
                         className="flex flex-col py-4 h-auto border-blue-300 hover:bg-blue-50 hover:border-blue-400 dark:border-blue-800 dark:hover:bg-blue-900/20"
                     >
                         <span className="text-2xl mb-1">😊</span>
-                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Good</span>
+                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Dobře</span>
                     </Button>
 
                     <Button
@@ -159,7 +159,7 @@ export function ReviewCard({ word, onAnswer, isSubmitting }: ReviewCardProps) {
                         className="flex flex-col py-4 h-auto border-green-300 hover:bg-green-50 hover:border-green-400 dark:border-green-800 dark:hover:bg-green-900/20"
                     >
                         <span className="text-2xl mb-1">🌟</span>
-                        <span className="text-xs font-medium text-green-600 dark:text-green-400">Easy</span>
+                        <span className="text-xs font-medium text-green-600 dark:text-green-400">Lehké</span>
                     </Button>
                 </div>
             )}

@@ -13,27 +13,27 @@ interface NavigationProps {
 const navigationItems = [
   {
     href: "/dashboard",
-    label: "Profile",
+    label: "Profil",
     icon: User,
   },
   {
     href: "/dashboard/review",
-    label: "Review",
+    label: "Opakovat",
     icon: Repeat,
   },
   {
     href: "/dashboard/analytics",
-    label: "Stats",
+    label: "Statistiky",
     icon: BarChart2,
   },
   {
     href: "/dashboard/saved",
-    label: "Saved",
+    label: "Uložené",
     icon: BookmarkCheck,
   },
   {
     href: "/dashboard/settings",
-    label: "Settings",
+    label: "Nastavení",
     icon: Settings,
   },
 ]

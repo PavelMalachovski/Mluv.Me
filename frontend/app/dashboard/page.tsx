@@ -37,7 +37,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen cream-bg landscape-bg pb-24">
-      <IllustratedHeader title="Dashboard" />
+      <IllustratedHeader title="Přehled" />
 
       <div className="mx-auto max-w-2xl px-4 pt-6">
         {/* Welcome Message - renders immediately with user name */}
@@ -46,7 +46,7 @@ export default function DashboardPage() {
             Ahoj, {user.first_name}! 👋
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Ready to practice Czech today?
+            Jsi připraven/a procvičovat češtinu?
           </p>
         </div>
 

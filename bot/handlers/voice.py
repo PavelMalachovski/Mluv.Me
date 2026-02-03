@@ -6,6 +6,7 @@ Language Immersion: Все сообщения бота на чешском.
 """
 
 import base64
+import urllib.parse
 
 from aiogram import F, Router
 from aiogram.types import (
@@ -14,18 +15,16 @@ from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
+    WebAppInfo,
 )
 import structlog
 
+from bot.config import config
 from bot.localization import get_text
 from bot.services.api_client import APIClient
 
 router = Router()
 logger = structlog.get_logger()
-
-# Временное хранилище текстовых ответов Хонзика (telegram_id -> text)
-# Используется для показа текста через callback кнопку
-honzik_text_storage: dict[int, str] = {}
 
 
 
@@ -120,17 +119,30 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                 caption = f"{get_text('voice_correctness', score=correctness_score)}\n"
                 caption += get_text("voice_streak", streak=streak)
 
-                # Сохраняем текстовый ответ Хонзика для этого пользователя
-                if honzik_text:
-                    honzik_text_storage[telegram_id] = honzik_text
+                # Создаём кнопки для голосового сообщения
+                buttons = []
 
-                # Callback кнопка "Text" для показа текста
-                text_button = InlineKeyboardButton(
-                    text=get_text("btn_show_text"),
-                    callback_data=f"show_text:{telegram_id}"
+                # WebApp кнопка "Text" для открытия страницы с текстом ответа
+                if honzik_text:
+                    # Кодируем текст для URL
+                    encoded_text = urllib.parse.quote(honzik_text, safe="")
+                    webui_url = f"{config.webui_url}/response?text={encoded_text}"
+
+                    text_button = InlineKeyboardButton(
+                        text=get_text("btn_show_text"),
+                        web_app=WebAppInfo(url=webui_url)
+                    )
+                    buttons.append(text_button)
+
+                # Кнопка "Restart" для сброса диалога
+                restart_button = InlineKeyboardButton(
+                    text=get_text("btn_restart"),
+                    callback_data="restart_dialog"
                 )
+                buttons.append(restart_button)
+
                 keyboard = InlineKeyboardMarkup(
-                    inline_keyboard=[[text_button]]
+                    inline_keyboard=[buttons]
                 )
 
                 # Отправляем голосовое сообщение с кнопкой
@@ -194,12 +206,12 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
         await message.answer(get_text("error_general"))
 
 
-@router.callback_query(F.data.startswith("show_text:"))
-async def show_honzik_text(callback: CallbackQuery, api_client: APIClient) -> None:
+@router.callback_query(F.data == "restart_dialog")
+async def restart_dialog(callback: CallbackQuery, api_client: APIClient) -> None:
     """
-    Callback handler для кнопки "Text".
+    Callback handler для кнопки "Restart".
 
-    Показывает текстовый ответ Хонзика прямо в Telegram без открытия WebApp.
+    Сбрасывает историю диалога и начинает новый разговор.
     Language Immersion: Сообщение на чешском.
 
     Args:
@@ -208,25 +220,18 @@ async def show_honzik_text(callback: CallbackQuery, api_client: APIClient) -> No
     """
     telegram_id = callback.from_user.id
 
-    # Получаем сохранённый текст
-    honzik_text = honzik_text_storage.get(telegram_id)
+    # Сбрасываем контекст разговора через API
+    success = await api_client.reset_conversation(telegram_id)
 
-    if honzik_text:
-        # Отправляем текст как reply на голосовое сообщение (на чешском)
+    if success:
         await callback.message.reply(
-            get_text("honzik_text_response", text=honzik_text),
+            get_text("restart_done"),
             parse_mode="HTML",
         )
-
-        logger.info(
-            "text_shown_via_callback",
-            telegram_id=telegram_id,
-            text_length=len(honzik_text),
-        )
+        logger.info("dialog_restarted_via_button", telegram_id=telegram_id)
     else:
-        # Текст не найден - сообщение на чешском
         await callback.answer(
-            "Text není k dispozici. Pošli novou zprávu!",
+            get_text("error_backend"),
             show_alert=True
         )
 

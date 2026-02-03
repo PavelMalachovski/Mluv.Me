@@ -86,7 +86,7 @@ function ResponsePageContent() {
     if (!text) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-                <p className="text-gray-600 dark:text-gray-400">Загрузка...</p>
+                <p className="text-gray-600 dark:text-gray-400">Načítání...</p>
             </div>
         )
     }
@@ -97,7 +97,7 @@ function ResponsePageContent() {
                 {/* Header */}
                 <div className="mb-6 flex items-center justify-between">
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        Ответ Хонзика
+                        Odpověď Honzíka
                     </h1>
                     <Button
                         variant={translateMode ? "default" : "outline"}
@@ -109,23 +109,23 @@ function ResponsePageContent() {
                             }`}
                     >
                         <Languages className="h-4 w-4" />
-                        {translateMode ? "Выключить перевод" : "Translate by word"}
+                        {translateMode ? "Vypnout překlad" : "Přeložit po slovech"}
                     </Button>
                 </div>
 
                 {/* Text Content */}
                 <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
                     {translateMode ? (
-                        <>
-                            <ClickableText
-                                text={text}
-                                onWordClick={handleWordClick}
-                                className="text-lg leading-relaxed text-gray-800 dark:text-gray-200"
-                            />
-                            <div className="mt-4 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-3 text-sm text-yellow-800 dark:text-yellow-200">
-                                💡 Нажмите на любое слово, чтобы увидеть перевод
-                            </div>
-                        </>
+                    <>
+                        <ClickableText
+                            text={text}
+                            onWordClick={handleWordClick}
+                            className="text-lg leading-relaxed text-gray-800 dark:text-gray-200"
+                        />
+                        <div className="mt-4 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-3 text-sm text-yellow-800 dark:text-yellow-200">
+                            💡 Klepni na jakékoliv slovo pro zobrazení překladu
+                        </div>
+                    </>
                     ) : (
                         <p className="text-lg leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
                             {text}
@@ -136,12 +136,12 @@ function ResponsePageContent() {
                 {/* Tips */}
                 <div className="mt-6 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
                     <h3 className="mb-3 font-semibold text-gray-900 dark:text-gray-100">
-                        Как использовать:
+                        Jak používat:
                     </h3>
                     <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <li>✅ Кликай на слова для перевода</li>
-                        <li>✅ Сохраняй новые слова в словарь</li>
-                        <li>✅ Изучай чешский язык эффективно</li>
+                        <li>✅ Klikej na slova pro překlad</li>
+                        <li>✅ Ukládej nová slova do slovníku</li>
+                        <li>✅ Uč se česky efektivně</li>
                     </ul>
                 </div>
             </div>
@@ -166,7 +166,7 @@ export default function ResponsePage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-                <p className="text-gray-600 dark:text-gray-400">Загрузка...</p>
+                <p className="text-gray-600 dark:text-gray-400">Načítání...</p>
             </div>
         }>
             <ResponsePageContent />

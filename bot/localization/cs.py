@@ -164,8 +164,12 @@ TEXTS_CS = {
 
     # Textová odpověď Honzíka
     "btn_show_text": "📝 Text",
-    "btn_open_webui": "🌐 Přejít na WEBUI",
+    "btn_menu": "📱 Menu",
+    "btn_restart": "🔄 Restart",
     "honzik_text_response": "📝 <b>Text odpovědi Honzíka:</b>\n\n{text}",
+    "restart_done": "🔄 <b>Dialog restartován!</b>\n\n"
+    "Začínáme novou konverzaci.\n"
+    "O čem si dnes promluvíme? 💬",
 
     # Ukládání slov
     "save_word": "💾 Uložit slovo",
@@ -181,7 +185,7 @@ TEXTS_CS = {
     "translate_result": "📖 <b>Překlad:</b>\n\n"
     "🇨🇿 <b>{word}</b> → <b>{translation}</b>",
     "translate_error": "Nepodařilo se přeložit slovo 😅\n\n"
-    "Zkus znovu nebo použij tlačítko 'Přejít na WEBUI'.",
+    "Zkus znovu nebo použij tlačítko 'Menu'.",
     "phonetics": "Fonetika",
 
     # Ostatní

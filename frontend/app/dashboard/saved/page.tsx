@@ -113,7 +113,7 @@ export default function SavedPage() {
   return (
     <div className="min-h-screen cream-bg landscape-bg pb-20">
       {/* Purple Header */}
-      <IllustratedHeader title="Saved Words" />
+      <IllustratedHeader title="Uložená slova" />
 
       <div className="mx-auto max-w-2xl px-4 pt-6">
         {/* Search Bar */}
@@ -121,7 +121,7 @@ export default function SavedPage() {
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Search saved words..."
+            placeholder="Hledat uložená slova..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="illustrated-search"
@@ -160,12 +160,11 @@ export default function SavedPage() {
 
                     <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
                       <span>
-                        Reviewed {word.times_reviewed} time
-                        {word.times_reviewed !== 1 ? "s" : ""}
+                        Opakováno {word.times_reviewed}×
                       </span>
                       <span>•</span>
                       <span>
-                        Added {new Date(word.created_at).toLocaleDateString()}
+                        Přidáno {new Date(word.created_at).toLocaleDateString('cs-CZ')}
                       </span>
                     </div>
                   </div>
@@ -198,9 +197,9 @@ export default function SavedPage() {
           </div>
         ) : (
           <IllustratedEmptyState
-            title="No saved words yet"
-            description="Start learning and save new Czech words during your conversations with Honzík"
-            buttonText="Start Practicing"
+            title="Zatím žádná uložená slova"
+            description="Začni se učit a ukládej nová česká slova během konverzací s Honzíkem"
+            buttonText="Začít procvičovat"
             buttonHref="/dashboard/practice"
           />
         )}

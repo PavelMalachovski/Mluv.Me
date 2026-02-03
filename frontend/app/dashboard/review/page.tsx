@@ -97,7 +97,7 @@ export default function ReviewPage() {
 
     return (
         <div className="min-h-screen cream-bg landscape-bg pb-20">
-            <IllustratedHeader title="Review Words" />
+            <IllustratedHeader title="Opakování slov" />
 
             <div className="mx-auto max-w-2xl px-4 pt-6">
                 {/* Back button */}
@@ -107,7 +107,7 @@ export default function ReviewPage() {
                     className="mb-4"
                 >
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back
+                    Zpět
                 </Button>
 
                 {isLoading ? (
@@ -119,29 +119,29 @@ export default function ReviewPage() {
                     <div className="illustrated-card p-8 text-center">
                         <div className="text-6xl mb-4">🎉</div>
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                            Session Complete!
+                            Relace dokončena!
                         </h2>
                         <p className="text-gray-600 dark:text-gray-400 mb-6">
-                            You reviewed {totalReviewed} words with {accuracy}% accuracy
+                            Zopakoval/a jsi {totalReviewed} slov s {accuracy}% přesností
                         </p>
 
                         {/* Stats breakdown */}
                         <div className="grid grid-cols-4 gap-3 mb-6">
                             <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
                                 <div className="text-2xl font-bold text-red-600">{sessionStats.again}</div>
-                                <div className="text-xs text-red-600">Again</div>
+                                <div className="text-xs text-red-600">Znovu</div>
                             </div>
                             <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20">
                                 <div className="text-2xl font-bold text-orange-600">{sessionStats.hard}</div>
-                                <div className="text-xs text-orange-600">Hard</div>
+                                <div className="text-xs text-orange-600">Těžké</div>
                             </div>
                             <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
                                 <div className="text-2xl font-bold text-blue-600">{sessionStats.good}</div>
-                                <div className="text-xs text-blue-600">Good</div>
+                                <div className="text-xs text-blue-600">Dobře</div>
                             </div>
                             <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
                                 <div className="text-2xl font-bold text-green-600">{sessionStats.easy}</div>
-                                <div className="text-xs text-green-600">Easy</div>
+                                <div className="text-xs text-green-600">Lehké</div>
                             </div>
                         </div>
 
@@ -150,17 +150,17 @@ export default function ReviewPage() {
                             <div className="flex items-center justify-center gap-2 mb-6 text-yellow-500">
                                 <Trophy className="h-6 w-6" />
                                 <span className="text-lg font-medium">
-                                    +{accuracy >= 90 ? 5 : accuracy >= 75 ? 3 : accuracy >= 50 ? 2 : 1} stars earned!
+                                    +{accuracy >= 90 ? 5 : accuracy >= 75 ? 3 : accuracy >= 50 ? 2 : 1} hvězd získáno!
                                 </span>
                             </div>
                         )}
 
                         <div className="flex gap-3 justify-center">
                             <Button variant="outline" onClick={() => router.push("/dashboard/saved")}>
-                                View All Words
+                                Zobrazit všechna slova
                             </Button>
                             <Button onClick={handleRestart}>
-                                Review More
+                                Opakovat více
                             </Button>
                         </div>
                     </div>
@@ -171,7 +171,7 @@ export default function ReviewPage() {
                         <div className="mb-6">
                             <div className="flex justify-between items-center mb-2">
                                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                                    {currentIndex + 1} of {reviewData.words.length}
+                                    {currentIndex + 1} z {reviewData.words.length}
                                 </span>
                                 <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
                                     <Clock className="h-4 w-4" />
@@ -196,9 +196,9 @@ export default function ReviewPage() {
                 ) : (
                     /* Empty state */
                     <IllustratedEmptyState
-                        title="No words to review"
-                        description="Great job! You're all caught up. Save more words during practice to review them later."
-                        buttonText="Start Practicing"
+                        title="Žádná slova k opakování"
+                        description="Skvělé! Máš vše zopakováno. Ulož více slov během procvičování pro pozdější opakování."
+                        buttonText="Začít procvičovat"
                         buttonHref="/dashboard/practice"
                     />
                 )}
@@ -208,19 +208,19 @@ export default function ReviewPage() {
                     <div className="mt-8 illustrated-card p-4">
                         <h3 className="font-semibold mb-3 flex items-center gap-2">
                             <BookOpen className="h-5 w-5 text-primary" />
-                            Your Progress
+                            Tvůj pokrok
                         </h3>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
-                                <span className="text-gray-500">Total words:</span>
+                                <span className="text-gray-500">Celkem slov:</span>
                                 <span className="float-right font-medium">{stats.total_words}</span>
                             </div>
                             <div>
-                                <span className="text-gray-500">Due today:</span>
+                                <span className="text-gray-500">Dnes k opakování:</span>
                                 <span className="float-right font-medium text-orange-500">{stats.due_today}</span>
                             </div>
                             <div className="col-span-2">
-                                <div className="text-gray-500 mb-2">Mastery levels:</div>
+                                <div className="text-gray-500 mb-2">Úrovně znalosti:</div>
                                 <div className="flex gap-1">
                                     {Object.entries(stats.mastery_breakdown).map(([level, count]) => (
                                         <div
@@ -240,11 +240,11 @@ export default function ReviewPage() {
                                     ))}
                                 </div>
                                 <div className="flex text-[10px] text-gray-400 mt-1">
-                                    <div className="flex-1 text-center">New</div>
-                                    <div className="flex-1 text-center">Learning</div>
-                                    <div className="flex-1 text-center">Familiar</div>
-                                    <div className="flex-1 text-center">Known</div>
-                                    <div className="flex-1 text-center">Master</div>
+                                    <div className="flex-1 text-center">Nové</div>
+                                    <div className="flex-1 text-center">Učím se</div>
+                                    <div className="flex-1 text-center">Známé</div>
+                                    <div className="flex-1 text-center">Osvojené</div>
+                                    <div className="flex-1 text-center">Mistr</div>
                                 </div>
                             </div>
                         </div>

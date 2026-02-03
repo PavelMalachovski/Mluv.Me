@@ -37,7 +37,7 @@ export function DashboardProgress({ telegramId }: DashboardProgressProps) {
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-primary" />
-          Today&apos;s Progress
+          Dnešní pokrok
         </h3>
         <span className="text-sm text-gray-500">{Math.round(progress)}%</span>
       </div>
@@ -57,21 +57,21 @@ export function DashboardProgress({ telegramId }: DashboardProgressProps) {
             <MessageCircle className="h-4 w-4 text-blue-500" />
             {stats?.messages_count || 0}
           </div>
-          <div className="text-xs text-gray-500">Messages</div>
+          <div className="text-xs text-gray-500">Zpráv</div>
         </div>
         <div>
           <div className="flex items-center justify-center gap-1 text-lg font-semibold text-gray-800 dark:text-gray-100">
             <BookOpen className="h-4 w-4 text-green-500" />
             {reviewStats?.due_today || 0}
           </div>
-          <div className="text-xs text-gray-500">To Review</div>
+          <div className="text-xs text-gray-500">K opakování</div>
         </div>
         <div>
           <div className="flex items-center justify-center gap-1 text-lg font-semibold text-gray-800 dark:text-gray-100">
             <Trophy className="h-4 w-4 text-yellow-500" />
             {stats?.correct_percent || 0}%
           </div>
-          <div className="text-xs text-gray-500">Accuracy</div>
+          <div className="text-xs text-gray-500">Přesnost</div>
         </div>
       </div>
     </div>
