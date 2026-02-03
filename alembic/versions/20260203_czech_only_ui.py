@@ -4,7 +4,7 @@
 UI на чешском, объяснения ошибок - на родном языке пользователя.
 
 Revision ID: 20260203_czech_only_ui
-Revises: 20251209_spaced_repetition
+Revises: 20251209_gamification
 Create Date: 2026-02-03
 """
 from typing import Sequence, Union
@@ -15,7 +15,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '20260203_czech_only_ui'
-down_revision: Union[str, None] = '20251209_spaced_repetition'
+down_revision: Union[str, None] = '20251209_gamification'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
