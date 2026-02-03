@@ -17,6 +17,18 @@ from backend.schemas.lesson import (
     LessonProcessResponse,
     VoiceSettingsSchema,
 )
+from backend.schemas.gamification import (
+    ChallengeResponse,
+    AllChallengesResponse,
+    ClaimRewardRequest,
+    ClaimRewardResponse,
+    AchievementResponse,
+    AchievementProgressResponse,
+    NewlyUnlockedAchievement,
+    LeaderboardEntry,
+    LeaderboardResponse,
+    MyRankResponse,
+)
 
 __all__ = [
     "UserCreate",
@@ -30,6 +42,17 @@ __all__ = [
     "LessonProcessRequest",
     "LessonProcessResponse",
     "VoiceSettingsSchema",
+    # Gamification
+    "ChallengeResponse",
+    "AllChallengesResponse",
+    "ClaimRewardRequest",
+    "ClaimRewardResponse",
+    "AchievementResponse",
+    "AchievementProgressResponse",
+    "NewlyUnlockedAchievement",
+    "LeaderboardEntry",
+    "LeaderboardResponse",
+    "MyRankResponse",
 ]
 
 

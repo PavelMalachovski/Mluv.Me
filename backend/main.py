@@ -16,7 +16,7 @@ import httpx
 from backend.config import get_settings
 from backend.db.database import close_db
 from backend.cache.redis_client import redis_client
-from backend.routers import users, lesson, stats, words, web_auth, web_lessons
+from backend.routers import users, lesson, stats, words, web_auth, web_lessons, gamification
 
 # Configure structlog for Railway.com
 structlog.configure(
@@ -98,6 +98,7 @@ app.include_router(stats.router)
 app.include_router(words.router)
 app.include_router(web_auth.router)
 app.include_router(web_lessons.router)
+app.include_router(gamification.router)
 
 
 @app.get(

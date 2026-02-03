@@ -245,6 +245,105 @@ class APIClient {
     const response = await this.client.get(`/api/v1/words/${telegramId}/review-stats`);
     return response.data;
   }
+
+  // ============= Gamification Endpoints =============
+
+  /**
+   * Get all challenges (daily and weekly) for a user.
+   */
+  async getAllChallenges(telegramId: number) {
+    const response = await this.client.get('/api/v1/gamification/challenges', {
+      params: { telegram_id: telegramId },
+    });
+    return response.data;
+  }
+
+  /**
+   * Get the daily challenge for a user.
+   */
+  async getDailyChallenge(telegramId: number) {
+    const response = await this.client.get('/api/v1/gamification/challenges/daily', {
+      params: { telegram_id: telegramId },
+    });
+    return response.data;
+  }
+
+  /**
+   * Get weekly challenges for a user.
+   */
+  async getWeeklyChallenges(telegramId: number) {
+    const response = await this.client.get('/api/v1/gamification/challenges/weekly', {
+      params: { telegram_id: telegramId },
+    });
+    return response.data;
+  }
+
+  /**
+   * Claim reward for a completed challenge.
+   */
+  async claimChallengeReward(telegramId: number, challengeId: number, challengeDate: string) {
+    const response = await this.client.post('/api/v1/gamification/challenges/claim', {
+      challenge_id: challengeId,
+      challenge_date: challengeDate,
+    }, {
+      params: { telegram_id: telegramId },
+    });
+    return response.data;
+  }
+
+  /**
+   * Get all achievements for a user.
+   */
+  async getAchievements(telegramId: number) {
+    const response = await this.client.get('/api/v1/gamification/achievements', {
+      params: { telegram_id: telegramId },
+    });
+    return response.data;
+  }
+
+  /**
+   * Get achievement progress summary.
+   */
+  async getAchievementProgress(telegramId: number) {
+    const response = await this.client.get('/api/v1/gamification/achievements/progress', {
+      params: { telegram_id: telegramId },
+    });
+    return response.data;
+  }
+
+  /**
+   * Get achievements by category.
+   */
+  async getAchievementsByCategory(telegramId: number, category: string) {
+    const response = await this.client.get(`/api/v1/gamification/achievements/category/${category}`, {
+      params: { telegram_id: telegramId },
+    });
+    return response.data;
+  }
+
+  /**
+   * Get weekly leaderboard.
+   */
+  async getLeaderboard(metric: 'stars' | 'streak' | 'messages' | 'accuracy' = 'stars', limit: number = 10, telegramId?: number) {
+    const params: any = { metric, limit };
+    if (telegramId) {
+      params.telegram_id = telegramId;
+    }
+    const response = await this.client.get('/api/v1/gamification/leaderboard/weekly', {
+      params,
+    });
+    return response.data;
+  }
+
+  /**
+   * Get user's rank in leaderboard.
+   */
+  async getMyRank(telegramId: number, metric: 'stars' | 'streak' | 'messages' | 'accuracy' = 'stars') {
+    const response = await this.client.get('/api/v1/gamification/leaderboard/my-rank', {
+      params: { telegram_id: telegramId, metric },
+    });
+    return response.data;
+  }
 }
 
 // Export singleton instance

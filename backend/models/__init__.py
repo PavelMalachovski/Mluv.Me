@@ -7,6 +7,7 @@ from backend.models.message import Message
 from backend.models.word import SavedWord
 from backend.models.stats import DailyStats, Stars
 from backend.models.achievement import Achievement, UserAchievement
+from backend.models.challenge import Challenge, UserChallenge, TopicMessageCount
 
 __all__ = [
     "User",
@@ -17,6 +18,9 @@ __all__ = [
     "Stars",
     "Achievement",
     "UserAchievement",
+    "Challenge",
+    "UserChallenge",
+    "TopicMessageCount",
 ]
 
 

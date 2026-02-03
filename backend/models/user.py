@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from backend.models.word import SavedWord
     from backend.models.stats import DailyStats, Stars
     from backend.models.achievement import UserAchievement
+    from backend.models.challenge import UserChallenge, TopicMessageCount
 
 
 class User(Base):
@@ -126,6 +127,18 @@ class User(Base):
         cascade="all, delete-orphan"
     )
 
+    challenges: Mapped[list["UserChallenge"]] = relationship(
+        "UserChallenge",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    topic_counts: Mapped[list["TopicMessageCount"]] = relationship(
+        "TopicMessageCount",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
     def to_dict(self) -> dict[str, Any]:
         """Convert user to dictionary for caching."""
         return {
@@ -204,6 +217,13 @@ class UserSettings(Base):
         comment="Включены ли уведомления"
     )
 
+    leaderboard_visible: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        comment="Показывать в публичном лидерборде"
+    )
+
     # Relationship
     user: Mapped["User"] = relationship("User", back_populates="settings")
 
@@ -217,6 +237,7 @@ class UserSettings(Base):
             "corrections_level": self.corrections_level,
             "timezone": self.timezone,
             "notifications_enabled": self.notifications_enabled,
+            "leaderboard_visible": self.leaderboard_visible,
         }
 
     def __repr__(self) -> str:

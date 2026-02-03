@@ -28,15 +28,23 @@ const CATEGORY_COLORS: Record<string, string> = {
     accuracy: "from-purple-400 to-pink-500",
     stars: "from-yellow-400 to-amber-500",
     review: "from-teal-400 to-cyan-500",
+    thematic: "from-pink-400 to-rose-500",
+    time: "from-indigo-400 to-violet-500",
+    quality: "from-emerald-400 to-green-500",
+    challenge: "from-amber-400 to-orange-500",
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-    streak: "🔥 Streaks",
-    messages: "💬 Messages",
-    vocabulary: "📚 Vocabulary",
-    accuracy: "🎯 Accuracy",
-    stars: "⭐ Stars",
-    review: "🧠 Review",
+    streak: "🔥 Série",
+    messages: "💬 Zprávy",
+    vocabulary: "📚 Slovíčka",
+    accuracy: "🎯 Přesnost",
+    stars: "⭐ Hvězdy",
+    review: "🧠 Opakování",
+    thematic: "🎭 Tematické",
+    time: "⏰ Časové",
+    quality: "✨ Kvalita",
+    challenge: "🏆 Výzvy",
 }
 
 export function AchievementGrid({ achievements, className = "" }: AchievementGridProps) {
