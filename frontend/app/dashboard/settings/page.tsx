@@ -3,7 +3,6 @@
 import { useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
 import { useAuthStore } from "@/lib/auth-store"
 import { apiClient } from "@/lib/api-client"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -126,21 +125,12 @@ export default function SettingsPage() {
       </ToastContainer>
 
       <div className="min-h-screen cream-bg landscape-bg pb-20">
-        {/* Purple Header with Mascot */}
-        <div className="illustrated-header relative pb-16">
+        {/* Purple Header */}
+        <div className="illustrated-header">
           <h1 className="illustrated-header-title">Nastavení</h1>
-          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
-            <Image
-              src="/images/mascot/honzik-waving.png"
-              alt="Honzík"
-              width={80}
-              height={80}
-              className="drop-shadow-lg"
-            />
-          </div>
         </div>
 
-        <div className="mx-auto max-w-2xl px-4 pt-16">
+        <div className="mx-auto max-w-2xl px-4 pt-6">
           <Tabs defaultValue="learning" className="space-y-6">
             <TabsList className="w-full grid grid-cols-4 bg-white dark:bg-gray-800 rounded-xl p-1 shadow-sm">
               <TabsTrigger value="learning" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
@@ -163,7 +153,7 @@ export default function SettingsPage() {
               <div className="illustrated-card p-6">
                 <div className="mb-6 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                    <span className="text-xl">💬</span>
+                    <span className="text-xl">🇨🇿</span>
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">Úroveň češtiny</h3>
@@ -171,32 +161,34 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-3">
                   {[
-                    { value: "beginner", label: "Začátečník", image: "/images/mascot/honzik-waving.png" },
-                    { value: "intermediate", label: "Středně pokročilý", image: "/images/mascot/honzik-running.png" },
-                    { value: "advanced", label: "Pokročilý", image: "/images/mascot/honzik-reading.png" },
-                    { value: "native", label: "Rodilý", image: "/images/mascot/honzik-stars.png" },
+                    { value: "beginner", label: "Začátečník", emoji: "🌱", description: "Základní fráze a slovíčka" },
+                    { value: "intermediate", label: "Středně pokročilý", emoji: "📚", description: "Běžná konverzace" },
+                    { value: "advanced", label: "Pokročilý", emoji: "🎯", description: "Složitější témata" },
+                    { value: "native", label: "Rodilý", emoji: "⭐", description: "Plynulá čeština" },
                   ].map((level) => (
                     <button
                       key={level.value}
                       onClick={() => updateProfileMutation.mutate({ level: level.value })}
                       disabled={updateProfileMutation.isPending}
-                      className={`level-card ${user.level === level.value ? "active" : ""}`}
+                      className={`w-full rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${user.level === level.value
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
+                        }`}
                     >
-                      <Image
-                        src={level.image}
-                        alt={level.label}
-                        width={80}
-                        height={80}
-                        className="mx-auto mb-2"
-                      />
-                      <span className="level-name">{level.label}</span>
-                      {updateProfileMutation.isPending && user.level !== level.value ? null : (
-                        user.level === level.value && (
-                          <Check className="h-5 w-5 text-primary mx-auto mt-1" />
-                        )
-                      )}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{level.emoji}</span>
+                          <div>
+                            <div className="font-medium text-foreground">{level.label}</div>
+                            <div className="text-sm text-muted-foreground">{level.description}</div>
+                          </div>
+                        </div>
+                        {user.level === level.value && (
+                          <Check className="h-5 w-5 text-primary" />
+                        )}
+                      </div>
                     </button>
                   ))}
                 </div>
