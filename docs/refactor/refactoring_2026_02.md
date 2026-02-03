@@ -1717,9 +1717,1245 @@ export default function OnboardingPage() {
 
 ---
 
+## 🇨🇿 ПОЛНЫЙ ПЕРЕХОД НА ЧЕШСКИЙ ИНТЕРФЕЙС
+
+### Концепция: Погружение в язык (Language Immersion)
+
+**Текущее состояние:**
+- UI на русском и украинском языках
+- Объяснения ошибок на языке пользователя
+- Хонзик говорит по-чешски, но подсказки на ru/uk
+
+**Новая концепция:**
+> 💡 **Полное погружение** — весь интерфейс на чешском с простыми объяснениями.
+> Это самый эффективный метод изучения языка!
+
+### 1. Удаление мультиязычности
+
+```python
+# backend/models/user.py - УДАЛИТЬ ui_language
+
+class User(Base):
+    """Модель пользователя - БЕЗ выбора языка UI."""
+    __tablename__ = "users"
+
+    # УДАЛИТЬ ЭТО ПОЛЕ:
+    # ui_language: Mapped[str] = mapped_column(...)
+
+    # Добавить поле для родного языка (для понимания ошибок)
+    native_language: Mapped[str] = mapped_column(
+        Enum("ru", "uk", "pl", "sk", name="native_language_enum"),
+        nullable=False,
+        default="ru",
+        comment="Родной язык пользователя (для объяснения сложных моментов)"
+    )
+```
+
+### 2. Чешские тексты для интерфейса
+
+```typescript
+// frontend/lib/localization/cs.ts
+export const CS_TEXTS = {
+  // Навигация
+  nav: {
+    dashboard: "Přehled",
+    practice: "Procvičování",
+    review: "Opakování",
+    saved: "Uložená slova",
+    profile: "Profil",
+    settings: "Nastavení",
+  },
+
+  // Dashboard
+  dashboard: {
+    greeting: (name: string) => `Ahoj, ${name}! 👋`,
+    subtitle: "Připraven/a na dnešní češtinu?",
+    streak: "Série dnů",
+    stars: "Hvězdy",
+    practice_btn: "Procvičovat",
+    review_btn: "Opakovat",
+    todays_progress: "Dnešní pokrok",
+    messages: "Zprávy",
+    to_review: "K opakování",
+    accuracy: "Přesnost",
+    achievements: "Úspěchy",
+    view_all: "Zobrazit vše →",
+    keep_going: "Pokračuj!",
+  },
+
+  // Practice
+  practice: {
+    title: "Procvičuj češtinu s Honzíkem",
+    subtitle: "Napiš nebo nahraj zprávu v češtině",
+    topic_select: "Vyber téma",
+    start_btn: "Začít procvičovat",
+    topic_label: "Téma:",
+    send_btn: "Odeslat",
+    recording: "Nahrávání...",
+    processing: "Zpracovávám...",
+    show_text: "Zobrazit text",
+    hide_text: "Skrýt text",
+    translate_word: "Přeložit slovo",
+    corrections_header: "Opravy:",
+    no_corrections: "Výborně! Bez chyb! 🎉",
+    stars_earned: (n: number) => `+${n} hvězd ⭐`,
+    tips_title: "Tipy pro procvičování:",
+    tips: [
+      "✅ Piš celé věty",
+      "✅ Neboj se chyb — tak se učíme!",
+      "✅ Ptej se Honzíka na českou kulturu",
+      "✅ Procvičuj pravidelně",
+    ],
+    input_placeholder: "Napiš zprávu v češtině...",
+    voice_hint: "🎤 Klepni pro nahrání (max 60 sekund)",
+  },
+
+  // Review (Spaced Repetition)
+  review: {
+    title: "Opakování slovíček",
+    cards_due: "Slovíček k opakování",
+    no_cards: "Žádná slovíčka k opakování! 🎉",
+    show_answer: "Zobrazit odpověď",
+    again: "Znovu",
+    hard: "Těžké",
+    good: "Dobré",
+    easy: "Snadné",
+    progress: (current: number, total: number) => `${current} / ${total}`,
+    completed: "Dnešní opakování hotovo! 🎉",
+  },
+
+  // Saved words
+  saved: {
+    title: "Uložená slova",
+    search_placeholder: "Hledat slovo...",
+    no_words: "Zatím nemáš žádná uložená slova",
+    add_words_hint: "Klepni na slovo v konverzaci pro jeho uložení",
+    delete_confirm: "Opravdu smazat toto slovo?",
+    phonetics: "Výslovnost",
+    example: "Příklad",
+  },
+
+  // Profile
+  profile: {
+    title: "Profil",
+    level: "Úroveň češtiny",
+    member_since: "Člen od",
+    stats_title: "Statistiky",
+    total_messages: "Celkem zpráv",
+    total_words: "Naučených slov",
+    best_streak: "Nejdelší série",
+    avg_accuracy: "Průměrná přesnost",
+  },
+
+  // Settings
+  settings: {
+    title: "Nastavení",
+    level_section: "Úroveň češtiny",
+    level_beginner: "Začátečník (A1-A2)",
+    level_intermediate: "Středně pokročilý (B1-B2)",
+    level_advanced: "Pokročilý (B2-C1)",
+    level_native: "Rodilý mluvčí (C2)",
+    style_section: "Styl komunikace",
+    style_friendly: "Přátelský",
+    style_friendly_desc: "Více podpory, méně oprav",
+    style_tutor: "Učitel",
+    style_tutor_desc: "Detailní vysvětlení chyb",
+    style_casual: "Kamarádský",
+    style_casual_desc: "Neformální konverzace",
+    corrections_section: "Úroveň oprav",
+    corrections_minimal: "Minimální",
+    corrections_balanced: "Vyvážená",
+    corrections_detailed: "Detailní",
+    voice_speed: "Rychlost hlasu Honzíka",
+    voice_very_slow: "Velmi pomalu",
+    voice_slow: "Pomalu",
+    voice_normal: "Normálně",
+    voice_native: "Rychle (rodilý)",
+    save_btn: "Uložit nastavení",
+    saved_toast: "Nastavení uloženo!",
+  },
+
+  // Achievements
+  achievements: {
+    title: "Úspěchy",
+    locked: "Zamčeno",
+    unlocked: "Odemčeno",
+    progress: "Pokrok",
+    reward: "Odměna",
+  },
+
+  // Common
+  common: {
+    loading: "Načítání...",
+    error: "Něco se pokazilo",
+    retry: "Zkusit znovu",
+    back: "Zpět",
+    next: "Další",
+    cancel: "Zrušit",
+    confirm: "Potvrdit",
+    save: "Uložit",
+    delete: "Smazat",
+    yes: "Ano",
+    no: "Ne",
+  },
+
+  // Errors
+  errors: {
+    network: "Problém s připojením. Zkus to znovu.",
+    voice_too_long: "Zpráva je příliš dlouhá (max 60 sekund)",
+    processing_failed: "Nepodařilo se zpracovat. Zkus to znovu.",
+  },
+
+  // Honzík phrases
+  honzik: {
+    greeting: "Ahoj! Jsem Honzík 🇨🇿",
+    thinking: "Honzík přemýšlí...",
+    listening: "Honzík poslouchá...",
+    encouragement: [
+      "Výborně! Jde ti to skvěle! 💪",
+      "Super práce! Pokračuj! 🎉",
+      "Skvělé! Učíš se rychle! ⭐",
+      "Prima! To bylo dobré! 👍",
+    ],
+  },
+}
+```
+
+### 3. Адаптивные объяснения ошибок
+
+**Концепция:** Объяснения ошибок сначала на простом чешском, с возможностью увидеть перевод на родной язык.
+
+```python
+# backend/services/honzik_personality.py
+
+def _get_correction_prompt(self, native_language: str) -> str:
+    """Промпт для исправлений на чешском с переводом."""
+    return f"""
+DŮLEŽITÉ: Piš opravy JEDNODUŠE v češtině na úrovni A2.
+Používej základní slovní zásobu.
+
+Formát odpovědi pro každou chybu:
+{{
+  "original": "špatný text",
+  "corrected": "správný text",
+  "explanation_cs": "Jednoduché vysvětlení česky (max 15 slov)",
+  "explanation_native": "Překlad vysvětlení do {native_language}"
+}}
+
+Příklad:
+{{
+  "original": "já jsem student",
+  "corrected": "jsem student",
+  "explanation_cs": "V češtině nemusíme říkat 'já' - je to jasné ze slovesa.",
+  "explanation_native": "В чешском не нужно говорить 'já' - это понятно из глагола."
+}}
+"""
+```
+
+### 4. UI компонент для объяснений
+
+```tsx
+// frontend/components/ui/CorrectionExplanation.tsx
+"use client"
+
+import { useState } from "react"
+import { ChevronDown, Languages } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+
+interface CorrectionProps {
+  original: string
+  corrected: string
+  explanationCs: string
+  explanationNative: string
+}
+
+export function CorrectionExplanation({
+  original,
+  corrected,
+  explanationCs,
+  explanationNative,
+}: CorrectionProps) {
+  const [showNative, setShowNative] = useState(false)
+
+  return (
+    <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-3 space-y-2">
+      {/* Исправление */}
+      <div className="flex items-center gap-2 text-sm">
+        <span className="line-through text-red-600">{original}</span>
+        <span>→</span>
+        <span className="font-medium text-green-600">{corrected}</span>
+      </div>
+
+      {/* Объяснение на чешском */}
+      <p className="text-sm text-gray-700 dark:text-gray-300">
+        💡 {explanationCs}
+      </p>
+
+      {/* Кнопка перевода */}
+      <button
+        onClick={() => setShowNative(!showNative)}
+        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700"
+      >
+        <Languages className="h-3 w-3" />
+        {showNative ? "Skrýt překlad" : "Zobrazit překlad"}
+        <ChevronDown className={`h-3 w-3 transition-transform ${showNative ? "rotate-180" : ""}`} />
+      </button>
+
+      {/* Перевод на родной язык */}
+      <AnimatePresence>
+        {showNative && (
+          <motion.p
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="text-xs text-gray-500 italic border-l-2 border-blue-300 pl-2"
+          >
+            {explanationNative}
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+```
+
+### 5. Миграция существующих пользователей
+
+```python
+# alembic/versions/20260203_czech_only_ui.py
+"""Remove ui_language, add native_language for explanations."""
+
+def upgrade():
+    # Добавляем новое поле
+    op.add_column(
+        'users',
+        sa.Column('native_language', sa.String(2), nullable=True)
+    )
+
+    # Мигрируем данные: ui_language → native_language
+    op.execute("""
+        UPDATE users
+        SET native_language = ui_language
+        WHERE ui_language IS NOT NULL
+    """)
+
+    # Делаем поле обязательным
+    op.alter_column('users', 'native_language', nullable=False, server_default='ru')
+
+    # Удаляем старое поле
+    op.drop_column('users', 'ui_language')
+
+def downgrade():
+    # Обратная миграция
+    op.add_column('users', sa.Column('ui_language', sa.String(2), nullable=True))
+    op.execute("UPDATE users SET ui_language = native_language")
+    op.drop_column('users', 'native_language')
+```
+
+### 6. Обновление Telegram бота
+
+```python
+# bot/localization/cs.py
+"""Все тексты бота на чешском."""
+
+TEXTS_CS = {
+    # Приветствие
+    "welcome": (
+        "Ahoj! 🇨🇿 Jsem Honzík!\n\n"
+        "Pomohu ti s češtinou. Pošli mi hlasovou zprávu "
+        "nebo napiš text v češtině.\n\n"
+        "Neboj se chyb — tak se učíme! 💪"
+    ),
+
+    # Выбор уровня
+    "choose_level": "Jaká je tvoje úroveň češtiny?",
+    "level_beginner": "🌱 Začátečník",
+    "level_intermediate": "📚 Středně pokročilý",
+    "level_advanced": "🎓 Pokročilý",
+    "level_native": "🏆 Rodilý mluvčí",
+
+    # Выбор родного языка (для объяснений)
+    "choose_native": "Jaký je tvůj rodný jazyk? (pro vysvětlení)",
+    "native_ru": "🇷🇺 Ruština",
+    "native_uk": "🇺🇦 Ukrajinština",
+    "native_pl": "🇵🇱 Polština",
+    "native_sk": "🇸🇰 Slovenština",
+
+    # Помощь
+    "help": (
+        "📖 **Jak používat bota:**\n\n"
+        "🎤 Pošli hlasovou zprávu v češtině\n"
+        "✍️ Nebo napiš text v češtině\n"
+        "💡 Opravím tvoje chyby\n"
+        "⭐ Získej hvězdy za praxi!\n\n"
+        "**Příkazy:**\n"
+        "/stats — Tvoje statistiky\n"
+        "/level — Změnit úroveň\n"
+        "/style — Styl komunikace\n"
+        "/saved — Uložená slova\n"
+        "/help — Tato nápověda"
+    ),
+
+    # Результаты
+    "voice_correctness": "✅ Správnost: {score}%",
+    "voice_streak": "🔥 Série: {streak} dnů",
+    "voice_stars_earned": "⭐ +{stars} hvězd!",
+
+    # Исправления
+    "corrections_header": "📝 **Opravy:**\n",
+    "no_corrections": "🎉 Výborně! Bez chyb!",
+    "suggestion": "💡 **Tip:** {suggestion}",
+
+    # Кнопки
+    "btn_show_text": "📝 Text",
+    "btn_save_word": "💾 Uložit",
+
+    # Ошибки
+    "error_general": "Něco se pokazilo. Zkus to znovu.",
+    "error_voice_too_long": "Zpráva je příliš dlouhá (max 60 sekund).",
+    "error_backend": "Server je momentálně nedostupný.",
+}
+
+def get_text(key: str, **kwargs) -> str:
+    """Получить текст на чешском."""
+    text = TEXTS_CS.get(key, key)
+    return text.format(**kwargs) if kwargs else text
+```
+
+---
+
+## ✍️ ТЕКСТОВОЕ ОБЩЕНИЕ С ХОНЗИКОМ
+
+### Текущее состояние
+- В боте только голосовые сообщения
+- В Web UI есть текстовый ввод (частично)
+- Нет полной поддержки текста в боте
+
+### 1. Backend: Endpoint для текстовых сообщений
+
+```python
+# backend/routers/lesson.py
+
+@router.post("/process/text", response_model=LessonProcessResponse)
+async def process_text_message(
+    user_id: int = Form(..., description="Telegram ID пользователя"),
+    text: str = Form(..., description="Текст сообщения на чешском"),
+    include_audio: bool = Form(True, description="Включить голосовой ответ"),
+    db: AsyncSession = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+    openai_client: OpenAIClient = Depends(get_openai_client),
+    honzik: HonzikPersonality = Depends(get_honzik_personality),
+    gamification: GamificationService = Depends(get_gamification_service),
+):
+    """
+    Обработать текстовое сообщение пользователя.
+
+    В отличие от голосового, здесь:
+    1. НЕТ этапа STT (текст уже есть)
+    2. Опционально TTS (можно отключить для экономии)
+    3. Быстрее на 1-2 секунды
+
+    Args:
+        user_id: Telegram ID пользователя
+        text: Текст на чешском
+        include_audio: Генерировать ли голосовой ответ
+    """
+    log = logger.bind(user_id=user_id, mode="text")
+    log.info("processing_text_message", text_length=len(text))
+
+    # Валидация
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_telegram_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if len(text) > 2000:
+        raise HTTPException(status_code=400, detail="Text too long (max 2000 chars)")
+
+    # Получаем историю
+    message_repo = MessageRepository(db)
+    recent_messages = await message_repo.get_user_messages(user_id=user.id, limit=10)
+    conversation_history = [
+        {"role": msg.role, "text": msg.text or ""}
+        for msg in reversed(recent_messages)
+    ]
+
+    # Анализ Хонзика (быстрее без STT!)
+    honzik_response = await honzik.generate_response(
+        user_text=text,
+        level=user.level,
+        style=user.settings.conversation_style,
+        corrections_level=user.settings.corrections_level,
+        native_language=user.native_language,  # Для объяснений
+        conversation_history=conversation_history,
+    )
+
+    # TTS только если нужно
+    audio_base64 = None
+    if include_audio:
+        voice_speed = openai_client.get_voice_speed_mapping(user.settings.voice_speed)
+        audio_response = await openai_client.generate_speech(
+            text=honzik_response["honzik_response"],
+            speed=voice_speed,
+        )
+        audio_base64 = base64.b64encode(audio_response).decode('utf-8')
+
+    # Сохранение и геймификация (в background)
+    await save_message_and_stats(db, user, text, honzik_response)
+    gamification_result = await gamification.process_message_gamification(
+        db=db,
+        user_id=user.id,
+        correctness_score=honzik_response["correctness_score"],
+        timezone_str=user.settings.timezone,
+    )
+
+    await db.commit()
+
+    return LessonProcessResponse(
+        transcript=text,  # Для текстового - это и есть "транскрипт"
+        honzik_response_text=honzik_response["honzik_response"],
+        honzik_response_audio=audio_base64,  # None если include_audio=False
+        corrections=CorrectionSchema(
+            corrected_text=honzik_response["corrected_text"],
+            mistakes=honzik_response["mistakes"],
+            correctness_score=honzik_response["correctness_score"],
+            suggestion=honzik_response["suggestion"],
+        ),
+        stars_earned=gamification_result["stars_earned"],
+        total_stars=gamification_result["total_stars"],
+        current_streak=gamification_result["current_streak"],
+        # ...
+    )
+```
+
+### 2. Telegram Bot: Обработка текстовых сообщений
+
+```python
+# bot/handlers/text.py
+"""Обработчик текстовых сообщений."""
+
+from aiogram import F, Router
+from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+import structlog
+
+from bot.localization.cs import get_text
+from bot.services.api_client import APIClient
+
+router = Router()
+logger = structlog.get_logger()
+
+
+@router.message(F.text & ~F.text.startswith("/"))
+async def handle_text(message: Message, api_client: APIClient) -> None:
+    """
+    Обработчик текстовых сообщений (не команд).
+
+    Пользователь может писать Хонзику текстом на чешском,
+    а не только голосовыми.
+    """
+    telegram_id = message.from_user.id
+    text = message.text.strip()
+
+    # Получаем пользователя
+    user = await api_client.get_user(telegram_id)
+    if not user:
+        await message.answer(get_text("error_general"))
+        return
+
+    # Проверка минимальной длины
+    if len(text) < 2:
+        await message.answer("Napiš alespoň pár slov v češtině! 📝")
+        return
+
+    # Показываем что Хонзик печатает
+    await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
+
+    try:
+        # Отправляем текст в backend
+        logger.info("processing_text", telegram_id=telegram_id, text_length=len(text))
+
+        response = await api_client.process_text(
+            user_id=telegram_id,
+            text=text,
+            include_audio=True,  # Хонзик отвечает голосом
+        )
+
+        if not response:
+            await message.answer(get_text("error_backend"))
+            return
+
+        # Ответ Хонзика
+        honzik_text = response.get("honzik_response_text", "")
+        audio_response = response.get("honzik_response_audio")
+        corrections = response.get("corrections", {})
+        correctness_score = corrections.get("correctness_score", 0)
+        streak = response.get("current_streak", 0)
+        stars_earned = response.get("stars_earned", 0)
+
+        # Если есть аудио - отправляем голосовое
+        if audio_response:
+            import base64
+            from aiogram.types import BufferedInputFile
+
+            audio_bytes = base64.b64decode(audio_response)
+            voice_file = BufferedInputFile(audio_bytes, filename="honzik.ogg")
+
+            caption = f"{get_text('voice_correctness', score=correctness_score)}\n"
+            caption += get_text('voice_streak', streak=streak)
+
+            # Кнопка показать текст
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(
+                    text=get_text("btn_show_text"),
+                    callback_data=f"show_text_resp:{message.message_id}"
+                )]
+            ])
+
+            await message.answer_voice(
+                voice=voice_file,
+                caption=caption,
+                reply_markup=keyboard
+            )
+        else:
+            # Если нет аудио - просто текст
+            await message.answer(
+                f"🗣️ **Honzík:**\n{honzik_text}\n\n"
+                f"{get_text('voice_correctness', score=correctness_score)}"
+            )
+
+        # Исправления
+        mistakes = corrections.get("mistakes", [])
+        if mistakes:
+            corrections_text = get_text("corrections_header")
+            for mistake in mistakes[:3]:
+                corrections_text += (
+                    f"❌ {mistake.get('original', '')} → "
+                    f"✅ {mistake.get('corrected', '')}\n"
+                    f"💡 {mistake.get('explanation_cs', '')}\n\n"
+                )
+            await message.answer(corrections_text, parse_mode="HTML")
+        else:
+            await message.answer(get_text("no_corrections"))
+
+        # Звёзды
+        if stars_earned > 0:
+            await message.answer(get_text("voice_stars_earned", stars=stars_earned))
+
+        logger.info(
+            "text_processed",
+            telegram_id=telegram_id,
+            score=correctness_score,
+            streak=streak,
+        )
+
+    except Exception as e:
+        logger.error("text_processing_error", telegram_id=telegram_id, error=str(e))
+        await message.answer(get_text("error_general"))
+
+
+# Добавляем в главный роутер
+# bot/handlers/__init__.py
+from bot.handlers.text import router as text_router
+
+def get_main_router():
+    router = Router()
+    router.include_router(start_router)
+    router.include_router(voice_router)
+    router.include_router(text_router)  # НОВОЕ!
+    router.include_router(commands_router)
+    return router
+```
+
+### 3. API Client: Метод для текста
+
+```python
+# bot/services/api_client.py
+
+class APIClient:
+    async def process_text(
+        self,
+        user_id: int,
+        text: str,
+        include_audio: bool = True,
+    ) -> dict | None:
+        """
+        Отправить текстовое сообщение для обработки.
+
+        Args:
+            user_id: Telegram ID
+            text: Текст на чешском
+            include_audio: Генерировать голосовой ответ
+        """
+        try:
+            form_data = {
+                "user_id": user_id,
+                "text": text,
+                "include_audio": include_audio,
+            }
+
+            async with self.session.post(
+                f"{self.base_url}/api/v1/lessons/process/text",
+                data=form_data,
+            ) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    self.logger.error(
+                        "text_api_error",
+                        status=response.status,
+                        body=await response.text()
+                    )
+                    return None
+        except Exception as e:
+            self.logger.error("text_api_exception", error=str(e))
+            return None
+```
+
+### 4. Frontend: Улучшенный текстовый ввод
+
+```tsx
+// frontend/components/ui/CzechTextInput.tsx
+"use client"
+
+import { useState, useRef, useEffect } from "react"
+import { Send, Mic, Keyboard } from "lucide-react"
+import { motion } from "framer-motion"
+import { CS_TEXTS } from "@/lib/localization/cs"
+
+interface CzechTextInputProps {
+  onSubmit: (text: string) => void
+  onVoiceStart: () => void
+  isLoading: boolean
+  mode: "text" | "voice"
+  onModeChange: (mode: "text" | "voice") => void
+}
+
+export function CzechTextInput({
+  onSubmit,
+  onVoiceStart,
+  isLoading,
+  mode,
+  onModeChange,
+}: CzechTextInputProps) {
+  const [text, setText] = useState("")
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Чешская клавиатура с диакритикой
+  const CZECH_CHARS = ["á", "č", "ď", "é", "ě", "í", "ň", "ó", "ř", "š", "ť", "ú", "ů", "ý", "ž"]
+
+  const insertChar = (char: string) => {
+    if (textareaRef.current) {
+      const start = textareaRef.current.selectionStart
+      const end = textareaRef.current.selectionEnd
+      const newText = text.slice(0, start) + char + text.slice(end)
+      setText(newText)
+
+      // Устанавливаем курсор после вставленного символа
+      setTimeout(() => {
+        textareaRef.current?.setSelectionRange(start + 1, start + 1)
+        textareaRef.current?.focus()
+      }, 0)
+    }
+  }
+
+  const handleSubmit = () => {
+    if (text.trim() && !isLoading) {
+      onSubmit(text.trim())
+      setText("")
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit()
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Переключатель режима */}
+      <div className="flex justify-center gap-2">
+        <button
+          onClick={() => onModeChange("text")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            mode === "text"
+              ? "bg-primary text-white"
+              : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200"
+          }`}
+        >
+          <Keyboard className="h-4 w-4" />
+          Text
+        </button>
+        <button
+          onClick={() => onModeChange("voice")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            mode === "voice"
+              ? "bg-primary text-white"
+              : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200"
+          }`}
+        >
+          <Mic className="h-4 w-4" />
+          Hlas
+        </button>
+      </div>
+
+      {mode === "text" ? (
+        <>
+          {/* Чешская клавиатура (диакритика) */}
+          <div className="flex flex-wrap gap-1 justify-center">
+            {CZECH_CHARS.map((char) => (
+              <motion.button
+                key={char}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => insertChar(char)}
+                className="w-8 h-8 rounded bg-blue-100 dark:bg-blue-900 hover:bg-blue-200
+                           dark:hover:bg-blue-800 text-blue-800 dark:text-blue-200
+                           font-medium text-sm transition-colors"
+              >
+                {char}
+              </motion.button>
+            ))}
+          </div>
+
+          {/* Текстовое поле */}
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={CS_TEXTS.practice.input_placeholder}
+              disabled={isLoading}
+              rows={3}
+              className="w-full p-4 pr-12 rounded-xl border-2 border-gray-200 dark:border-gray-700
+                         focus:border-primary dark:focus:border-primary
+                         bg-white dark:bg-gray-800 resize-none
+                         disabled:opacity-50"
+            />
+
+            {/* Кнопка отправки */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={handleSubmit}
+              disabled={!text.trim() || isLoading}
+              className="absolute right-3 bottom-3 p-2 rounded-full
+                         bg-primary text-white disabled:opacity-50
+                         disabled:cursor-not-allowed"
+            >
+              <Send className="h-5 w-5" />
+            </motion.button>
+          </div>
+
+          <p className="text-xs text-center text-gray-500">
+            Enter pro odeslání • Shift+Enter pro nový řádek
+          </p>
+        </>
+      ) : (
+        // Голосовой режим
+        <div className="text-center py-8">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onVoiceStart}
+            disabled={isLoading}
+            className="w-20 h-20 rounded-full bg-primary text-white shadow-lg
+                       flex items-center justify-center mx-auto
+                       disabled:opacity-50"
+          >
+            <Mic className="h-10 w-10" />
+          </motion.button>
+          <p className="text-sm text-gray-500 mt-3">
+            {CS_TEXTS.practice.voice_hint}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+```
+
+---
+
+## 💡 ИДЕИ ПО УЛУЧШЕНИЮ И НОВЫЕ ФУНКЦИИ
+
+### Краткосрочные (1-2 месяца)
+
+#### 1. 🎭 Ролевые сценарии с диалогами
+
+Интерактивные мини-диалоги для реальных ситуаций:
+
+| Сценарий | Описание | Уровень |
+|----------|----------|---------|
+| 🍺 V hospodě | Заказ пива и еды в чешском пабе | A1-A2 |
+| 🏥 U lékaře | Визит к врачу, описание симптомов | A2-B1 |
+| 🏦 Na cizinecké policii | Подача документов на ВНЖ | B1 |
+| 💼 Pracovní pohovor | Собеседование на работу | B1-B2 |
+| 🏠 Pronájem bytu | Аренда квартиры, общение с хозяином | A2-B1 |
+| 🚋 V tramvaji | Покупка билета, уточнение маршрута | A1 |
+| 🛒 V obchodě | Покупки в магазине | A1-A2 |
+| 📞 Telefonní hovor | Телефонный разговор (сложнее!) | B1 |
+
+```python
+# backend/services/scenario_service.py
+class ScenarioService:
+    """Сервис для ролевых сценариев."""
+
+    async def start_scenario(self, user_id: int, scenario_id: str) -> dict:
+        """Начать новый сценарий."""
+        scenario = SCENARIOS[scenario_id]
+
+        # Генерируем начальную ситуацию
+        initial_prompt = f"""
+        Zahajuješ scénář: {scenario['name_cs']}
+        Situace: {scenario['situation']}
+
+        Tvoje role: {scenario['honzik_role']}
+        Role studenta: {scenario['user_role']}
+
+        Začni dialog jako {scenario['honzik_role']}.
+        """
+
+        response = await self.honzik.generate_scenario_response(initial_prompt)
+
+        return {
+            "scenario_id": scenario_id,
+            "name": scenario['name_cs'],
+            "step": 1,
+            "total_steps": scenario['steps'],
+            "honzik_message": response,
+            "hints": scenario['hints'][0],  # Подсказки для первого шага
+        }
+```
+
+#### 2. 📊 Детальная аналитика произношения
+
+```python
+# backend/services/pronunciation_analyzer.py
+class PronunciationAnalyzer:
+    """Анализ произношения с детализацией по звукам."""
+
+    # Сложные звуки для русско/украиноговорящих
+    DIFFICULT_SOUNDS = {
+        "ř": {
+            "description_cs": "Český zvuk Ř",
+            "tip_cs": "Jazyk vibruje za horními zuby",
+            "words": ["řeka", "moře", "příliš"],
+        },
+        "h": {
+            "description_cs": "České H (ne ruské Г)",
+            "tip_cs": "Měkké H, jako vzdech",
+            "words": ["ahoj", "hora", "hodně"],
+        },
+        "ů/ú": {
+            "description_cs": "Dlouhé Ú",
+            "tip_cs": "Dlouhé ÚÚÚ, ne krátké У",
+            "words": ["dům", "úterý", "průvodce"],
+        },
+    }
+
+    async def analyze(self, audio: bytes, transcript: str) -> dict:
+        """Анализировать произношение."""
+        # Используем Whisper word-level timestamps
+        detailed = await self.openai_client.transcribe_audio(
+            audio,
+            response_format="verbose_json",
+            timestamp_granularities=["word"]
+        )
+
+        issues = []
+        for word_info in detailed.get("words", []):
+            word = word_info["word"]
+            # Проверяем сложные звуки
+            for sound, info in self.DIFFICULT_SOUNDS.items():
+                if sound in word.lower():
+                    issues.append({
+                        "word": word,
+                        "sound": sound,
+                        "tip": info["tip_cs"],
+                        "practice_words": info["words"],
+                    })
+
+        return {
+            "overall_score": self._calculate_score(detailed),
+            "pronunciation_issues": issues,
+            "recommendation": self._get_recommendation(issues),
+        }
+```
+
+#### 3. 📚 Интеграция с учебниками
+
+```python
+# Привязка уроков к популярным учебникам чешского
+TEXTBOOK_INTEGRATION = {
+    "czech_step_by_step": {
+        "name": "Czech Step by Step",
+        "lessons": {
+            1: ["pozdravy", "představování"],
+            2: ["rodina", "čísla"],
+            # ...
+        }
+    },
+    "communicative_czech": {
+        "name": "Communicative Czech",
+        "lessons": {...}
+    }
+}
+
+# Пользователь может выбрать учебник и урок
+# Хонзик будет использовать лексику из этого урока
+```
+
+### Среднесрочные (3-6 месяцев)
+
+#### 4. 🎮 Мини-игры для изучения
+
+| Игра | Описание | Награда |
+|------|----------|---------|
+| 🎯 Slovní hádanka | Угадай слово по описанию | 3 ⭐ |
+| 🔤 Doplň písmeno | Вставь пропущенную букву | 2 ⭐ |
+| 🎭 Rychlá odpověď | Ответь за 10 секунд | 5 ⭐ |
+| 🧩 Sestav větu | Собери предложение из слов | 4 ⭐ |
+| 👂 Co slyšíš? | Напиши услышанное слово | 3 ⭐ |
+
+#### 5. 👥 Групповые функции
+
+```typescript
+// Групповые челленджи
+interface GroupChallenge {
+  id: string;
+  name: string;
+  participants: User[];
+  goal: {
+    type: "total_messages" | "total_words" | "avg_accuracy";
+    value: number;
+    deadline: Date;
+  };
+  rewards: {
+    winner: number;  // звёзды победителю
+    participants: number;  // звёзды всем участникам
+  };
+}
+```
+
+#### 6. 🏆 Сезонные события
+
+```python
+# Сезонные челленджи и награды
+SEASONAL_EVENTS = {
+    "christmas": {
+        "name_cs": "🎄 Vánoční výzva",
+        "duration": "20-31 декабря",
+        "theme": "Рождество в Чехии",
+        "vocabulary": ["Vánoce", "dárek", "stromeček", "kapr", "cukroví"],
+        "special_achievement": "🎄 Vánoční mluvčí",
+        "bonus_stars": 50,
+    },
+    "easter": {
+        "name_cs": "🐣 Velikonoční výzva",
+        "duration": "Пасхальная неделя",
+        "theme": "Чешская Пасха",
+        "vocabulary": ["Velikonoce", "pomlázka", "kraslice", "beránek"],
+        "special_achievement": "🐣 Velikonoční mistr",
+    },
+    "october_fest": {
+        "name_cs": "🍺 Pivní měsíc",
+        "duration": "Октябрь",
+        "theme": "Чешское пиво",
+        "vocabulary": ["pivo", "hospoda", "čepované", "plzeň", "ležák"],
+        "special_achievement": "🍺 Pivní znalec",
+    },
+}
+```
+
+### Долгосрочные (6+ месяцев)
+
+#### 7. 🤖 Множественные AI-персонажи
+
+| Персонаж | Голос | Характер | Специализация |
+|----------|-------|----------|---------------|
+| 🧔 Honzík | alloy | Весёлый чех | Общие темы, пиво, хоккей |
+| 👩 Markéta | nova | Элегантная | Культура, искусство, мода |
+| 👴 Dědeček | onyx | Мудрый | История, традиции, пословицы |
+| 👧 Terezka | shimmer | Молодёжная | Сленг, современный чешский |
+| 👨‍🏫 Pan Profesor | echo | Строгий | Грамматика, формальный стиль |
+
+#### 8. 📱 Мобильное приложение (PWA → Native)
+
+```
+Native App Benefits:
+- Push уведомления
+- Offline режим
+- Background audio
+- Виджеты на главном экране
+- Apple Watch / Wear OS интеграция
+```
+
+#### 9. 🎓 Подготовка к экзаменам
+
+```python
+# Подготовка к официальным экзаменам по чешскому
+EXAM_PREPARATION = {
+    "a1_vnzh": {
+        "name": "Čeština pro ВНЖ (A1)",
+        "description": "Экзамен для получения ВНЖ в Чехии",
+        "modules": [
+            "listening_comprehension",
+            "reading_comprehension",
+            "writing",
+            "speaking",
+        ],
+        "mock_tests": 5,
+        "duration_weeks": 8,
+    },
+    "a2_pmzh": {
+        "name": "Čeština pro ПМЖ (A2)",
+        "description": "Экзамен для получения ПМЖ",
+        # ...
+    },
+    "b1_citizenship": {
+        "name": "Čeština pro občanství (B1)",
+        "description": "Экзамен для гражданства",
+        # ...
+    }
+}
+```
+
+#### 10. 🌐 Расширение на другие славянские языки
+
+```
+Потенциальные языки:
+- 🇸🇰 Словацкий (очень близок к чешскому)
+- 🇵🇱 Польский
+- 🇭🇷 Хорватский
+- 🇸🇮 Словенский
+
+Архитектура позволяет добавить новый язык:
+- Новый персонаж (Jano для словацкого)
+- Новые промпты
+- Адаптация TTS/STT
+- Локализация
+```
+
+### Экспериментальные идеи
+
+#### 11. 🎥 Видео-аватар Хонзика
+
+```
+Технологии:
+- D-ID / HeyGen для генерации видео
+- Lip-sync с TTS
+- Эмоции по контексту разговора
+
+Применение:
+- Приветствие при первом входе
+- Поздравление с достижениями
+- Объяснение сложной грамматики
+```
+
+#### 12. 🔊 Анализ в реальном времени
+
+```
+Real-time Pronunciation Feedback:
+- WebRTC streaming
+- Whisper streaming API
+- Мгновенная обратная связь
+- "Попробуй ещё раз: ŘŘŘ"
+```
+
+#### 13. 📖 Генерация персонализированных историй
+
+```python
+async def generate_story_for_user(user: User) -> str:
+    """Генерирует историю на чешском под уровень пользователя."""
+    prompt = f"""
+    Napiš krátký příběh (100-150 slov) na úrovni {user.level}.
+
+    Téma: {random.choice(user.favorite_topics)}
+    Slovní zásoba: použij slova, která student zná: {user.known_words[:20]}
+    Nová slova: přidej 3-5 nových slov s vysvětlením
+
+    Na konci přidej:
+    - 3 otázky k příběhu
+    - Slovníček nových slov
+    """
+
+    return await openai_client.generate(prompt)
+```
+
+#### 14. 🎧 Подкаст от Хонзика
+
+```
+Еженедельный AI-генерируемый подкаст:
+- 5-10 минут на чешском
+- Адаптирован под уровень
+- Новости из Чехии
+- Интересные факты
+- Разбор полезных фраз
+```
+
+---
+
 ## 📋 ПЛАН ВНЕДРЕНИЯ
 
 ### Фаза 1: Критические улучшения (1-2 недели)
+
+| Задача | Приоритет | Оценка |
+|--------|-----------|--------|
+| Параллельная обработка голосовых | 🔴 Критично | 3 дня |
+| Умный выбор модели GPT | 🔴 Критично | 1 день |
+| Кеширование TTS | 🟠 Высокий | 2 дня |
+| Connection pooling | 🟠 Высокий | 1 день |
+| Background tasks для DB | 🟠 Высокий | 2 дня |
+
+### Фаза 2: Монетизация (2-3 недели)
+
+| Задача | Приоритет | Оценка |
+|--------|-----------|--------|
+| Модель подписок в БД | 🔴 Критично | 2 дня |
+| Telegram Stars интеграция | 🔴 Критично | 3 дня |
+| Usage limiter | 🔴 Критично | 2 дня |
+| Paywall UI | 🟠 Высокий | 2 дня |
+| Premium функции | 🟠 Высокий | 5 дней |
+
+### Фаза 3: Геймификация (2-3 недели)
+
+| Задача | Приоритет | Оценка |
+|--------|-----------|--------|
+| Новые достижения | 🟠 Высокий | 3 дня |
+| Ежедневные челленджи | 🟠 Высокий | 3 дня |
+| Лидерборд | 🟡 Средний | 2 дня |
+| Реферальная программа | 🟡 Средний | 3 дня |
+
+### Фаза 4: Чешский интерфейс + Текст (2-3 недели)
+
+| Задача | Приоритет | Оценка |
+|--------|-----------|--------|
+| Локализация UI на чешский | 🔴 Критично | 4 дня |
+| Миграция ui_language → native_language | 🔴 Критично | 1 день |
+| Текстовый endpoint в backend | 🔴 Критично | 2 дня |
+| Обработчик текста в боте | 🔴 Критично | 2 дня |
+| Чешская клавиатура с диакритикой | 🟠 Высокий | 1 день |
+| Адаптивные объяснения ошибок | 🟠 Высокий | 2 дня |
+
+### Фаза 5: Frontend (1-2 недели)
+
+| Задача | Приоритет | Оценка |
+|--------|-----------|--------|
+| Server Components | 🟠 Высокий | 3 дня |
+| Optimistic updates | 🟠 Высокий | 2 дня |
+| Новый Onboarding | 🟡 Средний | 2 дня |
+| Анимации достижений | 🟡 Средний | 2 дня |
+
+### Фаза 6: Новые функции (4+ недели)
+
+| Задача | Приоритет | Оценка |
+|--------|-----------|--------|
+| Ролевые сценарии | 🟠 Высокий | 1 неделя |
+| Анализ произношения | 🟡 Средний | 1 неделя |
+| Мини-игры | 🟡 Средний | 1 неделя |
+| Подготовка к экзаменам | 🟡 Средний | 2 недели |
 
 | Задача | Приоритет | Оценка |
 |--------|-----------|--------|
