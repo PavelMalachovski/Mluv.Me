@@ -1,9 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { User, BookmarkCheck, Settings, Repeat, BarChart2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useCallback } from "react"
 
 interface NavigationProps {
   className?: string
@@ -37,8 +38,22 @@ const navigationItems = [
   },
 ]
 
+/**
+ * Navigation Component with Prefetching on Hover
+ *
+ * Features:
+ * - Prefetches routes when user hovers over links
+ * - Active state indication
+ * - Responsive design (bottom on mobile, sidebar on desktop)
+ */
 export function Navigation({ className }: NavigationProps) {
   const pathname = usePathname()
+  const router = useRouter()
+
+  // Prefetch on hover for faster navigation
+  const handleMouseEnter = useCallback((href: string) => {
+    router.prefetch(href)
+  }, [router])
 
   return (
     <nav
@@ -56,8 +71,12 @@ export function Navigation({ className }: NavigationProps) {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={true}
+              onMouseEnter={() => handleMouseEnter(item.href)}
+              onTouchStart={() => handleMouseEnter(item.href)}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-purple-50 dark:hover:bg-purple-900/20 md:w-full md:gap-2 md:py-4",
+                "flex flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm transition-all hover:bg-purple-50 dark:hover:bg-purple-900/20 md:w-full md:gap-2 md:py-4",
+                "hover:scale-105 active:scale-95 transition-transform duration-150",
                 isActive
                   ? "text-purple-600 dark:text-purple-400 font-semibold bg-purple-50 dark:bg-purple-900/30"
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
@@ -65,7 +84,7 @@ export function Navigation({ className }: NavigationProps) {
             >
               <Icon
                 className={cn(
-                  "h-6 w-6",
+                  "h-6 w-6 transition-colors",
                   isActive ? "text-purple-600 dark:text-purple-400" : "text-gray-500 dark:text-gray-500"
                 )}
               />

@@ -1,6 +1,19 @@
 "use client"
 
+import { Suspense } from "react"
+import dynamic from "next/dynamic"
 import { Navigation } from "@/components/ui/navigation"
+import { PrefetchLinks } from "@/components/ui/PrefetchLinks"
+import { Skeleton } from "@/components/ui/skeletons"
+
+/**
+ * Dashboard Layout with Prefetching
+ *
+ * Features:
+ * - Prefetches popular routes on mount
+ * - Lazy loads Navigation to reduce initial bundle
+ * - Provides consistent layout structure
+ */
 
 export default function DashboardLayout({
   children,
@@ -9,6 +22,9 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="flex min-h-screen cream-bg landscape-bg">
+      {/* Prefetch popular routes */}
+      <PrefetchLinks />
+
       {/* Navigation Sidebar/Bottom Bar */}
       <Navigation />
 

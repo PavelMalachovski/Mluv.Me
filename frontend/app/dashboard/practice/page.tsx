@@ -1,11 +1,10 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useCallback } from "react"
 import dynamic from "next/dynamic"
-import { useMutation } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
-import { apiClient } from "@/lib/api-client"
+import { useTextMutation, useVoiceMutation, useTranslateWordMutation, useSaveWordMutation } from "@/lib/hooks"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ClickableText } from "@/components/ui/ClickableText"
@@ -14,24 +13,23 @@ import { CzechTextInput } from "@/components/ui/CzechTextInput"
 import { TopicSelector, TOPICS } from "@/components/features/TopicSelector"
 import { LessonResponse, WordTranslation } from "@/lib/types"
 import { FileText, Languages, X, Loader2 } from "lucide-react"
+import { VoiceRecorderSkeleton } from "@/components/ui/skeletons"
 
-// Dynamic import to avoid SSR issues with react-media-recorder (uses Web Workers)
+// Dynamic import VoiceRecorder - heavy component with Web Workers
 const VoiceRecorder = dynamic(
   () => import("@/components/ui/VoiceRecorder").then((mod) => mod.VoiceRecorder),
   {
     ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center p-4">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    ),
+    loading: () => <VoiceRecorderSkeleton />,
   }
 )
 
 interface ConversationMessage {
+  id: string
   role: "user" | "assistant"
   text: string
   response?: LessonResponse
+  status: "sending" | "sent" | "error"
   showTranscript?: boolean
   translateMode?: boolean
 }
@@ -48,20 +46,20 @@ interface TranslationState {
 export default function PracticePage() {
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
-  const [userText, setUserText] = useState("")
   const [conversation, setConversation] = useState<ConversationMessage[]>([])
   const [translationState, setTranslationState] = useState<TranslationState | null>(null)
   const [inputMode, setInputMode] = useState<"text" | "voice">("text")
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
   const [showTopicSelector, setShowTopicSelector] = useState(true)
 
-  const sendMessage = useMutation({
-    mutationFn: (text: string) =>
-      apiClient.processText(user!.telegram_id, text, false), // No audio for web - faster
-    onSuccess: (data, text) => {
+  // Text message mutation with optimistic updates
+  // Note: All hooks must be called before any early returns
+  const sendMessage = useTextMutation({
+    telegramId: user?.telegram_id ?? 0,
+    includeAudio: false, // No audio for web - faster
+    onSuccess: (data) => {
       console.log("Response from backend:", data)
 
-      // Create lesson response from text response
       const lessonResponse: LessonResponse = {
         honzik_text: data.honzik_response_text || "",
         honzik_transcript: data.honzik_response_transcript || data.honzik_response_text || "",
@@ -71,35 +69,77 @@ export default function PracticePage() {
         correctness_score: data.corrections?.correctness_score || 0,
       }
 
-      // Add user message
+      // Add to local conversation state
       setConversation((prev) => [
-        ...prev,
+        ...prev.filter(m => m.status !== "sending"),
         {
+          id: `user-${Date.now()}`,
           role: "user",
-          text: text,
+          text: data.transcript || "",
           response: lessonResponse,
+          status: "sent",
         },
-      ])
-
-      // Add Honzík response with transcript
-      setConversation((prev) => [
-        ...prev,
         {
+          id: `assistant-${Date.now()}`,
           role: "assistant",
           text: lessonResponse.honzik_text,
           response: lessonResponse,
+          status: "sent",
           showTranscript: false,
           translateMode: false,
         },
       ])
-
-      setUserText("")
+    },
+    onError: () => {
+      // Remove the "sending" message on error
+      setConversation((prev) => prev.filter(m => m.status !== "sending"))
     },
   })
 
-  const translateWord = useMutation({
-    mutationFn: (word: string) =>
-      apiClient.translateWord(word, user?.ui_language || "ru"),
+  // Voice message mutation with optimistic updates
+  const processVoice = useVoiceMutation({
+    telegramId: user?.telegram_id ?? 0,
+    onSuccess: (data) => {
+      console.log("Voice response from backend:", data)
+
+      const userTranscript = data.user_transcript || data.transcript || "🎤 Voice message"
+      const lessonResponse: LessonResponse = {
+        honzik_text: data.honzik_response_text || data.honzik_response_transcript || "",
+        honzik_transcript: data.honzik_response_transcript || data.honzik_response_text || "",
+        user_mistakes: data.corrections?.mistakes?.map((m: { original: string }) => m.original) || [],
+        suggestions: data.corrections?.suggestion ? [data.corrections.suggestion] : [],
+        stars_earned: data.stars_earned || 0,
+        correctness_score: data.corrections?.correctness_score || 0,
+      }
+
+      setConversation((prev) => [
+        ...prev.filter(m => m.status !== "sending"),
+        {
+          id: `user-${Date.now()}`,
+          role: "user",
+          text: userTranscript,
+          response: lessonResponse,
+          status: "sent",
+        },
+        {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          text: lessonResponse.honzik_text,
+          response: lessonResponse,
+          status: "sent",
+          showTranscript: false,
+          translateMode: false,
+        },
+      ])
+    },
+    onError: () => {
+      setConversation((prev) => prev.filter(m => m.status !== "sending"))
+    },
+  })
+
+  // Translate word mutation
+  const translateWord = useTranslateWordMutation({
+    targetLanguage: user?.ui_language || "ru",
     onSuccess: (data: WordTranslation) => {
       setTranslationState((prev) =>
         prev ? {
@@ -117,89 +157,62 @@ export default function PracticePage() {
     },
   })
 
-  const saveWord = useMutation({
-    mutationFn: (wordData: { word_czech: string; translation: string }) =>
-      apiClient.saveWord(user!.id, wordData),
+  // Save word mutation with optimistic update
+  const saveWord = useSaveWordMutation({
+    userId: user?.id ?? 0,
+    telegramId: user?.telegram_id ?? 0,
     onSuccess: () => {
-      // Close popup after saving
       setTranslationState(null)
     },
   })
 
-  // Voice processing mutation
-  const processVoice = useMutation({
-    mutationFn: (audioBlob: Blob) => apiClient.processVoice(user!.telegram_id, audioBlob),
-    onSuccess: (data) => {
-      console.log("Voice response from backend:", data)
+  // Handlers - useCallback must be called before early returns
+  const handleTextSubmit = useCallback((text: string) => {
+    // Add optimistic message immediately
+    setConversation((prev) => [
+      ...prev,
+      {
+        id: `temp-${Date.now()}`,
+        role: "user",
+        text: text,
+        status: "sending",
+      },
+    ])
+    sendMessage.mutate(text)
+  }, [sendMessage])
 
-      // Get user transcript if available
-      const userTranscript = data.user_transcript || data.transcript || "🎤 Voice message"
+  const handleVoiceSubmit = useCallback((blob: Blob) => {
+    // Add optimistic message
+    setConversation((prev) => [
+      ...prev,
+      {
+        id: `temp-${Date.now()}`,
+        role: "user",
+        text: "🎤 Processing voice message...",
+        status: "sending",
+      },
+    ])
+    processVoice.mutate(blob)
+  }, [processVoice])
 
-      // Create lesson response from voice response
-      const lessonResponse: LessonResponse = {
-        honzik_text: data.honzik_response_text || data.honzik_response_transcript || "",
-        honzik_transcript: data.honzik_response_transcript || data.honzik_response_text || "",
-        user_mistakes: data.corrections?.mistakes?.map((m: { original: string }) => m.original) || [],
-        suggestions: data.corrections?.suggestion ? [data.corrections.suggestion] : [],
-        stars_earned: data.stars_earned || 0,
-        correctness_score: data.corrections?.correctness_score || 0,
-      }
-
-      // Add user message
-      setConversation((prev) => [
-        ...prev,
-        {
-          role: "user",
-          text: userTranscript,
-          response: lessonResponse,
-        },
-      ])
-
-      // Add Honzík response
-      setConversation((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          text: lessonResponse.honzik_text,
-          response: lessonResponse,
-          showTranscript: false,
-          translateMode: false,
-        },
-      ])
-    },
-  })
-
-  if (!user) {
-    router.push("/login")
-    return null
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (userText.trim()) {
-      sendMessage.mutate(userText)
-    }
-  }
-
-  const toggleTranscript = (index: number) => {
+  const toggleTranscript = useCallback((index: number) => {
     setConversation((prev) =>
       prev.map((msg, i) =>
         i === index ? { ...msg, showTranscript: !msg.showTranscript } : msg
       )
     )
-  }
+  }, [])
 
-  const toggleTranslateMode = (index: number) => {
+  const toggleTranslateMode = useCallback((index: number) => {
     setConversation((prev) =>
       prev.map((msg, i) =>
         i === index ? { ...msg, translateMode: !msg.translateMode } : msg
       )
     )
-    // Close any open translation popup
     setTranslationState(null)
-  }
+  }, [])
 
-  const handleWordClick = (word: string, rect: DOMRect, messageIndex: number) => {
+  const handleWordClick = useCallback((word: string, rect: DOMRect, messageIndex: number) => {
     const scrollY = typeof window !== 'undefined' ? window.scrollY : 0
     setTranslationState({
       word,
@@ -210,15 +223,23 @@ export default function PracticePage() {
       messageIndex,
     })
     translateWord.mutate(word)
-  }
+  }, [translateWord])
 
-  const handleSaveWord = () => {
+  const handleSaveWord = useCallback(() => {
     if (translationState?.translation) {
       saveWord.mutate({
         word_czech: translationState.word,
         translation: translationState.translation,
       })
     }
+  }, [translationState, saveWord])
+
+  const isLoading = sendMessage.isPending || processVoice.isPending
+
+  // Auth check - AFTER all hooks are called
+  if (!user) {
+    router.push("/login")
+    return null
   }
 
   return (
@@ -291,13 +312,12 @@ export default function PracticePage() {
               ) : (
                 conversation.map((msg, index) => (
                   <div
-                    key={index}
-                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"
-                      }`}
+                    key={msg.id}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   >
                     <div
                       className={`max-w-[80%] ${msg.role === "user"
-                        ? "rounded-lg bg-blue-500 p-4 text-white"
+                        ? `rounded-lg bg-blue-500 p-4 text-white ${msg.status === "sending" ? "opacity-70" : ""}`
                         : "rounded-lg bg-gray-100 dark:bg-gray-800 p-4"
                         }`}
                     >
@@ -312,7 +332,15 @@ export default function PracticePage() {
                         <p className="whitespace-pre-wrap">{msg.text}</p>
                       )}
 
-                      {msg.role === "user" && msg.response && (
+                      {/* Sending indicator */}
+                      {msg.status === "sending" && (
+                        <div className="flex items-center gap-2 mt-2 text-xs opacity-70">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Processing...
+                        </div>
+                      )}
+
+                      {msg.role === "user" && msg.response && msg.status === "sent" && (
                         <div className="mt-3 space-y-2 border-t border-blue-400 pt-3">
                           <div className="flex items-center gap-2 text-sm">
                             <span>⭐ {msg.response.stars_earned} stars</span>
@@ -333,7 +361,7 @@ export default function PracticePage() {
                         </div>
                       )}
 
-                      {msg.role === "assistant" && msg.response && (
+                      {msg.role === "assistant" && msg.response && msg.status === "sent" && (
                         <div className="mt-3 space-y-2 border-t border-gray-300 dark:border-gray-600 pt-3">
                           <div className="flex flex-wrap gap-2">
                             <Button
@@ -346,7 +374,6 @@ export default function PracticePage() {
                               {msg.showTranscript ? "Скрыть текст" : "Показать текст"}
                             </Button>
 
-                            {/* Translate by word button */}
                             <Button
                               variant={msg.translateMode ? "default" : "outline"}
                               size="sm"
@@ -380,7 +407,8 @@ export default function PracticePage() {
                 ))
               )}
 
-              {sendMessage.isPending && (
+              {/* Loading indicator for background processing */}
+              {isLoading && conversation.every(m => m.status !== "sending") && (
                 <div className="flex justify-start">
                   <div className="rounded-lg bg-gray-100 p-4">
                     <div className="flex items-center gap-2">
@@ -394,14 +422,13 @@ export default function PracticePage() {
             </div>
           )}
 
-          {/* Input Mode Toggle - only show when not selecting topic */}
+          {/* Input Area */}
           {!showTopicSelector && (
             <>
-              {/* Input Area with Czech Keyboard */}
               {inputMode === "text" ? (
                 <CzechTextInput
-                  onSubmit={(text) => sendMessage.mutate(text)}
-                  isLoading={sendMessage.isPending}
+                  onSubmit={handleTextSubmit}
+                  isLoading={isLoading}
                   mode={inputMode}
                   onModeChange={setInputMode}
                   placeholder="Napiš zprávu v češtině..."
@@ -409,19 +436,17 @@ export default function PracticePage() {
                 />
               ) : (
                 <div className="space-y-3">
-                  {/* Mode Toggle */}
                   <CzechTextInput
-                    onSubmit={(text) => sendMessage.mutate(text)}
+                    onSubmit={handleTextSubmit}
                     onVoiceStart={() => {/* VoiceRecorder handles this */}}
-                    isLoading={processVoice.isPending}
+                    isLoading={isLoading}
                     mode={inputMode}
                     onModeChange={setInputMode}
                   />
 
-                  {/* Voice Recorder */}
                   <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-4">
                     <VoiceRecorder
-                      onRecordComplete={(blob) => processVoice.mutate(blob)}
+                      onRecordComplete={handleVoiceSubmit}
                       isProcessing={processVoice.isPending}
                       maxDurationSeconds={60}
                     />
