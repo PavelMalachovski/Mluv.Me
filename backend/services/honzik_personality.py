@@ -166,7 +166,7 @@ ODPOVĚZ VE FORMÁTU JSON:
     }}
   ],
   "correctness_score": 85,
-  "suggestion": "jeden krátký tip pro studenta v {native_lang_name}"
+  "suggestion": "jeden krátký tip pro studenta v jednoduché češtině"
 }}
 
 Příklad formátu opravy:
