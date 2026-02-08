@@ -403,4 +403,69 @@
   .illustrated-nav-item.active .nav-icon {
     color: hsl(var(--primary));
   }
+
+  /* ========== Achievement Animations ========== */
+
+  /* Wiggle animation for newly unlocked achievement icons */
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    50% { transform: rotate(10deg); }
+    75% { transform: rotate(-5deg); }
+  }
+
+  .animate-wiggle {
+    animation: wiggle 0.5s ease-in-out;
+  }
+
+  /* Achievement unlock animation (scale + glow) */
+  @keyframes achievement-unlock {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .animate-achievement-unlock {
+    animation: achievement-unlock 0.6s ease-out;
+  }
+
+  /* Shimmer effect for 100% progress bars */
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+
+  /* Confetti burst animation */
+  @keyframes confetti {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    50% { transform: translateY(-10px) scale(1.2); }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+
+  .animate-confetti {
+    animation: confetti 0.6s ease-in-out;
+  }
+
+  /* Slide transitions for onboarding */
+  @keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  @keyframes slideOutLeft {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(-100%); opacity: 0; }
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  .animate-slide-out-left {
+    animation: slideOutLeft 0.3s ease-out;
+  }
 }

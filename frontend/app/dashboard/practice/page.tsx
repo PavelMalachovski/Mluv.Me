@@ -140,7 +140,7 @@ export default function PracticePage() {
 
   // Translate word mutation
   const translateWord = useTranslateWordMutation({
-    targetLanguage: user?.ui_language || "ru",
+    targetLanguage: user?.native_language || "ru",
     onSuccess: (data: WordTranslation) => {
       setTranslationState((prev) =>
         prev ? {

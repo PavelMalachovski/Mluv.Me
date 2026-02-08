@@ -80,20 +80,27 @@ export function AchievementGrid({ achievements, className = "" }: AchievementGri
 
 interface AchievementCardProps {
     achievement: Achievement
+    /** Whether this achievement was recently unlocked (show animation) */
+    isNew?: boolean
 }
 
-function AchievementCard({ achievement }: AchievementCardProps) {
+function AchievementCard({ achievement, isNew = false }: AchievementCardProps) {
     const colorClass = CATEGORY_COLORS[achievement.category] || "from-gray-400 to-gray-500"
 
     return (
         <div
             className={`relative rounded-xl overflow-hidden transition-all duration-300 ${achievement.is_unlocked
-                    ? "transform hover:scale-105 shadow-lg"
-                    : "opacity-60 grayscale"
-                }`}
+                ? "transform hover:scale-105 shadow-lg"
+                : "opacity-60 grayscale"
+                } ${isNew ? "animate-achievement-unlock ring-2 ring-yellow-400 ring-offset-2" : ""}`}
         >
             {/* Background gradient */}
             <div className={`absolute inset-0 bg-gradient-to-br ${colorClass} opacity-20`} />
+
+            {/* Glow effect for new achievements */}
+            {isNew && (
+                <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/30 to-amber-500/30 animate-pulse" />
+            )}
 
             <div className="relative p-4 text-center">
                 {/* Lock overlay for locked achievements */}
@@ -103,8 +110,15 @@ function AchievementCard({ achievement }: AchievementCardProps) {
                     </div>
                 )}
 
-                {/* Icon */}
-                <div className={`text-4xl mb-2 ${!achievement.is_unlocked && "blur-sm"}`}>
+                {/* Confetti burst for new achievements */}
+                {isNew && (
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 text-xl animate-bounce">
+                        🎉
+                    </div>
+                )}
+
+                {/* Icon with animation */}
+                <div className={`text-4xl mb-2 ${!achievement.is_unlocked && "blur-sm"} ${isNew ? "animate-wiggle" : ""}`}>
                     {achievement.icon}
                 </div>
 
@@ -121,21 +135,28 @@ function AchievementCard({ achievement }: AchievementCardProps) {
                 {/* Stars reward */}
                 {achievement.stars_reward > 0 && (
                     <div className={`mt-2 text-xs font-medium ${achievement.is_unlocked ? "text-yellow-600" : "text-gray-400"
-                        }`}>
+                        } ${isNew ? "animate-pulse" : ""}`}>
                         ⭐ {achievement.stars_reward}
                     </div>
                 )}
 
-                {/* Unlocked date */}
-                {achievement.is_unlocked && achievement.unlocked_at && (
+                {/* Unlocked date or NEW badge */}
+                {achievement.is_unlocked && (
                     <div className="mt-1 text-[10px] text-gray-400">
-                        {new Date(achievement.unlocked_at).toLocaleDateString()}
+                        {isNew ? (
+                            <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                                NOVÉ! 🎊
+                            </span>
+                        ) : (
+                            achievement.unlocked_at && new Date(achievement.unlocked_at).toLocaleDateString()
+                        )}
                     </div>
                 )}
             </div>
         </div>
     )
 }
+
 
 interface AchievementProgressProps {
     total: number

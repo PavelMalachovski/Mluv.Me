@@ -97,7 +97,7 @@ class APIClient {
     username?: string;
     first_name: string;
     last_name?: string;
-    ui_language: 'ru' | 'uk';
+    native_language: 'ru' | 'uk';
     level: 'beginner' | 'intermediate' | 'advanced' | 'native';
   }) {
     const response = await this.client.post('/api/v1/users', userData);

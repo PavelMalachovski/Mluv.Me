@@ -77,7 +77,7 @@ export default function SettingsPage() {
   })
 
   const updateProfileMutation = useMutation({
-    mutationFn: (data: { level?: string; ui_language?: string }) =>
+    mutationFn: (data: { level?: string; native_language?: string }) =>
       apiClient.patch(`/api/v1/users/${user?.id}`, data),
     onSuccess: (updatedUser) => {
       queryClient.invalidateQueries({ queryKey: ["user-stats"] })
@@ -440,9 +440,9 @@ export default function SettingsPage() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <button
-                    onClick={() => updateProfileMutation.mutate({ ui_language: "ru" })}
+                    onClick={() => updateProfileMutation.mutate({ native_language: "ru" })}
                     disabled={updateProfileMutation.isPending}
-                    className={`rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${user?.ui_language === "ru"
+                    className={`rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${user?.native_language === "ru"
                       ? "border-primary bg-primary/10"
                       : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
                       }`}
@@ -455,14 +455,14 @@ export default function SettingsPage() {
                           <div className="text-sm text-muted-foreground">Русский</div>
                         </div>
                       </div>
-                      {user?.ui_language === "ru" && <Check className="h-5 w-5 text-primary" />}
+                      {user?.native_language === "ru" && <Check className="h-5 w-5 text-primary" />}
                     </div>
                   </button>
 
                   <button
-                    onClick={() => updateProfileMutation.mutate({ ui_language: "uk" })}
+                    onClick={() => updateProfileMutation.mutate({ native_language: "uk" })}
                     disabled={updateProfileMutation.isPending}
-                    className={`rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${user?.ui_language === "uk"
+                    className={`rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${user?.native_language === "uk"
                       ? "border-primary bg-primary/10"
                       : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
                       }`}
@@ -475,7 +475,7 @@ export default function SettingsPage() {
                           <div className="text-sm text-muted-foreground">Українська</div>
                         </div>
                       </div>
-                      {user?.ui_language === "uk" && <Check className="h-5 w-5 text-primary" />}
+                      {user?.native_language === "uk" && <Check className="h-5 w-5 text-primary" />}
                     </div>
                   </button>
                 </div>
@@ -538,7 +538,7 @@ export default function SettingsPage() {
                     </label>
                     <input
                       type="text"
-                      value={user.ui_language === "ru" ? "Ruština" : "Ukrajinština"}
+                      value={user.native_language === "ru" ? "Ruština" : "Ukrajinština"}
                       disabled
                       className="w-full rounded-xl border border-border bg-cream-alt px-4 py-2 text-sm text-foreground"
                     />

@@ -3,7 +3,7 @@ export interface User {
   telegram_id: number
   username?: string
   first_name: string
-  ui_language: "ru" | "uk"
+  native_language: "ru" | "uk"
   level: string
   created_at: string
 }

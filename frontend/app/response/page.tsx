@@ -36,7 +36,7 @@ function ResponsePageContent() {
 
     const translateWord = useMutation({
         mutationFn: (word: string) =>
-            apiClient.translateWord(word, user?.ui_language || "ru"),
+            apiClient.translateWord(word, user?.native_language || "ru"),
         onSuccess: (data: WordTranslation) => {
             setTranslationState((prev) =>
                 prev ? {
@@ -116,16 +116,16 @@ function ResponsePageContent() {
                 {/* Text Content */}
                 <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
                     {translateMode ? (
-                    <>
-                        <ClickableText
-                            text={text}
-                            onWordClick={handleWordClick}
-                            className="text-lg leading-relaxed text-gray-800 dark:text-gray-200"
-                        />
-                        <div className="mt-4 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-3 text-sm text-yellow-800 dark:text-yellow-200">
-                            💡 Klepni na jakékoliv slovo pro zobrazení překladu
-                        </div>
-                    </>
+                        <>
+                            <ClickableText
+                                text={text}
+                                onWordClick={handleWordClick}
+                                className="text-lg leading-relaxed text-gray-800 dark:text-gray-200"
+                            />
+                            <div className="mt-4 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-3 text-sm text-yellow-800 dark:text-yellow-200">
+                                💡 Klepni na jakékoliv slovo pro zobrazení překladu
+                            </div>
+                        </>
                     ) : (
                         <p className="text-lg leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
                             {text}

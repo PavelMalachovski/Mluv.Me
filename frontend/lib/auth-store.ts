@@ -11,7 +11,7 @@ export interface User {
   username?: string;
   first_name: string;
   last_name?: string;
-  ui_language: 'ru' | 'uk';
+  native_language: 'ru' | 'uk';
   level: 'beginner' | 'intermediate' | 'advanced' | 'native';
   created_at: string;
 }
