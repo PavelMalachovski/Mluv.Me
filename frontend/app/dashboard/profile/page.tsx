@@ -10,6 +10,7 @@ import { UserStats } from "@/lib/types"
 import { Calendar } from "lucide-react"
 import { IllustratedHeader } from "@/components/ui/IllustratedHeader"
 import { IllustratedStatCard } from "@/components/ui/IllustratedStatCard"
+import { ProfileMiniGames } from "@/components/features/ProfileMiniGames"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -126,6 +127,13 @@ export default function ProfilePage() {
             );
           })()}
         </div>
+
+        {/* Mini Games Section */}
+        <ProfileMiniGames
+          userId={user.id}
+          telegramId={user.telegram_id}
+          level={user.level}
+        />
 
         {/* Achievements Section */}
         <div className="illustrated-card p-4">

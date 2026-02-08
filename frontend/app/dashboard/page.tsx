@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useEffect } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
 import { DashboardStats } from "@/components/features/DashboardStats"
@@ -8,6 +8,11 @@ import { DashboardProgress } from "@/components/features/DashboardProgress"
 import { DashboardAchievements } from "@/components/features/DashboardAchievements"
 import { QuickActions } from "@/components/features/QuickActions"
 import { WelcomeMessage } from "@/components/features/WelcomeMessage"
+import {
+  HonzikVideoAvatar,
+  hasSeenWelcomeVideo,
+  preloadVideoImages,
+} from "@/components/features/HonzikVideoAvatar"
 import {
   StatsSkeletons,
   QuickActionsSkeleton,
@@ -52,6 +57,17 @@ function getAvatarColor(name: string): string {
 export default function DashboardPage() {
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
+  const [showWelcomeVideo, setShowWelcomeVideo] = useState(false)
+
+  // Check if this is first visit — show welcome video
+  useEffect(() => {
+    if (user && !hasSeenWelcomeVideo()) {
+      preloadVideoImages("welcome")
+      // Small delay to let dashboard render first
+      const timer = setTimeout(() => setShowWelcomeVideo(true), 500)
+      return () => clearTimeout(timer)
+    }
+  }, [user])
 
   // Auth check - use useEffect to avoid SSR issues
   useEffect(() => {
@@ -70,6 +86,16 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen cream-bg landscape-bg pb-24">
+      {/* Honzík Welcome Video — shows on first visit */}
+      {showWelcomeVideo && (
+        <HonzikVideoAvatar
+          type="welcome"
+          language={user.native_language === "ru" ? "ru" : "cs"}
+          onComplete={() => setShowWelcomeVideo(false)}
+          onDismiss={() => setShowWelcomeVideo(false)}
+        />
+      )}
+
       {/* Custom Header with Avatar */}
       <div className="illustrated-header relative pb-8">
         <h1 className="illustrated-header-title">Přehled</h1>
