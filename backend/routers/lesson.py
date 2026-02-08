@@ -260,12 +260,27 @@ async def process_voice_message(
 
         # Определяем все задачи для параллельного выполнения
         async def generate_tts():
-            """Генерация TTS (самая долгая операция - 2-4 сек)"""
-            return await openai_client.generate_speech(
-                text=processed["honzik_response"],
-                voice=settings.tts_voice,
-                speed=voice_speed,
+            """Генерация TTS с кешированием (ускорение на 2-4 сек для повторных фраз)"""
+            text = processed["honzik_response"]
+            voice = settings.tts_voice
+            speed = voice_speed
+
+            # Проверяем кеш сначала
+            cached_audio = await cache_service.get_cached_tts(text, voice, speed)
+            if cached_audio:
+                log.info("tts_cache_hit", text_preview=text[:30])
+                return cached_audio
+
+            # Генерируем новое аудио
+            audio = await openai_client.generate_speech(
+                text=text,
+                voice=voice,
+                speed=speed,
             )
+
+            # Сохраняем в кеш (30 дней)
+            await cache_service.cache_tts(text, voice, speed, audio)
+            return audio
 
         async def save_messages():
             """Сохранение сообщений в БД"""
@@ -534,18 +549,33 @@ async def process_text_message(
 
         # Определяем все задачи
         async def generate_tts():
-            """Генерация TTS (если включено)"""
+            """Генерация TTS с кешированием (если включено)"""
             if not include_audio:
                 return None
 
             voice_speed = openai_client.get_voice_speed_mapping(
                 user.settings.voice_speed
             )
-            return await openai_client.generate_speech(
-                text=processed["honzik_response"],
-                voice=settings.tts_voice,
-                speed=voice_speed,
+            text = processed["honzik_response"]
+            voice = settings.tts_voice
+            speed = voice_speed
+
+            # Проверяем кеш сначала
+            cached_audio = await cache_service.get_cached_tts(text, voice, speed)
+            if cached_audio:
+                log.info("tts_cache_hit", text_preview=text[:30])
+                return cached_audio
+
+            # Генерируем новое аудио
+            audio = await openai_client.generate_speech(
+                text=text,
+                voice=voice,
+                speed=speed,
             )
+
+            # Сохраняем в кеш (30 дней)
+            await cache_service.cache_tts(text, voice, speed, audio)
+            return audio
 
         async def save_messages():
             """Сохранение сообщений в БД"""
