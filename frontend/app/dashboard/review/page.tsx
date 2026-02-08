@@ -70,8 +70,14 @@ export default function ReviewPage() {
         },
     })
 
+    // Auth check - use useEffect to avoid SSR issues
+    useEffect(() => {
+        if (!user) {
+            router.push("/login")
+        }
+    }, [user, router])
+
     if (!user) {
-        router.push("/login")
         return null
     }
 

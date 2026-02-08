@@ -48,7 +48,7 @@ def event_loop():
 @pytest_asyncio.fixture(scope="function")
 async def test_engine():
     """Create test database engine."""
-    settings = get_test_settings()
+    get_test_settings()
 
     # Use in-memory SQLite for tests (faster)
     engine = create_async_engine(
@@ -85,6 +85,7 @@ async def session(test_engine) -> AsyncGenerator[AsyncSession, None]:
 @pytest_asyncio.fixture(scope="function")
 async def client(session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """Create test HTTP client with database session override."""
+    import httpx
 
     async def override_get_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
@@ -92,10 +93,15 @@ async def client(session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_settings] = get_test_settings
 
+    # Initialize http_client like in startup event
+    app.state.http_client = httpx.AsyncClient(follow_redirects=True, timeout=30.0)
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 
+    # Cleanup
+    await app.state.http_client.aclose()
     app.dependency_overrides.clear()
 
 

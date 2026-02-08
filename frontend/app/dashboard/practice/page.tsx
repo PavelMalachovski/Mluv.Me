@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
@@ -236,9 +236,15 @@ export default function PracticePage() {
 
   const isLoading = sendMessage.isPending || processVoice.isPending
 
-  // Auth check - AFTER all hooks are called
+  // Auth check - use useEffect to avoid SSR issues
+  useEffect(() => {
+    if (!user) {
+      router.push("/login")
+    }
+  }, [user, router])
+
+  // Don't render if not authenticated
   if (!user) {
-    router.push("/login")
     return null
   }
 
@@ -438,7 +444,7 @@ export default function PracticePage() {
                 <div className="space-y-3">
                   <CzechTextInput
                     onSubmit={handleTextSubmit}
-                    onVoiceStart={() => {/* VoiceRecorder handles this */}}
+                    onVoiceStart={() => {/* VoiceRecorder handles this */ }}
                     isLoading={isLoading}
                     mode={inputMode}
                     onModeChange={setInputMode}

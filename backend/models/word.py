@@ -4,7 +4,7 @@ SavedWord model.
 """
 
 from datetime import datetime, date
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 import json
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Float, Date, Index

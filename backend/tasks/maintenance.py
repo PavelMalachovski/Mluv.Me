@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any
 
 from celery import Task
-from sqlalchemy import text, select, delete
+from sqlalchemy import text, delete
 
 from backend.tasks.celery_app import celery_app
 from backend.db.database import AsyncSessionLocal

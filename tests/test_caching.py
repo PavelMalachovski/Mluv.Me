@@ -268,7 +268,7 @@ class TestStatsRepositoryCaching:
             today = date.today()
 
             # Create stats and manually cache
-            stats = await stats_repo.get_or_create_daily(user.id, today)
+            await stats_repo.get_or_create_daily(user.id, today)
             await session.commit()
 
             cache_key = CacheKeys.daily_stats(user.telegram_id, str(today))

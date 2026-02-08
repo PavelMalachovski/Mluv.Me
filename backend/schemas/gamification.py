@@ -2,7 +2,6 @@
 Pydantic schemas for gamification API endpoints.
 """
 
-from datetime import datetime
 from typing import Any
 from pydantic import BaseModel, Field
 

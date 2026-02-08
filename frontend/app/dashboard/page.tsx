@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense } from "react"
+import { Suspense, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
 import { DashboardStats } from "@/components/features/DashboardStats"
@@ -53,9 +53,15 @@ export default function DashboardPage() {
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
 
+  // Auth check - use useEffect to avoid SSR issues
+  useEffect(() => {
+    if (!user) {
+      router.push("/login")
+    }
+  }, [user, router])
+
   // Auth check - redirect if not logged in
   if (!user) {
-    router.push("/login")
     return null
   }
 

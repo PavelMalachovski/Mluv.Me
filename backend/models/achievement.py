@@ -4,7 +4,7 @@ Achievement models.
 """
 
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Boolean, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship

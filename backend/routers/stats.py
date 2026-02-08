@@ -43,7 +43,7 @@ async def get_stats_summary(
         HTTPException: Если пользователь не найден
     """
     # Try cache first
-    settings = get_settings()
+    get_settings()
     today = datetime.now().date()
     cache_key = CacheKeys.daily_stats(telegram_id, str(today))
 

@@ -21,12 +21,12 @@ class TestHealthEndpoint:
         assert data["version"] == "1.0.0"
 
     async def test_root_endpoint(self, client: AsyncClient):
-        """Test root endpoint."""
+        """Test root endpoint (proxies to frontend, returns 503 when frontend is down)."""
         response = await client.get("/")
 
-        assert response.status_code == 200
-        data = response.json()
-        assert "Nazdar" in data["message"]
+        # When frontend is not running (like in tests), expect 503
+        assert response.status_code == 503
+        assert "Frontend is starting up" in response.text
 
 
 @pytest.mark.asyncio
@@ -61,7 +61,7 @@ class TestUserEndpoints:
     async def test_get_user_by_telegram_id(self, client: AsyncClient, user_data):
         """Test getting user by Telegram ID."""
         # Create user
-        create_response = await client.post("/api/v1/users", json=user_data)
+        await client.post("/api/v1/users", json=user_data)
 
         # Get user
         telegram_id = user_data["telegram_id"]

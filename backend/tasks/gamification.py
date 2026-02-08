@@ -10,11 +10,11 @@ from datetime import datetime, date, timedelta
 from typing import Dict, Any
 
 from celery import Task
-from sqlalchemy import select, func
+from sqlalchemy import select
 
 from backend.tasks.celery_app import celery_app
 from backend.db.database import AsyncSessionLocal
-from backend.db.repositories import StatsRepository, UserRepository
+from backend.db.repositories import StatsRepository
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)

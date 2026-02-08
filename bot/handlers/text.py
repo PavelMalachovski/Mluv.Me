@@ -11,7 +11,6 @@ import base64
 from aiogram import F, Router
 from aiogram.types import (
     BufferedInputFile,
-    CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,

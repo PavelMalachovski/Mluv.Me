@@ -4,7 +4,6 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime
 
 from backend.db.database import get_session
 from backend.db.repositories import (
@@ -106,7 +105,7 @@ async def process_text_message(
     )
 
     # Save user message
-    user_message = await message_repo.create(
+    await message_repo.create(
         user_id=request.user_id,
         role="user",
         text=request.text,

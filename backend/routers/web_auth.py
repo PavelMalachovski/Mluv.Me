@@ -13,7 +13,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.config import get_settings
 from backend.db.database import get_session
 from backend.db.repositories import UserRepository
-from backend.models.user import User
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -328,8 +327,8 @@ async def authenticate_web_app(
             raise HTTPException(status_code=400, detail="No user data in initData")
 
         telegram_id = user_data['id']
-        first_name = user_data.get('first_name', 'User')
-        username = user_data.get('username')
+        user_data.get('first_name', 'User')
+        user_data.get('username')
 
         # Get or create user
         user_repo = UserRepository(db)

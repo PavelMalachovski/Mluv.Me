@@ -23,7 +23,6 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.challenge import Challenge, UserChallenge, TopicMessageCount
-from backend.models.user import User
 from backend.models.stats import DailyStats, Stars
 from backend.models.word import SavedWord
 from backend.models.message import Message
@@ -64,7 +63,7 @@ class ChallengeService:
             select(Challenge).where(
                 and_(
                     Challenge.type == "daily",
-                    Challenge.is_active == True
+                    Challenge.is_active
                 )
             )
         )
@@ -137,7 +136,7 @@ class ChallengeService:
             select(Challenge).where(
                 and_(
                     Challenge.type == "weekly",
-                    Challenge.is_active == True
+                    Challenge.is_active
                 )
             )
         )

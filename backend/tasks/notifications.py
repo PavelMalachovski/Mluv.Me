@@ -7,7 +7,7 @@ Notification background tasks for Mluv.Me.
 - Еженедельных отчетов
 """
 
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from typing import Dict, Any
 
 from celery import Task
@@ -206,7 +206,7 @@ async def send_daily_reminders(self) -> Dict[str, Any]:
                 .join(UserSettings, Message.user_id == UserSettings.user_id)
                 .where(
                     Message.created_at >= week_ago,
-                    UserSettings.notifications_enabled == True
+                    UserSettings.notifications_enabled
                 )
             )
 
@@ -221,7 +221,6 @@ async def send_daily_reminders(self) -> Dict[str, Any]:
             # Запускаем задачи отправки для каждого пользователя
             sent = 0
             failed = 0
-            skipped = 0
 
             for user_id in active_user_ids:
                 try:

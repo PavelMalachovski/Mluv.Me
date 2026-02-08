@@ -2,8 +2,7 @@
 Тесты для GamificationService.
 """
 
-import pytest
-from datetime import date, timedelta
+from datetime import date
 from backend.services.gamification import GamificationService
 
 

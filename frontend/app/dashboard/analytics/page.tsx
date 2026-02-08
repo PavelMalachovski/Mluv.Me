@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
@@ -52,8 +53,14 @@ export default function AnalyticsPage() {
     // Transform daily data for charts
     const chartData = dailyData ? transformDailyData(dailyData) : []
 
+    // Auth check - use useEffect to avoid SSR issues
+    useEffect(() => {
+        if (!user) {
+            router.push("/login")
+        }
+    }, [user, router])
+
     if (!user) {
-        router.push("/login")
         return null
     }
 

@@ -5,7 +5,6 @@ Saved words endpoints.
 
 import structlog
 from datetime import date, datetime
-from typing import Optional
 from pydantic import BaseModel
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -20,7 +19,7 @@ from backend.schemas.translation import (
     SaveWordRequest,
 )
 from backend.services.translation_service import TranslationService
-from backend.services.spaced_repetition_service import SpacedRepetitionService, ResponseQuality
+from backend.services.spaced_repetition_service import SpacedRepetitionService
 from backend.models.word import SavedWord
 
 logger = structlog.get_logger()

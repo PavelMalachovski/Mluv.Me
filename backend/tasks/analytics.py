@@ -12,14 +12,12 @@ from typing import Dict, Any
 
 from celery import Task
 from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.tasks.celery_app import celery_app
 from backend.db.database import AsyncSessionLocal
-from backend.db.repositories import StatsRepository, UserRepository, MessageRepository
+from backend.db.repositories import StatsRepository, MessageRepository
 from backend.cache.redis_client import redis_client
 from backend.cache.cache_keys import CacheKeys
-from backend.services.gamification import GamificationService
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -262,7 +260,7 @@ async def generate_weekly_report(self, user_id: int) -> Dict[str, Any]:
     try:
         async with AsyncSessionLocal() as db:
             stats_repo = StatsRepository(db)
-            message_repo = MessageRepository(db)
+            MessageRepository(db)
 
             # Период: последние 7 дней
             today = date.today()

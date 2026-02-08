@@ -118,7 +118,7 @@ class MluvMeUser(HttpUser):
         Вес: 3
         """
         self.client.get(
-            f"/api/v1/stats/summary",
+            "/api/v1/stats/summary",
             params={"user_id": self.telegram_id},
             name="GET /api/v1/stats/summary",
         )
@@ -143,7 +143,7 @@ class MluvMeUser(HttpUser):
         Вес: 2
         """
         self.client.get(
-            f"/api/v1/words",
+            "/api/v1/words",
             params={"user_id": self.telegram_id, "limit": 10},
             name="GET /api/v1/words",
         )
@@ -156,7 +156,7 @@ class MluvMeUser(HttpUser):
         Вес: 1
         """
         self.client.get(
-            f"/api/v1/stats/streak",
+            "/api/v1/stats/streak",
             params={"user_id": self.telegram_id},
             name="GET /api/v1/stats/streak",
         )

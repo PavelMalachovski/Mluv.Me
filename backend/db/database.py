@@ -4,9 +4,8 @@ Database connection and session management.
 """
 
 from collections.abc import AsyncGenerator
-from typing import Any
 
-from sqlalchemy import MetaData, event
+from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,

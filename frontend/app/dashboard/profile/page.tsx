@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -20,8 +21,14 @@ export default function ProfilePage() {
     enabled: !!user?.telegram_id,
   })
 
+  // Auth check - use useEffect to avoid SSR issues
+  useEffect(() => {
+    if (!user) {
+      router.push("/login")
+    }
+  }, [user, router])
+
   if (!user) {
-    router.push("/login")
     return null
   }
 

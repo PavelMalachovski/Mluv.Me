@@ -338,7 +338,7 @@ class AchievementService:
             .where(
                 and_(
                     UserChallenge.user_id == user_id,
-                    UserChallenge.completed == True
+                    UserChallenge.completed
                 )
             )
         )
@@ -390,7 +390,7 @@ class AchievementService:
 
         for topic in detected_topics:
             # Увеличиваем счётчик темы
-            count = await self._increment_topic_count(session, user.id, topic)
+            await self._increment_topic_count(session, user.id, topic)
 
             # Проверяем достижения для этой темы
             achievements = await self.check_achievements(
@@ -742,7 +742,7 @@ class AchievementService:
             Сводка прогресса по категориям
         """
         # Получаем количество достижений
-        total_query = select(Achievement).where(Achievement.is_hidden == False)
+        total_query = select(Achievement).where(not Achievement.is_hidden)
         total_result = await session.execute(total_query)
         total_count = len(list(total_result.scalars().all()))
 
