@@ -8,15 +8,18 @@ Language Immersion: Все сообщения бота на чешском.
 
 import base64
 
+import urllib.parse
 from aiogram import F, Router
 from aiogram.types import (
     BufferedInputFile,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
+    WebAppInfo,
 )
 import structlog
 
+from bot.config import config
 from bot.localization import get_text
 from bot.services.api_client import APIClient
 
@@ -91,28 +94,33 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
             caption = f"{get_text('voice_correctness', score=correctness_score)}\n"
             caption += get_text("voice_streak", streak=streak)
 
-            # Кнопка показать текст
-            keyboard = InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [
-                        InlineKeyboardButton(
-                            text=get_text("btn_show_text"),
-                            callback_data=f"show_text_msg:{message.message_id}"
-                        )
-                    ]
-                ]
-            )
+            # Создаём кнопки
+            buttons = []
+
+            # WebApp кнопка "Text" для открытия страницы с текстом ответа
+            if honzik_text:
+                # Кодируем текст для URL
+                encoded_text = urllib.parse.quote(honzik_text, safe="")
+                webui_url = f"{config.webui_url}/response?text={encoded_text}"
+
+                text_button = InlineKeyboardButton(
+                    text=get_text("btn_show_text"),
+                    web_app=WebAppInfo(url=webui_url)
+                )
+                buttons.append(text_button)
+
+            # Создаём клавиатуру только если есть кнопки
+            keyboard = None
+            if buttons:
+                keyboard = InlineKeyboardMarkup(
+                    inline_keyboard=[buttons]
+                )
 
             await message.answer_voice(
                 voice=voice_file,
                 caption=caption,
                 reply_markup=keyboard
             )
-
-            # Сохраняем текст для callback
-            from bot.handlers.voice import honzik_text_storage
-            if honzik_text:
-                honzik_text_storage[telegram_id] = honzik_text
         else:
             # Если нет аудио - просто текст
             response_text = f"🗣️ <b>Honzík:</b>\n{honzik_text}\n\n"
