@@ -91,8 +91,7 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
             voice_file = BufferedInputFile(audio_bytes, filename="honzik.ogg")
 
             # Caption с результатами (на чешском)
-            caption = f"{get_text('voice_correctness', score=correctness_score)}\n"
-            caption += get_text("voice_streak", streak=streak)
+            caption = f"{get_text('voice_correctness', score=correctness_score)}"
 
             # Создаём кнопки
             buttons = []
@@ -124,8 +123,7 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
         else:
             # Если нет аудио - просто текст
             response_text = f"🗣️ <b>Honzík:</b>\n{honzik_text}\n\n"
-            response_text += f"{get_text('voice_correctness', score=correctness_score)}\n"
-            response_text += get_text("voice_streak", streak=streak)
+            response_text += f"{get_text('voice_correctness', score=correctness_score)}"
 
             await message.answer(response_text, parse_mode="HTML")
 

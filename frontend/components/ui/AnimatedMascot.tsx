@@ -94,7 +94,7 @@ export function AnimatedMascot({
                     alt={`Honzík - ${currentEmotion}`}
                     width={size}
                     height={size}
-                    className="drop-shadow-lg"
+                    className="drop-shadow-lg mix-blend-multiply"
                     priority
                 />
             </div>

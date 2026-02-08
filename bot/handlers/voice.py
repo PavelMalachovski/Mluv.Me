@@ -115,8 +115,7 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                 )
 
                 # Создаем caption с результатами (на чешском)
-                caption = f"{get_text('voice_correctness', score=correctness_score)}\n"
-                caption += get_text("voice_streak", streak=streak)
+                caption = f"{get_text('voice_correctness', score=correctness_score)}"
 
                 # Создаём кнопки для голосового сообщения
                 buttons = []

@@ -74,7 +74,7 @@ async def get_stats_summary(
         "words_said": summary.get("total_words", 0),
         "correct_percent": summary.get("average_correctness", 0),
         "messages_count": summary.get("total_messages", 0),
-        "stars": stars.total if stars else 0,
+        "stars": stars.lifetime if stars else 0,
     }
 
     # Cache until end of day

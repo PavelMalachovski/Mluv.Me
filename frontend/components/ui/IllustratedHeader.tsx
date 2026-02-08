@@ -24,7 +24,7 @@ export function IllustratedHeader({ title, subtitle, mascot = false }: Illustrat
                         alt="Honzík"
                         width={80}
                         height={80}
-                        className="drop-shadow-lg"
+                        className="drop-shadow-lg mix-blend-multiply"
                     />
                 </div>
             )}

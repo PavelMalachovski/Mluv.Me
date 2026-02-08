@@ -30,7 +30,7 @@ export function IllustratedEmptyState({
                 alt="Honzík"
                 width={150}
                 height={150}
-                className="mascot drop-shadow-xl"
+                className="mascot drop-shadow-xl mix-blend-multiply"
             />
 
             {/* Message */}

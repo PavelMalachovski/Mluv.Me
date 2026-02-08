@@ -23,7 +23,7 @@ export function IllustratedStatCard({
                     alt={label}
                     width={64}
                     height={64}
-                    className="drop-shadow-md"
+                    className="drop-shadow-md mix-blend-multiply"
                 />
             ) : (
                 <div className="text-3xl font-bold text-primary">{value}</div>
