@@ -111,8 +111,6 @@ class CorrectionEngine:
             formatted += f"   ✅ {corrected}\n"
             if explanation_cs:
                 formatted += f"   💡 {explanation_cs}\n"
-            if explanation_native:
-                formatted += f"   🌐 {explanation_native}\n"
             formatted += "\n"
 
         return formatted.strip()

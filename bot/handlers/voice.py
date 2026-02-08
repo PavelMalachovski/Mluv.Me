@@ -154,9 +154,8 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                 original = mistake.get("original", "")
                 corrected = mistake.get("corrected", "")
 
-                # Новый формат с explanation_cs и explanation_native
+                # Новый формат с explanation_cs
                 explanation_cs = mistake.get("explanation_cs", "")
-                explanation_native = mistake.get("explanation_native", "")
 
                 # Fallback на старый формат
                 if not explanation_cs and "explanation" in mistake:
@@ -166,8 +165,6 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                 corrections_text += f"✅ <b>{corrected}</b>\n"
                 if explanation_cs:
                     corrections_text += f"💡 {explanation_cs}\n"
-                if explanation_native:
-                    corrections_text += f"🌐 {explanation_native}\n"
                 corrections_text += "\n"
 
             await message.answer(corrections_text, parse_mode="HTML")

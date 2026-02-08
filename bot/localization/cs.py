@@ -174,7 +174,7 @@ TEXTS_CS = {
     "transcript_text": "📄 <b>Přepis:</b>\n\n{text}",
 
     # Textová odpověď Honzíka
-    "btn_show_text": "📱 Menu",
+    "btn_show_text": "📝 Text",
     "btn_menu": "📱 Menu",
     "btn_restart": "🔄 Restart",
     "honzik_text_response": "📝 <b>Text odpovědi Honzíka:</b>\n\n{text}",

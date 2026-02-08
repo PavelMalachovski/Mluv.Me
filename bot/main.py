@@ -9,6 +9,7 @@ import structlog
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.types import MenuButtonWebApp, WebAppInfo
 
 from bot.config import config
 from bot.handlers import get_main_router
@@ -38,6 +39,14 @@ async def main() -> None:
     bot = Bot(
         token=config.telegram_bot_token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    )
+
+    # Устанавливаем кнопку меню (Global)
+    await bot.set_chat_menu_button(
+        menu_button=MenuButtonWebApp(
+            text="Menu",
+            web_app=WebAppInfo(url=config.webui_url),
+        )
     )
 
     # Создаем диспетчер
