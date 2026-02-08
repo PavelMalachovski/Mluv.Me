@@ -56,6 +56,279 @@ interface ProfileMiniGamesProps {
   level?: string
 }
 
+// ===== Local Vocabulary Bank (mirrors backend) =====
+
+interface WordEntry {
+  word: string
+  hint: string
+  category: string
+}
+
+interface SentenceEntry {
+  sentence: string
+  translation: string
+}
+
+interface QuickEntry {
+  question: string
+  answer: string
+  options: string[]
+}
+
+const VOCABULARY: Record<string, { words: WordEntry[]; sentences: SentenceEntry[]; quick: QuickEntry[] }> = {
+  beginner: {
+    words: [
+      { word: "pivo", hint: "Oblíbený český nápoj 🍺", category: "drink" },
+      { word: "chleba", hint: "Jíme ho každý den 🍞", category: "food" },
+      { word: "voda", hint: "Tekutina, kterou pijeme 💧", category: "drink" },
+      { word: "dům", hint: "Kde bydlíme 🏠", category: "place" },
+      { word: "auto", hint: "Dopravní prostředek se 4 koly 🚗", category: "transport" },
+      { word: "kniha", hint: "Čteme ji 📚", category: "object" },
+      { word: "pes", hint: "Domácí mazlíček, štěká 🐕", category: "animal" },
+      { word: "kočka", hint: "Domácí mazlíček, mňouká 🐱", category: "animal" },
+      { word: "škola", hint: "Místo, kde se učíme 🏫", category: "place" },
+      { word: "Praha", hint: "Hlavní město Česka 🏰", category: "place" },
+      { word: "mlíko", hint: "Bílý nápoj od krávy 🥛", category: "drink" },
+      { word: "vlak", hint: "Jezdí po kolejích 🚂", category: "transport" },
+    ],
+    sentences: [
+      { sentence: "Jak se máš?", translation: "Как дела?" },
+      { sentence: "Mám se dobře.", translation: "У меня всё хорошо." },
+      { sentence: "Děkuji moc.", translation: "Большое спасибо." },
+      { sentence: "Jedno pivo, prosím.", translation: "Одно пиво, пожалуйста." },
+      { sentence: "Kde je zastávka?", translation: "Где остановка?" },
+      { sentence: "Jak se jmenuješ?", translation: "Как тебя зовут?" },
+      { sentence: "Dobrý den!", translation: "Добрый день!" },
+    ],
+    quick: [
+      { question: "Jak se řekne 'hello' česky?", answer: "ahoj", options: ["ahoj", "sbohem", "prosím", "děkuji"] },
+      { question: "Jaké je hlavní město Česka?", answer: "Praha", options: ["Praha", "Brno", "Ostrava", "Plzeň"] },
+      { question: "Co pijeme v hospodě? 🍺", answer: "pivo", options: ["pivo", "mléko", "čaj", "kávu"] },
+      { question: "Jak se řekne 'thank you' česky?", answer: "děkuji", options: ["prosím", "ahoj", "děkuji", "pardon"] },
+      { question: "Jak se řekne 'goodbye' česky?", answer: "na shledanou", options: ["ahoj", "na shledanou", "prosím", "ano"] },
+      { question: "Co je 'pes'? 🐕", answer: "dog", options: ["cat", "dog", "bird", "fish"] },
+      { question: "Jakou barvu má nebe? ☀️", answer: "modrá", options: ["červená", "zelená", "modrá", "žlutá"] },
+      { question: "Kolik dní má týden?", answer: "sedm", options: ["pět", "šest", "sedm", "deset"] },
+    ],
+  },
+  intermediate: {
+    words: [
+      { word: "hospoda", hint: "Typické české místo pro pivo 🍺", category: "place" },
+      { word: "knedlík", hint: "Příloha k svíčkové", category: "food" },
+      { word: "krásný", hint: "Velmi hezký ✨", category: "adjective" },
+      { word: "důležitý", hint: "Velmi významný ❗", category: "adjective" },
+      { word: "cestovat", hint: "Jezdit do různých míst ✈️", category: "verb" },
+      { word: "překvapení", hint: "Něco nečekaného 🎁", category: "noun" },
+      { word: "nádraží", hint: "Místo odkud jezdí vlaky 🚉", category: "place" },
+      { word: "počasí", hint: "Jaké je venku? ☁️", category: "noun" },
+    ],
+    sentences: [
+      { sentence: "Rád bych si objednal svíčkovou.", translation: "Я бы хотел заказать свичкову." },
+      { sentence: "Můžete mi prosím pomoct?", translation: "Вы можете мне помочь?" },
+      { sentence: "Jak dlouho trvá cesta?", translation: "Сколько времени занимает дорога?" },
+      { sentence: "Máte nějakou slevu?", translation: "У вас есть скидка?" },
+      { sentence: "Kde je nejbližší lékárna?", translation: "Где ближайшая аптека?" },
+    ],
+    quick: [
+      { question: "Co je 'svíčková'?", answer: "tradiční české jídlo", options: ["tradiční české jídlo", "druh piva", "typ svíčky", "název města"] },
+      { question: "Jak se řekne 'I don't understand'?", answer: "nerozumím", options: ["nerozumím", "nevím", "nemůžu", "nechci"] },
+      { question: "Co znamená 'hospoda'?", answer: "pub", options: ["hospital", "pub", "hotel", "house"] },
+      { question: "Jaká je česká měna?", answer: "koruna", options: ["euro", "koruna", "zlotý", "dolar"] },
+      { question: "Co je 'tramvaj'? 🚊", answer: "tram", options: ["tram", "bus", "train", "taxi"] },
+      { question: "Jaký je nejznámější český hrad?", answer: "Karlštejn", options: ["Karlštejn", "Křivoklát", "Bouzov", "Loket"] },
+    ],
+  },
+  advanced: {
+    words: [
+      { word: "zodpovědnost", hint: "Odpovědnost za něco", category: "noun" },
+      { word: "překážka", hint: "Něco, co brání v cestě 🚧", category: "noun" },
+      { word: "přehodnotit", hint: "Znovu promyslet 🤔", category: "verb" },
+      { word: "záležitost", hint: "Věc nebo problém", category: "noun" },
+      { word: "spravedlnost", hint: "Férovost a rovnost ⚖️", category: "noun" },
+    ],
+    sentences: [
+      { sentence: "Bylo by možné přeložit schůzku na příští týden?", translation: "Можно ли перенести встречу на следующую неделю?" },
+      { sentence: "Rád bych vás upozornil na důležitý detail.", translation: "Хотел бы обратить ваше внимание на важную деталь." },
+      { sentence: "To záleží na okolnostech.", translation: "Это зависит от обстоятельств." },
+    ],
+    quick: [
+      { question: "Co znamená 'nicméně'?", answer: "nevertheless", options: ["never", "nevertheless", "nothing", "nowhere"] },
+      { question: "Jaký je rozdíl mezi 'být' a 'mít'?", answer: "to be vs to have", options: ["to be vs to have", "to go vs to come", "to say vs to tell", "to do vs to make"] },
+      { question: "Co je 'soudce'?", answer: "judge", options: ["lawyer", "judge", "police", "doctor"] },
+      { question: "Jaký pád používáme po 'bez'?", answer: "genitiv", options: ["nominativ", "akuzativ", "genitiv", "dativ"] },
+    ],
+  },
+}
+
+// Helper: pick random element from array
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+// Helper: shuffle array (Fisher-Yates)
+function shuffle<T>(arr: T[]): T[] {
+  const result = [...arr]
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]]
+  }
+  return result
+}
+
+/**
+ * Generate a local question + correct answer for a given game type.
+ * This mirrors the backend's game_service._generate_question logic.
+ */
+function generateLocalQuestion(
+  gameId: string,
+  level: string,
+  gameName: string,
+  timeLimit: number,
+  reward: number,
+): { question: GameQuestion; correctAnswer: string } {
+  const vocab = VOCABULARY[level] || VOCABULARY.beginner
+
+  if (gameId === "slovni_hadanka") {
+    const entry = pickRandom(vocab.words)
+    return {
+      question: {
+        game_id: gameId,
+        game_type: gameId,
+        name_cs: gameName,
+        question: {
+          type: "guess_word",
+          prompt: `Uhádni slovo (${entry.word.length} písmen):`,
+          hint: entry.hint,
+        },
+        time_limit_seconds: timeLimit,
+        reward_stars: reward,
+      },
+      correctAnswer: entry.word,
+    }
+  }
+
+  if (gameId === "dopln_pismeno") {
+    const entry = pickRandom(vocab.words)
+    const word = entry.word
+    const idx = Math.floor(Math.random() * word.length)
+    const display = word.slice(0, idx) + "_" + word.slice(idx + 1)
+    return {
+      question: {
+        game_id: gameId,
+        game_type: gameId,
+        name_cs: gameName,
+        question: {
+          type: "fill_letter",
+          prompt: `Doplň chybějící písmeno:`,
+          word: display,
+          hint: entry.hint,
+        },
+        time_limit_seconds: timeLimit,
+        reward_stars: reward,
+      },
+      correctAnswer: word[idx],
+    }
+  }
+
+  if (gameId === "rychla_odpoved") {
+    const entry = pickRandom(vocab.quick)
+    return {
+      question: {
+        game_id: gameId,
+        game_type: gameId,
+        name_cs: gameName,
+        question: {
+          type: "quick_answer",
+          prompt: entry.question,
+          options: shuffle(entry.options),
+        },
+        time_limit_seconds: timeLimit,
+        reward_stars: reward,
+      },
+      correctAnswer: entry.answer,
+    }
+  }
+
+  if (gameId === "sestav_vetu") {
+    const entry = pickRandom(vocab.sentences)
+    const words = entry.sentence
+      .replace(/\?/g, " ?")
+      .replace(/\./g, " .")
+      .replace(/,/g, " ,")
+      .split(/\s+/)
+      .filter(Boolean)
+    return {
+      question: {
+        game_id: gameId,
+        game_type: gameId,
+        name_cs: gameName,
+        question: {
+          type: "build_sentence",
+          prompt: `Sestav větu (${entry.translation}):`,
+          words: shuffle(words),
+        },
+        time_limit_seconds: timeLimit,
+        reward_stars: reward,
+      },
+      correctAnswer: entry.sentence,
+    }
+  }
+
+  if (gameId === "co_slyses") {
+    const entry = pickRandom(vocab.words)
+    return {
+      question: {
+        game_id: gameId,
+        game_type: gameId,
+        name_cs: gameName,
+        question: {
+          type: "listen_write",
+          prompt: `Napiš slovo, které vidíš:`,
+          hint: `${entry.hint} (${entry.category})`,
+          word: entry.word.split("").join(" · "), // show as spaced letters as hint
+        },
+        time_limit_seconds: timeLimit,
+        reward_stars: reward,
+      },
+      correctAnswer: entry.word,
+    }
+  }
+
+  // Fallback — should not happen
+  const entry = pickRandom(vocab.quick)
+  return {
+    question: {
+      game_id: gameId,
+      game_type: gameId,
+      name_cs: gameName,
+      question: {
+        type: "quick_answer",
+        prompt: entry.question,
+        options: shuffle(entry.options),
+      },
+      time_limit_seconds: timeLimit,
+      reward_stars: reward,
+    },
+    correctAnswer: entry.answer,
+  }
+}
+
+/**
+ * Locally check if user answer matches the correct answer.
+ */
+function checkLocalAnswer(userAnswer: string, correctAnswer: string, gameType: string): boolean {
+  const uNorm = userAnswer.trim().toLowerCase()
+  const cNorm = correctAnswer.trim().toLowerCase()
+
+  if (gameType === "sestav_vetu") {
+    const uClean = uNorm.replace(/ \?/g, "?").replace(/ \./g, ".").replace(/ ,/g, ",")
+    const cClean = cNorm.replace(/ \?/g, "?").replace(/ \./g, ".").replace(/ ,/g, ",")
+    return uClean === cClean
+  }
+
+  return uNorm === cNorm
+}
+
 // ===== Game Definitions =====
 
 const MINI_GAMES: MiniGame[] = [
@@ -302,6 +575,9 @@ export function ProfileMiniGames({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [totalStarsWon, setTotalStarsWon] = useState(0)
   const [gamesPlayed, setGamesPlayed] = useState(0)
+  const [localCorrectAnswer, setLocalCorrectAnswer] = useState<string>("")
+  const [gameStartedAt, setGameStartedAt] = useState<number>(0)
+  const [isLocalMode, setIsLocalMode] = useState(false)
 
   // Load stats from localStorage
   useEffect(() => {
@@ -356,22 +632,19 @@ export function ProfileMiniGames({
       })
       setQuestion(response)
       setTimeLeft(response.time_limit_seconds)
+      setIsLocalMode(false)
+      setGameStartedAt(Date.now())
       setGameState("playing")
     } catch (error) {
-      console.error("Failed to start game:", error)
-      // Fallback: generate local question
-      setQuestion({
-        game_id: game.id,
-        game_type: game.id,
-        name_cs: game.name,
-        question: {
-          type: "text",
-          prompt: "Jak se řekne 'hello' česky?",
-          hint: "Pozdrav",
-        },
-        time_limit_seconds: game.timeLimit,
-        reward_stars: game.reward,
-      })
+      console.error("Failed to start game, using local mode:", error)
+      // Generate a proper local question with real vocabulary
+      const local = generateLocalQuestion(
+        game.id, level, game.name, game.timeLimit, game.reward
+      )
+      setQuestion(local.question)
+      setLocalCorrectAnswer(local.correctAnswer)
+      setIsLocalMode(true)
+      setGameStartedAt(Date.now())
       setTimeLeft(game.timeLimit)
       setGameState("playing")
     }
@@ -382,37 +655,69 @@ export function ProfileMiniGames({
     if (isSubmitting || !question) return
     setIsSubmitting(true)
 
-    try {
-      const response = await apiClient.post("/api/v1/games/submit", {
-        user_id: telegramId,
-        answer: answer || "(no answer)",
-      })
-      setResult(response)
+    const elapsed = (Date.now() - gameStartedAt) / 1000
 
-      // Update stats
-      const newStars = totalStarsWon + (response.stars_earned || 0)
+    // If we're in local mode (API was unavailable), evaluate locally
+    if (isLocalMode) {
+      const isCorrect = checkLocalAnswer(
+        answer || "(no answer)",
+        localCorrectAnswer,
+        question.game_type,
+      )
+      const timeBonus = Math.max(0, 1 - elapsed / question.time_limit_seconds)
+      const baseStars = isCorrect ? question.reward_stars : 0
+      const bonusStars = isCorrect ? Math.round(baseStars * timeBonus * 0.5) : 0
+
+      const localResult: GameResult = {
+        is_correct: isCorrect,
+        correct_answer: localCorrectAnswer,
+        user_answer: answer || "(no answer)",
+        stars_earned: baseStars + bonusStars,
+        base_stars: baseStars,
+        bonus_stars: bonusStars,
+        time_seconds: Math.round(elapsed * 10) / 10,
+        time_bonus_percent: Math.round(timeBonus * 100),
+      }
+      setResult(localResult)
+
+      const newStars = totalStarsWon + localResult.stars_earned
       const newPlayed = gamesPlayed + 1
       setTotalStarsWon(newStars)
       setGamesPlayed(newPlayed)
       saveStats(newStars, newPlayed)
-    } catch (error) {
-      console.error("Failed to submit answer:", error)
-      // Fallback result
-      setResult({
-        is_correct: false,
-        correct_answer: "ahoj",
-        user_answer: answer,
-        stars_earned: 0,
-        base_stars: 0,
-        bonus_stars: 0,
-        time_seconds: 0,
-        time_bonus_percent: 0,
-      })
+    } else {
+      // Use API
+      try {
+        const response = await apiClient.post("/api/v1/games/submit", {
+          user_id: telegramId,
+          answer: answer || "(no answer)",
+        })
+        setResult(response)
+
+        const newStars = totalStarsWon + (response.stars_earned || 0)
+        const newPlayed = gamesPlayed + 1
+        setTotalStarsWon(newStars)
+        setGamesPlayed(newPlayed)
+        saveStats(newStars, newPlayed)
+      } catch (error) {
+        console.error("Failed to submit answer:", error)
+        // Even in API mode, use local correct answer if available
+        setResult({
+          is_correct: false,
+          correct_answer: localCorrectAnswer || "?",
+          user_answer: answer || "(no answer)",
+          stars_earned: 0,
+          base_stars: 0,
+          bonus_stars: 0,
+          time_seconds: Math.round(elapsed * 10) / 10,
+          time_bonus_percent: 0,
+        })
+      }
     }
 
     setIsSubmitting(false)
     setGameState("result")
-  }, [answer, isSubmitting, question, telegramId, totalStarsWon, gamesPlayed, saveStats])
+  }, [answer, isSubmitting, question, telegramId, totalStarsWon, gamesPlayed, saveStats, isLocalMode, localCorrectAnswer, gameStartedAt])
 
   // Reset to menu
   const handleBack = useCallback(() => {
