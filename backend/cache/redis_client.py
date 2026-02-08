@@ -108,5 +108,40 @@ class RedisClient:
             return False
         return bool(await self.redis.ping())
 
+    async def get_bytes(self, key: str) -> bytes | None:
+        """Get binary value from cache (for TTS audio)."""
+        if not self.is_enabled or not self.pool:
+            return None
+        # Use separate connection without decode_responses for binary data
+        try:
+            async with redis.Redis(connection_pool=redis.ConnectionPool.from_url(
+                get_settings().redis_url,
+                max_connections=2,
+                decode_responses=False,
+            )) as binary_redis:
+                value = await binary_redis.get(key)
+                return value if value else None
+        except Exception as e:
+            logger.warning("redis_get_bytes_error", key=key, error=str(e))
+            return None
+
+    async def set_bytes(self, key: str, value: bytes, ttl: int | None = None) -> bool:
+        """Set binary value in cache with TTL (for TTS audio)."""
+        if not self.is_enabled or not self.pool:
+            return False
+        settings = get_settings()
+        ttl_value = ttl or settings.redis_cache_ttl_default
+        try:
+            async with redis.Redis(connection_pool=redis.ConnectionPool.from_url(
+                settings.redis_url,
+                max_connections=2,
+                decode_responses=False,
+            )) as binary_redis:
+                result = await binary_redis.setex(key, ttl_value, value)
+                return bool(result)
+        except Exception as e:
+            logger.warning("redis_set_bytes_error", key=key, error=str(e))
+            return False
+
 
 redis_client = RedisClient()

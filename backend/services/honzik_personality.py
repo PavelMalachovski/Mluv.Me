@@ -16,6 +16,7 @@ import structlog
 
 from backend.services.openai_client import OpenAIClient
 from backend.services.cache_service import cache_service
+from backend.services.model_selector import model_selector
 
 logger = structlog.get_logger(__name__)
 
@@ -303,10 +304,18 @@ Analyzuj text studenta a odpověz ve formátu JSON podle instrukcí výše."""
                 saved=original_tokens - optimized_tokens,
             )
 
-        # Выбираем оптимальную модель в зависимости от уровня
-        selected_model = self.openai_client.get_optimal_model(
+        # Выбираем оптимальную модель на основе анализа текста
+        selected_model, model_reason = model_selector.select_model(
+            user_text=user_text,
             czech_level=level,
-            task_type="analysis"
+            corrections_level=corrections_level,
+            history_length=len(conversation_history),
+        )
+
+        self.logger.info(
+            "model_selected_for_response",
+            model=selected_model,
+            reason=model_reason,
         )
 
         try:

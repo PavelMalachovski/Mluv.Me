@@ -34,10 +34,17 @@ export interface Message {
   transcript_raw?: string
 }
 
+export interface Mistake {
+  original: string
+  corrected: string
+  explanation_cs?: string
+  explanation_native?: string
+}
+
 export interface LessonResponse {
   honzik_text: string
   honzik_transcript: string
-  user_mistakes: string[]
+  user_mistakes: Mistake[]
   suggestions: string[]
   stars_earned: number
   correctness_score: number

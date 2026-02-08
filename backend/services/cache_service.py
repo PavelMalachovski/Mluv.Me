@@ -216,5 +216,91 @@ class CacheService:
         )
         logger.info("honzik_response_cached", text_length=len(user_text))
 
+    # ============== TTS CACHING ==============
+
+    # TTL для TTS кеша: 30 дней (2592000 секунд)
+    TTS_CACHE_TTL = 2592000
+
+    # Максимальная длина текста для кеширования TTS
+    MAX_TTS_CACHE_LENGTH = 200
+
+    def create_tts_cache_key(self, text: str, voice: str, speed: float) -> str:
+        """
+        Создать ключ кеша для TTS аудио.
+
+        Args:
+            text: Текст для озвучивания
+            voice: Голос TTS
+            speed: Скорость речи
+
+        Returns:
+            str: Ключ кеша
+        """
+        text_hash = hashlib.md5(text.encode()).hexdigest()[:16]
+        return f"tts:{text_hash}:{voice}:{speed}"
+
+    async def get_cached_tts(
+        self, text: str, voice: str, speed: float
+    ) -> bytes | None:
+        """
+        Получить кешированное TTS аудио.
+
+        Args:
+            text: Текст для озвучивания
+            voice: Голос TTS
+            speed: Скорость речи
+
+        Returns:
+            bytes | None: Аудио данные или None
+        """
+        if not redis_client.is_enabled:
+            return None
+
+        if len(text) > self.MAX_TTS_CACHE_LENGTH:
+            return None
+
+        cache_key = self.create_tts_cache_key(text, voice, speed)
+        cached = await redis_client.get_bytes(cache_key)
+
+        if cached:
+            logger.info(
+                "tts_cache_hit",
+                text_preview=text[:30],
+                cache_key=cache_key,
+            )
+            return cached
+
+        return None
+
+    async def cache_tts(
+        self, text: str, voice: str, speed: float, audio: bytes
+    ) -> None:
+        """
+        Кешировать TTS аудио.
+
+        Кешируем только короткие фразы (< 200 символов) на 30 дней.
+
+        Args:
+            text: Текст для озвучивания
+            voice: Голос TTS
+            speed: Скорость речи
+            audio: Аудио данные (bytes)
+        """
+        if not redis_client.is_enabled:
+            return
+
+        if len(text) > self.MAX_TTS_CACHE_LENGTH:
+            return
+
+        cache_key = self.create_tts_cache_key(text, voice, speed)
+
+        await redis_client.set_bytes(cache_key, audio, ttl=self.TTS_CACHE_TTL)
+        logger.info(
+            "tts_cached",
+            text_preview=text[:30],
+            audio_size_bytes=len(audio),
+            ttl_days=30,
+        )
+
 
 cache_service = CacheService()

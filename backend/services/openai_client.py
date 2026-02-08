@@ -18,6 +18,7 @@ import structlog
 from openai import AsyncOpenAI, RateLimitError, APIError, APITimeoutError
 
 from backend.config import Settings
+from backend.services.cache_service import cache_service
 
 logger = structlog.get_logger(__name__)
 
@@ -360,14 +361,18 @@ class OpenAIClient:
         text: str,
         voice: str | None = None,
         speed: float = 1.0,
+        use_cache: bool = True,
     ) -> bytes:
         """
         Сгенерировать речь из текста с помощью TTS API.
+
+        Поддерживает кеширование коротких фраз (< 200 символов) на 30 дней.
 
         Args:
             text: Текст для озвучивания
             voice: Голос (alloy, echo, fable, onyx, nova, shimmer)
             speed: Скорость речи (0.25 - 4.0)
+            use_cache: Использовать кеширование TTS (по умолчанию True)
 
         Returns:
             bytes: Аудио файл в формате MP3
@@ -377,6 +382,12 @@ class OpenAIClient:
         """
         if voice is None:
             voice = self.settings.tts_voice
+
+        # Проверяем кеш для коротких фраз
+        if use_cache:
+            cached_audio = await cache_service.get_cached_tts(text, voice, speed)
+            if cached_audio:
+                return cached_audio
 
         self.logger.info(
             "generating_speech",
@@ -402,6 +413,11 @@ class OpenAIClient:
                 "speech_generation_success",
                 audio_size_bytes=len(audio_content),
             )
+
+            # Кешируем короткие фразы
+            if use_cache:
+                await cache_service.cache_tts(text, voice, speed, audio_content)
+
             return audio_content
         except Exception as e:
             self.logger.error(

@@ -14,6 +14,7 @@ import { TopicSelector, TOPICS } from "@/components/features/TopicSelector"
 import { LessonResponse, WordTranslation } from "@/lib/types"
 import { FileText, Languages, X, Loader2 } from "lucide-react"
 import { VoiceRecorderSkeleton } from "@/components/ui/skeletons"
+import { CorrectionList, SuggestionBox } from "@/components/ui/CorrectionExplanation"
 
 // Dynamic import VoiceRecorder - heavy component with Web Workers
 const VoiceRecorder = dynamic(
@@ -63,7 +64,7 @@ export default function PracticePage() {
       const lessonResponse: LessonResponse = {
         honzik_text: data.honzik_response_text || "",
         honzik_transcript: data.honzik_response_transcript || data.honzik_response_text || "",
-        user_mistakes: data.corrections?.mistakes?.map((m: { original: string }) => m.original) || [],
+        user_mistakes: data.corrections?.mistakes || [],
         suggestions: data.corrections?.suggestion ? [data.corrections.suggestion] : [],
         stars_earned: data.stars_earned || 0,
         correctness_score: data.corrections?.correctness_score || 0,
@@ -106,7 +107,7 @@ export default function PracticePage() {
       const lessonResponse: LessonResponse = {
         honzik_text: data.honzik_response_text || data.honzik_response_transcript || "",
         honzik_transcript: data.honzik_response_transcript || data.honzik_response_text || "",
-        user_mistakes: data.corrections?.mistakes?.map((m: { original: string }) => m.original) || [],
+        user_mistakes: data.corrections?.mistakes || [],
         suggestions: data.corrections?.suggestion ? [data.corrections.suggestion] : [],
         stars_earned: data.stars_earned || 0,
         correctness_score: data.corrections?.correctness_score || 0,
@@ -355,14 +356,16 @@ export default function PracticePage() {
                           </div>
 
                           {msg.response.user_mistakes.length > 0 && (
-                            <div className="rounded-md bg-blue-600 p-2 text-xs">
-                              <p className="font-semibold mb-1">Corrections:</p>
-                              <ul className="list-disc pl-4 space-y-1">
-                                {msg.response.user_mistakes.map((mistake, i) => (
-                                  <li key={i}>{mistake}</li>
-                                ))}
-                              </ul>
-                            </div>
+                            <CorrectionList
+                              mistakes={msg.response.user_mistakes}
+                              className="mt-2"
+                            />
+                          )}
+                          {msg.response.suggestions.length > 0 && (
+                            <SuggestionBox
+                              suggestion={msg.response.suggestions[0]}
+                              className="mt-2"
+                            />
                           )}
                         </div>
                       )}
