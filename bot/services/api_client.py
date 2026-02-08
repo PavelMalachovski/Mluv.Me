@@ -326,6 +326,28 @@ class APIClient:
             )
             return False
 
+    async def delete_conversation_history(self, telegram_id: int) -> bool:
+        """
+        Удалить всю историю переписки пользователя.
+
+        Args:
+            telegram_id: Telegram ID
+
+        Returns:
+            True если успешно
+        """
+        session = await self._get_session()
+        try:
+            async with session.delete(
+                f"{self.base_url}/api/v1/messages/{telegram_id}/history"
+            ) as resp:
+                return resp.status == 200
+        except Exception as e:
+            logger.error(
+                "delete_conversation_history_error", telegram_id=telegram_id, error=str(e)
+            )
+            return False
+
     async def translate_word(
         self, word: str, target_language: str = "ru"
     ) -> Optional[dict[str, Any]]:

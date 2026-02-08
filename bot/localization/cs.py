@@ -89,6 +89,17 @@ TEXTS_CS = {
     "reset_done": "Hotovo! Začínáme novou konverzaci 🎉\n\n"
     "O čem si dnes promluvíme?",
 
+    # Příkaz /clear_history (NOVÉ)
+    "clear_history_confirm": "⚠️ \u003cb\u003ePozor!\u003c/b\u003e\n\n"
+    "Opravdu chceš smazat \u003cb\u003evšechny zprávy\u003c/b\u003e s Honzíkem?\n\n"
+    "Tato akce je \u003cb\u003enevratná\u003c/b\u003e!\n"
+    "Statistiky a uložená slova zůstanou.",
+    "clear_history_yes": "🗑️ Ano, smazat vše",
+    "clear_history_no": "❌ Ne, ponechat",
+    "clear_history_done": "✅ \u003cb\u003eHistorie smazána!\u003c/b\u003e\n\n"
+    "Všechny zprávy s Honzíkem byly odstraněny.\n"
+    "Můžeš začít znovu! 🎉",
+
     # Nastavení - úroveň
     "settings_level": "Vyber svoji úroveň češtiny:\n\n"
     "Aktuální: <b>{current}</b>",

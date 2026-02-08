@@ -143,3 +143,31 @@ def get_reset_confirm_keyboard() -> InlineKeyboardMarkup:
         ]
     )
     return keyboard
+
+
+def get_clear_history_confirm_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура подтверждения удаления истории переписки.
+
+    Language Immersion: Все на чешском.
+
+    Returns:
+        Inline клавиатура
+    """
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=get_text("clear_history_yes"),
+                    callback_data="clear_history:yes",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=get_text("clear_history_no"),
+                    callback_data="clear_history:no",
+                )
+            ],
+        ]
+    )
+    return keyboard

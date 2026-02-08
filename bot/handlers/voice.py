@@ -11,7 +11,6 @@ import urllib.parse
 from aiogram import F, Router
 from aiogram.types import (
     BufferedInputFile,
-    CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
@@ -134,16 +133,12 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                     )
                     buttons.append(text_button)
 
-                # Кнопка "Restart" для сброса диалога
-                restart_button = InlineKeyboardButton(
-                    text=get_text("btn_restart"),
-                    callback_data="restart_dialog"
-                )
-                buttons.append(restart_button)
-
-                keyboard = InlineKeyboardMarkup(
-                    inline_keyboard=[buttons]
-                )
+                # Создаём клавиатуру только если есть кнопки
+                keyboard = None
+                if buttons:
+                    keyboard = InlineKeyboardMarkup(
+                        inline_keyboard=[buttons]
+                    )
 
                 # Отправляем голосовое сообщение с кнопкой
                 await message.answer_voice(
@@ -204,36 +199,3 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
     except Exception as e:
         logger.error("voice_processing_error", telegram_id=telegram_id, error=str(e))
         await message.answer(get_text("error_general"))
-
-
-@router.callback_query(F.data == "restart_dialog")
-async def restart_dialog(callback: CallbackQuery, api_client: APIClient) -> None:
-    """
-    Callback handler для кнопки "Restart".
-
-    Сбрасывает историю диалога и начинает новый разговор.
-    Language Immersion: Сообщение на чешском.
-
-    Args:
-        callback: Callback query от кнопки
-        api_client: API клиент
-    """
-    telegram_id = callback.from_user.id
-
-    # Сбрасываем контекст разговора через API
-    success = await api_client.reset_conversation(telegram_id)
-
-    if success:
-        await callback.message.reply(
-            get_text("restart_done"),
-            parse_mode="HTML",
-        )
-        logger.info("dialog_restarted_via_button", telegram_id=telegram_id)
-    else:
-        await callback.answer(
-            get_text("error_backend"),
-            show_alert=True
-        )
-
-    # Закрываем callback (убираем loading)
-    await callback.answer()

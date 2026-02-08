@@ -2,7 +2,7 @@
 API routers для FastAPI endpoints.
 """
 
-from . import users, lesson, stats, words, web_auth, web_lessons, gamification
+from . import users, lesson, stats, words, web_auth, web_lessons, gamification, messages
 
 __all__ = [
     "users",
@@ -12,4 +12,5 @@ __all__ = [
     "web_auth",
     "web_lessons",
     "gamification",
+    "messages",
 ]

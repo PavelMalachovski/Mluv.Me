@@ -10,6 +10,7 @@ from aiogram.types import CallbackQuery, Message
 import structlog
 
 from bot.keyboards import (
+    get_clear_history_confirm_keyboard,
     get_corrections_keyboard,
     get_level_keyboard,
     get_native_language_keyboard,
@@ -189,6 +190,76 @@ async def reset_confirmed(callback: CallbackQuery, api_client: APIClient) -> Non
 async def reset_cancelled(callback: CallbackQuery, api_client: APIClient) -> None:
     """
     Отмена сброса разговора.
+
+    Args:
+        callback: Callback query
+        api_client: API клиент
+    """
+    await callback.message.delete()
+    await callback.answer()
+
+
+@router.message(Command("clear_history"))
+async def command_clear_history(message: Message, api_client: APIClient) -> None:
+    """
+    Обработчик команды /clear_history - удаление всей истории переписки.
+
+    Language Immersion: Все на чешском.
+
+    Args:
+        message: Сообщение от пользователя
+        api_client: API клиент
+    """
+    telegram_id = message.from_user.id
+    user = await api_client.get_user(telegram_id)
+
+    if not user:
+        await message.answer(get_text("error_general"))
+        return
+
+    # Запрашиваем подтверждение (на чешском)
+    await message.answer(
+        get_text("clear_history_confirm"),
+        reply_markup=get_clear_history_confirm_keyboard(),
+        parse_mode="HTML",
+    )
+
+
+@router.callback_query(F.data == "clear_history:yes")
+async def clear_history_confirmed(callback: CallbackQuery, api_client: APIClient) -> None:
+    """
+    Подтверждение удаления истории переписки.
+
+    Args:
+        callback: Callback query
+        api_client: API клиент
+    """
+    telegram_id = callback.from_user.id
+    user = await api_client.get_user(telegram_id)
+
+    if not user:
+        await callback.answer()
+        return
+
+    # Удаляем всю историю сообщений через API
+    success = await api_client.delete_conversation_history(telegram_id)
+
+    if success:
+        await callback.message.edit_text(
+            get_text("clear_history_done"),
+            parse_mode="HTML"
+        )
+        logger.info("conversation_history_cleared", telegram_id=telegram_id)
+    else:
+        await callback.message.edit_text(get_text("error_backend"))
+
+    await callback.answer()
+
+
+@router.callback_query(F.data == "clear_history:no")
+async def clear_history_cancelled(callback: CallbackQuery, api_client: APIClient) -> None:
+    """
+    Отмена удаления истории переписки.
 
     Args:
         callback: Callback query
