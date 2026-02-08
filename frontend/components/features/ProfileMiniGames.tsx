@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
-import { 
-  Gamepad2, Trophy, Timer, Star, Check, X, 
-  RotateCcw, ChevronRight, Sparkles, Zap 
+import {
+  Gamepad2, Trophy, Timer, Star, Check, X,
+  RotateCcw, ChevronRight, Sparkles, Zap
 } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 
@@ -432,7 +432,7 @@ export function ProfileMiniGames({
     }
   }, [selectedGame, handleStartGame])
 
-  // Render word arrangement for "sestav_vetu" 
+  // Render word arrangement for "sestav_vetu"
   const renderWordChips = useMemo(() => {
     if (!question?.question?.words) return null
     return (
