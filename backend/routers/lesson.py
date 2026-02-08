@@ -175,28 +175,24 @@ async def process_voice_message(
     log.info("audio_validated", size_bytes=len(audio_bytes))
 
     try:
-        # 3. STT - транскрипция с автоопределением языка
-        log.info("starting_transcription_with_detection")
+        # 3. STT - транскрипция на чешском языке
+        log.info("starting_transcription")
         audio_file = io.BytesIO(audio_bytes)
         audio_file.name = audio.filename or "audio.ogg"
 
-        # Используем transcribe_audio_with_detection для определения языка
-        transcription_result = await openai_client.transcribe_audio_with_detection(
-            audio_file=audio_file
+        # Используем обычную транскрипцию с фиксированным чешским языком
+        transcript = await openai_client.transcribe_audio(
+            audio_file=audio_file,
+            language="cs"
         )
-        transcript = transcription_result["text"]
-        detected_language = transcription_result["language"]
+        detected_language = "cs"  # Всегда чешский
 
         log.info(
             "transcription_completed",
             transcript_length=len(transcript),
-            detected_language=detected_language,
         )
 
-        # Генерируем сообщение о языке (если не чешский)
-        language_notice = honzik.get_language_notice(
-            detected_language=detected_language,
-        )
+
 
         # 4. Получаем историю разговора (последние 5 сообщений)
         message_repo = MessageRepository(db)
@@ -382,7 +378,7 @@ async def process_voice_message(
             words_correct=processed["words_correct"],
             # Неделя 2: Определение языка
             detected_language=detected_language,
-            language_notice=language_notice,
+            language_notice=None,
         )
 
     except ValueError as e:

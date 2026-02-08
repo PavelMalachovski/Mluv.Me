@@ -405,36 +405,4 @@ Analyzuj text studenta a odpověz ve formátu JSON podle instrukcí výše."""
             "Pojďme procvičovat! Pošli mi hlasovou zprávu v češtině! 🎤"
         )
 
-    def get_language_notice(self, detected_language: str) -> str | None:
-        """
-        Сгенерировать сообщение о распознанном языке.
 
-        Если пользователь говорил НЕ на чешском, возвращает сообщение
-        на чешском (Language Immersion).
-
-        Args:
-            detected_language: Определённый язык речи ("cs", "ru", "uk", "en" и т.д.)
-
-        Returns:
-            str | None: Сообщение о языке или None если язык был чешский
-        """
-        # Если язык чешский - всё в порядке, не нужно уведомление
-        if detected_language == "cs":
-            return None
-
-        # Названия языков на чешском
-        lang_names_cs = {
-            "ru": "rusky",
-            "uk": "ukrajinsky",
-            "en": "anglicky",
-            "de": "německy",
-            "pl": "polsky",
-            "sk": "slovensky",
-        }
-
-        detected_name = lang_names_cs.get(detected_language, detected_language)
-
-        return (
-            f"🎧 Slyšel jsem, že jsi mluvil {detected_name}. "
-            "Rozuměl jsem ti, ale odpovím česky! 🇨🇿"
-        )

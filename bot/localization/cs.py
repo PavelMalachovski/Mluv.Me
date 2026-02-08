@@ -192,19 +192,7 @@ TEXTS_CS = {
     "already_registered": "Už jsi zaregistrovaný!\n\n"
     "Použij /help pro zobrazení co umím.",
 
-    # Detekce jazyka
-    "language_detected_notice": "🎧 Slyšel jsem, že jsi mluvil {lang_name}. "
-    "Rozuměl jsem ti, ale odpovím česky! 🇨🇿",
 
-    # Názvy jazyků v češtině (pro detekci)
-    "lang_names": {
-        "ru": "rusky",
-        "uk": "ukrajinsky",
-        "en": "anglicky",
-        "de": "německy",
-        "pl": "polsky",
-        "sk": "slovensky",
-    },
 
     # Názvy rodných jazyků
     "native_lang_names": {
