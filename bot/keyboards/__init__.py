@@ -9,6 +9,7 @@ from .settings import (
     get_clear_history_confirm_keyboard,
     get_corrections_keyboard,
     get_reset_confirm_keyboard,
+    get_reset_full_confirm_keyboard,
     get_style_keyboard,
     get_voice_speed_keyboard,
 )
@@ -21,6 +22,7 @@ __all__ = [
     "get_corrections_keyboard",
     "get_style_keyboard",
     "get_reset_confirm_keyboard",
+    "get_reset_full_confirm_keyboard",
     "get_clear_history_confirm_keyboard",
 ]
 

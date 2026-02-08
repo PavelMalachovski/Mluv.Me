@@ -42,7 +42,7 @@ class TestUserEndpoints:
         assert data["telegram_id"] == user_data["telegram_id"]
         assert data["username"] == user_data["username"]
         assert data["first_name"] == user_data["first_name"]
-        assert data["ui_language"] == user_data["ui_language"]
+        assert data["native_language"] == user_data["native_language"]
         assert data["level"] == user_data["level"]
         assert "id" in data
         assert "created_at" in data
@@ -106,7 +106,7 @@ class TestUserEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["level"] == user_update_data["level"]
-        assert data["ui_language"] == user_update_data["ui_language"]
+        assert data["native_language"] == user_update_data["native_language"]
 
     async def test_get_user_settings(self, client: AsyncClient, user_data):
         """Test getting user settings."""
@@ -154,7 +154,7 @@ class TestValidation:
 
     async def test_create_user_invalid_language(self, client: AsyncClient, user_data):
         """Test creating user with invalid language."""
-        invalid_data = {**user_data, "ui_language": "invalid"}
+        invalid_data = {**user_data, "native_language": "invalid"}
         response = await client.post("/api/v1/users", json=invalid_data)
 
         assert response.status_code == 422  # Validation error

@@ -136,6 +136,40 @@ def get_reset_confirm_keyboard() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
+                    text=get_text("reset_full"),
+                    callback_data="reset:full",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=get_text("reset_no"),
+                    callback_data="reset:no",
+                )
+            ],
+        ]
+    )
+    return keyboard
+
+
+def get_reset_full_confirm_keyboard() -> InlineKeyboardMarkup:
+    """
+    Клавиатура подтверждения ПОЛНОГО сброса.
+
+    Language Immersion: Все на чешском.
+
+    Returns:
+        Inline клавиатура
+    """
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=get_text("reset_full_yes"),
+                    callback_data="reset:full_yes",
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text=get_text("reset_no"),
                     callback_data="reset:no",
                 )

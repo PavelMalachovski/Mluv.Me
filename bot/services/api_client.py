@@ -389,9 +389,33 @@ class APIClient:
             )
             return None
 
+
+    async def full_reset_user(self, telegram_id: int) -> bool:
+        """
+        Полный сброс прогресса пользователя.
+
+        Args:
+            telegram_id: Telegram ID
+
+        Returns:
+            True если успешно
+        """
+        session = await self._get_session()
+        try:
+            async with session.delete(
+                f"{self.base_url}/api/v1/users/telegram/{telegram_id}/full-reset"
+            ) as resp:
+                return resp.status == 200
+        except Exception as e:
+            logger.error(
+                "full_reset_user_error", telegram_id=telegram_id, error=str(e)
+            )
+            return False
+
     async def close(self):
         """Закрыть сессию."""
         if self.session:
             await self.session.close()
             self.session = None
+
 

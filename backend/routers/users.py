@@ -365,3 +365,80 @@ async def update_user_settings_by_telegram(
     return UserSettingsResponse.model_validate(settings)
 
 
+
+@router.delete(
+    "/telegram/{telegram_id}/full-reset",
+    status_code=status.HTTP_200_OK,
+    summary="Полный сброс прогресса пользователя",
+    description="Удалить все данные пользователя (слова, сообщения, статистику) и сбросить уровень.",
+)
+async def full_reset_user(
+    telegram_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Полный сброс прогресса пользователя.
+
+    Args:
+        telegram_id: Telegram ID
+        session: Database session
+
+    Raises:
+        HTTPException: Если пользователь не найден
+    """
+    from sqlalchemy import delete
+    from backend.models.user import User
+    from backend.models.word import SavedWord
+    from backend.models.message import Message
+    from backend.models.stats import DailyStats, Stars
+    from backend.models.achievement import UserAchievement
+    from backend.models.challenge import UserChallenge, TopicMessageCount
+
+    repo = UserRepository(session)
+    user = await repo.get_by_telegram_id(telegram_id)
+
+    if not user:
+        logger.warning("user_not_found", telegram_id=telegram_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with telegram_id {telegram_id} not found"
+        )
+
+    # 1. Delete all related data
+    # Note: Cascades might handle this, but explicit delete is safer for "Business Logic" reset
+    # We want to keep the User record but reset it.
+
+    # Delete Saved Words
+    await session.execute(delete(SavedWord).where(SavedWord.user_id == user.id))
+
+    # Delete Messages
+    await session.execute(delete(Message).where(Message.user_id == user.id))
+
+    # Delete Daily Stats
+    await session.execute(delete(DailyStats).where(DailyStats.user_id == user.id))
+
+    # Delete Stars
+    await session.execute(delete(Stars).where(Stars.user_id == user.id))
+
+    # Delete Achievements & Challenges
+    await session.execute(delete(UserAchievement).where(UserAchievement.user_id == user.id))
+    await session.execute(delete(UserChallenge).where(UserChallenge.user_id == user.id))
+    await session.execute(delete(TopicMessageCount).where(TopicMessageCount.user_id == user.id))
+
+    # 2. Reset User Fields
+    user.level = "beginner"
+    # user.created_at = func.now() # Optional: reset creation date? No, keep account age.
+
+    # 3. Reset Settings (Optional, maybe keep them?)
+    # Let's keep settings like timezone and voice speed, but reset "game" related stuff if any.
+    # Currently settings are mostly preferences.
+
+    await session.commit()
+
+    logger.info(
+        "user_full_reset",
+        telegram_id=telegram_id,
+        user_id=user.id
+    )
+
+    return {"status": "success", "message": "User progress fully reset"}

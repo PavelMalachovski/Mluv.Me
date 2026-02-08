@@ -56,7 +56,7 @@ export function TranslationPopup({
     return (
         <div
             ref={popupRef}
-            className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-4 min-w-[250px] max-w-[350px]"
+            className="absolute z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-4 min-w-[250px] max-w-[350px]"
             style={{
                 top: `${position.top + 10}px`,
                 left: `${position.left}px`,

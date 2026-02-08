@@ -88,6 +88,17 @@ TEXTS_CS = {
     "reset_no": "❌ Ne, pokračovat",
     "reset_done": "Hotovo! Začínáme novou konverzaci 🎉\n\n"
     "O čem si dnes promluvíme?",
+    "reset_full": "🧨 Smazat všechno",
+    "reset_full_confirm": "⚠️ <b>OPRAVDU SMAZAT VŠE?</b> ⚠️\n\n"
+    "Tato akce:\n"
+    "• Smaže historii zpráv\n"
+    "• Smaže uložená slova\n"
+    "• Smaže statistiky a hvězdy\n"
+    "• Resetuje úroveň na Začátečník\n\n"
+    "<b>To už nepůjde vrátit!</b>",
+    "reset_full_yes": "🧨 ANO, SMAZAT VŠE",
+    "reset_full_done": "Vše bylo smazáno. Začínáme od nuly! 🌱\n\n"
+    "Napiš mi /start pro nové nastavení.",
 
     # Příkaz /clear_history (NOVÉ)
     "clear_history_confirm": "⚠️ \u003cb\u003ePozor!\u003c/b\u003e\n\n"

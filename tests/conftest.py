@@ -112,7 +112,7 @@ def user_data() -> dict[str, Any]:
         "telegram_id": 123456789,
         "username": "test_user",
         "first_name": "Test",
-        "ui_language": "ru",
+        "native_language": "ru",
         "level": "beginner",
     }
 
@@ -122,7 +122,7 @@ def user_update_data() -> dict[str, Any]:
     """Sample user update data."""
     return {
         "level": "intermediate",
-        "ui_language": "uk",
+        "native_language": "uk",
     }
 
 

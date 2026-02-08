@@ -15,6 +15,7 @@ from bot.keyboards import (
     get_level_keyboard,
     get_native_language_keyboard,
     get_reset_confirm_keyboard,
+    get_reset_full_confirm_keyboard,
     get_style_keyboard,
     get_voice_speed_keyboard,
 )
@@ -180,6 +181,47 @@ async def reset_confirmed(callback: CallbackQuery, api_client: APIClient) -> Non
     if success:
         await callback.message.edit_text(get_text("reset_done"))
         logger.info("conversation_reset", telegram_id=telegram_id)
+    else:
+        await callback.message.edit_text(get_text("error_backend"))
+
+    await callback.answer()
+
+
+
+@router.callback_query(F.data == "reset:full")
+async def reset_full_requested(callback: CallbackQuery, api_client: APIClient) -> None:
+    """
+    Запрос на полный сброс.
+
+    Args:
+        callback: Callback query
+        api_client: API клиент
+    """
+    await callback.message.edit_text(
+        get_text("reset_full_confirm"),
+        reply_markup=get_reset_full_confirm_keyboard(),
+        parse_mode="HTML"
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "reset:full_yes")
+async def reset_full_confirmed(callback: CallbackQuery, api_client: APIClient) -> None:
+    """
+    Подтверждение полного сброса.
+
+    Args:
+        callback: Callback query
+        api_client: API клиент
+    """
+    telegram_id = callback.from_user.id
+
+    # Выполняем полный сброс
+    success = await api_client.full_reset_user(telegram_id)
+
+    if success:
+        await callback.message.edit_text(get_text("reset_full_done"))
+        logger.info("user_full_reset_confirmed", telegram_id=telegram_id)
     else:
         await callback.message.edit_text(get_text("error_backend"))
 

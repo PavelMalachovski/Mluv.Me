@@ -29,7 +29,7 @@ class TestUserRepository:
         assert user.telegram_id == user_data["telegram_id"]
         assert user.username == user_data["username"]
         assert user.first_name == user_data["first_name"]
-        assert user.ui_language == user_data["ui_language"]
+        assert user.native_language == user_data["native_language"]
         assert user.level == user_data["level"]
 
         # Check that settings were created
@@ -80,12 +80,12 @@ class TestUserRepository:
         updated_user = await repo.update(
             created_user.id,
             level="advanced",
-            ui_language="uk"
+            native_language="uk"
         )
 
         assert updated_user is not None
         assert updated_user.level == "advanced"
-        assert updated_user.ui_language == "uk"
+        assert updated_user.native_language == "uk"
 
     async def test_delete_user(self, session, user_data):
         """Test deleting user."""
