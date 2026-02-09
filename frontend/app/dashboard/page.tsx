@@ -7,7 +7,6 @@ import { DashboardStats } from "@/components/features/DashboardStats"
 import { DashboardProgress } from "@/components/features/DashboardProgress"
 import { DashboardAchievements } from "@/components/features/DashboardAchievements"
 import { QuickActions } from "@/components/features/QuickActions"
-import { WelcomeMessage } from "@/components/features/WelcomeMessage"
 import {
   HonzikVideoAvatar,
   hasSeenWelcomeVideo,
@@ -19,7 +18,6 @@ import {
   QuickActionsSkeleton,
   ProgressCardSkeleton,
   AchievementsSkeleton,
-  Skeleton,
 } from "@/components/ui/skeletons"
 
 /**
@@ -109,24 +107,15 @@ export default function DashboardPage() {
       </div>
 
       <div className="mx-auto max-w-2xl px-4 pt-14">
-        {/* Welcome Message - renders immediately with user name */}
-        <div className="mb-6 text-center">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
-            Ahoj, {user.first_name}! 👋
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Jsi připraven/a procvičovat češtinu?
-          </p>
-        </div>
 
         {/* Stats Section - loads with own suspense boundary */}
         <Suspense fallback={<StatsSkeletons />}>
           <DashboardStats telegramId={user.telegram_id} />
         </Suspense>
 
-        {/* Quick Actions - loads quickly, uses review stats for badge */}
+        {/* Quick Actions - loads quickly */}
         <Suspense fallback={<QuickActionsSkeleton />}>
-          <QuickActions telegramId={user.telegram_id} />
+          <QuickActions />
         </Suspense>
 
         {/* Progress Section */}
@@ -135,31 +124,20 @@ export default function DashboardPage() {
         </Suspense>
 
         {/* Mini Games Section */}
-        <ProfileMiniGames
-          userId={user.id}
-          telegramId={user.telegram_id}
-          level={user.level}
-        />
+        <div id="mini-games-section">
+          <ProfileMiniGames
+            userId={user.id}
+            telegramId={user.telegram_id}
+            level={user.level}
+          />
+        </div>
 
         {/* Achievements Section */}
         <Suspense fallback={<AchievementsSkeleton />}>
           <DashboardAchievements telegramId={user.telegram_id} />
         </Suspense>
 
-        {/* Motivational Mascot - with streak message */}
-        <Suspense
-          fallback={
-            <div className="mt-6 text-center">
-              <Skeleton className="w-[100px] h-[100px] rounded-full mx-auto mb-2" />
-              <Skeleton className="h-4 w-48 mx-auto" />
-            </div>
-          }
-        >
-          <WelcomeMessage
-            firstName={user.first_name}
-            telegramId={user.telegram_id}
-          />
-        </Suspense>
+
       </div>
     </div>
   )
