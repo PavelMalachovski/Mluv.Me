@@ -177,7 +177,7 @@ async def get_daily_rule(
     if not rule_data:
         return DailyRuleResponse(message="Žádná pravidla k zobrazení")
 
-    rule = await service.grammar_repo.get_rule_by_id(rule_data["rule_id"])
+    rule = await service.grammar_repo.get_rule_by_id(rule_data["id"])
     if not rule:
         return DailyRuleResponse(message="Pravidlo nenalezeno")
 
