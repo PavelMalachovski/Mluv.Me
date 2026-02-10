@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useCallback } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   BookOpen, ChevronRight, ChevronDown, Trophy,
   Target, CheckCircle2, AlertTriangle, Sparkles,
-  RotateCcw, ArrowRight,
+  RotateCcw, RefreshCw, AlertCircle,
 } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 
@@ -39,6 +40,11 @@ interface ProgressSummary {
   average_accuracy: number
 }
 
+interface DailyRuleResponse {
+  rule: GrammarRule | null
+  message?: string
+}
+
 interface ProfileGrammarProps {
   userId: number
   telegramId: number
@@ -62,6 +68,34 @@ const CATEGORY_LABELS: Record<string, { label: string; emoji: string }> = {
 
 type TabState = "daily" | "categories" | "progress"
 
+// ===== Error / Empty inline components =====
+
+function InlineError({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div className="text-center py-6 space-y-2">
+      <AlertCircle className="w-8 h-8 text-red-400 mx-auto" />
+      <p className="text-sm text-red-500">{message}</p>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+        >
+          <RefreshCw className="w-3 h-3" /> Zkusit znovu
+        </button>
+      )}
+    </div>
+  )
+}
+
+function InlineLoading({ message }: { message: string }) {
+  return (
+    <div className="text-center py-6 space-y-2">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-emerald-500 mx-auto" />
+      <p className="text-sm text-muted-foreground">{message}</p>
+    </div>
+  )
+}
+
 // ===== Main Component =====
 
 export function ProfileGrammar({
@@ -70,69 +104,69 @@ export function ProfileGrammar({
   level = "beginner",
 }: ProfileGrammarProps) {
   const [tab, setTab] = useState<TabState>("daily")
-  const [dailyRule, setDailyRule] = useState<GrammarRule | null>(null)
-  const [categories, setCategories] = useState<CategoryInfo[]>([])
-  const [progress, setProgress] = useState<ProgressSummary | null>(null)
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
-  const [categoryRules, setCategoryRules] = useState<GrammarRule[]>([])
   const [expandedRule, setExpandedRule] = useState<number | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
 
-  // Fetch daily rule
-  const fetchDailyRule = useCallback(async () => {
-    try {
-      const data = await apiClient.get(`/api/v1/grammar/daily-rule/${telegramId}`)
-      if (data.rule) setDailyRule(data.rule)
-    } catch (e) {
-      console.error("Failed to fetch daily rule:", e)
-    }
-  }, [telegramId])
+  // --- React Query: Daily Rule ---
+  const {
+    data: dailyData,
+    isLoading: dailyLoading,
+    isError: dailyError,
+    refetch: refetchDaily,
+  } = useQuery<DailyRuleResponse>({
+    queryKey: ["grammar-daily-rule", telegramId],
+    queryFn: () => apiClient.get(`/api/v1/grammar/daily-rule/${telegramId}`),
+    enabled: tab === "daily",
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
+  })
 
-  // Fetch categories
-  const fetchCategories = useCallback(async () => {
-    try {
-      const data = await apiClient.get("/api/v1/grammar/categories")
-      setCategories(data)
-    } catch (e) {
-      console.error("Failed to fetch categories:", e)
-    }
+  // --- React Query: Categories ---
+  const {
+    data: categories,
+    isLoading: categoriesLoading,
+    isError: categoriesError,
+    refetch: refetchCategories,
+  } = useQuery<CategoryInfo[]>({
+    queryKey: ["grammar-categories"],
+    queryFn: () => apiClient.get("/api/v1/grammar/categories"),
+    enabled: tab === "categories",
+    staleTime: 10 * 60 * 1000,
+    retry: 2,
+  })
+
+  // --- React Query: Progress ---
+  const {
+    data: progress,
+    isLoading: progressLoading,
+    isError: progressError,
+    refetch: refetchProgress,
+  } = useQuery<ProgressSummary>({
+    queryKey: ["grammar-progress", telegramId],
+    queryFn: () => apiClient.get(`/api/v1/grammar/progress/${telegramId}`),
+    enabled: tab === "progress",
+    staleTime: 2 * 60 * 1000,
+    retry: 2,
+  })
+
+  // --- React Query: Category Rules (when expanded) ---
+  const {
+    data: categoryRules,
+    isLoading: rulesLoading,
+  } = useQuery<GrammarRule[]>({
+    queryKey: ["grammar-rules", expandedCategory],
+    queryFn: () => apiClient.get(`/api/v1/grammar/rules?category=${expandedCategory}&limit=20`),
+    enabled: !!expandedCategory,
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
+  })
+
+  const toggleCategory = useCallback((category: string) => {
+    setExpandedCategory((prev) => (prev === category ? null : category))
+    setExpandedRule(null)
   }, [])
 
-  // Fetch progress
-  const fetchProgress = useCallback(async () => {
-    try {
-      const data = await apiClient.get(`/api/v1/grammar/progress/${telegramId}`)
-      setProgress(data)
-    } catch (e) {
-      console.error("Failed to fetch progress:", e)
-    }
-  }, [telegramId])
-
-  // Load data for current tab
-  useEffect(() => {
-    if (tab === "daily") fetchDailyRule()
-    else if (tab === "categories") fetchCategories()
-    else if (tab === "progress") fetchProgress()
-  }, [tab, fetchDailyRule, fetchCategories, fetchProgress])
-
-  // Fetch rules for a category
-  const loadCategoryRules = async (category: string) => {
-    if (expandedCategory === category) {
-      setExpandedCategory(null)
-      setCategoryRules([])
-      return
-    }
-    setIsLoading(true)
-    try {
-      const data = await apiClient.get(`/api/v1/grammar/rules?category=${category}&limit=20`)
-      setCategoryRules(data)
-      setExpandedCategory(category)
-    } catch (e) {
-      console.error("Failed to fetch category rules:", e)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const dailyRule = dailyData?.rule ?? null
 
   return (
     <div className="illustrated-card p-4 mb-6">
@@ -172,58 +206,48 @@ export function ProfileGrammar({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            {dailyRule ? (
+            {dailyLoading ? (
+              <InlineLoading message="Načítám pravidlo dne..." />
+            ) : dailyError ? (
+              <InlineError message="Nepodařilo se načíst pravidlo" onRetry={() => refetchDaily()} />
+            ) : dailyRule ? (
               <div className="space-y-3">
-                {/* Rule title */}
                 <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4">
                   <div className="flex items-start gap-2 mb-2">
                     <Sparkles className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <h4 className="font-bold text-sm text-foreground">
-                      {dailyRule.title_cs}
-                    </h4>
+                    <h4 className="font-bold text-sm text-foreground">{dailyRule.title_cs}</h4>
                   </div>
-                  <p className="text-sm text-foreground/80 leading-relaxed">
-                    {dailyRule.rule_cs}
-                  </p>
+                  <p className="text-sm text-foreground/80 leading-relaxed">{dailyRule.rule_cs}</p>
                 </div>
 
-                {/* Explanation */}
                 {dailyRule.explanation_cs && (
-                  <p className="text-xs text-muted-foreground px-1">
-                    💬 {dailyRule.explanation_cs}
-                  </p>
+                  <p className="text-xs text-muted-foreground px-1">💬 {dailyRule.explanation_cs}</p>
                 )}
 
-                {/* Examples */}
                 {dailyRule.examples && dailyRule.examples.length > 0 && (
                   <div className="space-y-1.5">
                     <p className="text-xs font-medium text-muted-foreground px-1">Příklady:</p>
                     {dailyRule.examples.slice(0, 3).map((ex, i) => (
                       <div key={i} className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg px-3 py-2 text-sm">
                         <span className="text-green-600 dark:text-green-400">✓ {ex.correct}</span>
-                        {ex.incorrect && (
-                          <span className="text-red-500 ml-2 text-xs">✗ {ex.incorrect}</span>
-                        )}
+                        {ex.incorrect && <span className="text-red-500 ml-2 text-xs">✗ {ex.incorrect}</span>}
                       </div>
                     ))}
                   </div>
                 )}
 
-                {/* Mnemonic */}
                 {dailyRule.mnemonic && (
                   <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2 text-xs">
                     🧠 <strong>Pomůcka:</strong> {dailyRule.mnemonic}
                   </div>
                 )}
 
-                {/* Source */}
                 <p className="text-[10px] text-muted-foreground text-right">
                   📖 {dailyRule.source_ref || "Internetová jazyková příručka ÚJČ"}
                 </p>
 
-                {/* Refresh button */}
                 <button
-                  onClick={fetchDailyRule}
+                  onClick={() => refetchDaily()}
                   className="w-full py-2 rounded-lg text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center justify-center gap-1"
                 >
                   <RotateCcw className="w-3 h-3" />
@@ -233,7 +257,7 @@ export function ProfileGrammar({
             ) : (
               <div className="text-center py-6">
                 <BookOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Načítám pravidlo dne...</p>
+                <p className="text-sm text-muted-foreground">Žádné pravidlo k zobrazení</p>
               </div>
             )}
           </motion.div>
@@ -248,14 +272,18 @@ export function ProfileGrammar({
             exit={{ opacity: 0, y: -10 }}
             className="space-y-1"
           >
-            {categories.length > 0 ? (
+            {categoriesLoading ? (
+              <InlineLoading message="Načítám kategorie..." />
+            ) : categoriesError ? (
+              <InlineError message="Nepodařilo se načíst kategorie" onRetry={() => refetchCategories()} />
+            ) : categories && categories.length > 0 ? (
               categories.map((cat) => {
                 const info = CATEGORY_LABELS[cat.category] || { label: cat.category, emoji: "📘" }
                 const isExpanded = expandedCategory === cat.category
                 return (
                   <div key={cat.category}>
                     <button
-                      onClick={() => loadCategoryRules(cat.category)}
+                      onClick={() => toggleCategory(cat.category)}
                       className="w-full flex items-center gap-2 p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
                     >
                       <span className="text-lg">{info.emoji}</span>
@@ -263,14 +291,9 @@ export function ProfileGrammar({
                         <p className="text-sm font-medium text-foreground truncate">{info.label}</p>
                         <p className="text-xs text-muted-foreground">{cat.count} pravidel</p>
                       </div>
-                      {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                      )}
+                      {isExpanded ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
                     </button>
 
-                    {/* Expanded rules for this category */}
                     <AnimatePresence>
                       {isExpanded && (
                         <motion.div
@@ -279,11 +302,11 @@ export function ProfileGrammar({
                           exit={{ height: 0, opacity: 0 }}
                           className="overflow-hidden"
                         >
-                          {isLoading ? (
+                          {rulesLoading ? (
                             <div className="py-4 text-center">
                               <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-emerald-500 mx-auto" />
                             </div>
-                          ) : (
+                          ) : categoryRules && categoryRules.length > 0 ? (
                             <div className="pl-8 pb-2 space-y-1">
                               {categoryRules.map((rule) => (
                                 <div key={rule.id}>
@@ -305,9 +328,7 @@ export function ProfileGrammar({
                                         <div className="ml-2 mb-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-xs space-y-1">
                                           <p className="text-foreground/80">{rule.rule_cs}</p>
                                           {rule.examples && rule.examples.length > 0 && (
-                                            <p className="text-green-600 dark:text-green-400">
-                                              ✓ {rule.examples[0].correct}
-                                            </p>
+                                            <p className="text-green-600 dark:text-green-400">✓ {rule.examples[0].correct}</p>
                                           )}
                                         </div>
                                       </motion.div>
@@ -316,6 +337,8 @@ export function ProfileGrammar({
                                 </div>
                               ))}
                             </div>
+                          ) : (
+                            <p className="pl-8 py-2 text-xs text-muted-foreground">Žádná pravidla</p>
                           )}
                         </motion.div>
                       )}
@@ -326,7 +349,7 @@ export function ProfileGrammar({
             ) : (
               <div className="text-center py-6">
                 <BookOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Načítám kategorie...</p>
+                <p className="text-sm text-muted-foreground">Žádné kategorie</p>
               </div>
             )}
           </motion.div>
@@ -340,9 +363,12 @@ export function ProfileGrammar({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            {progress ? (
+            {progressLoading ? (
+              <InlineLoading message="Načítám pokrok..." />
+            ) : progressError ? (
+              <InlineError message="Nepodařilo se načíst pokrok" onRetry={() => refetchProgress()} />
+            ) : progress ? (
               <div className="space-y-3">
-                {/* Stats grid */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 text-center">
                     <Target className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
@@ -366,7 +392,6 @@ export function ProfileGrammar({
                   </div>
                 </div>
 
-                {/* Progress bar */}
                 <div>
                   <div className="flex justify-between text-xs text-muted-foreground mb-1">
                     <span>Celkový pokrok</span>
@@ -379,8 +404,7 @@ export function ProfileGrammar({
                       animate={{
                         width: `${progress.total_rules > 0
                           ? (progress.practiced_rules / progress.total_rules) * 100
-                          : 0
-                        }%`,
+                          : 0}%`,
                       }}
                       transition={{ duration: 0.8 }}
                     />

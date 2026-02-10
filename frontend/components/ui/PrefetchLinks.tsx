@@ -15,11 +15,8 @@ import { useRouter } from "next/navigation"
 
 const PREFETCH_ROUTES = [
   "/dashboard/practice",
-  "/dashboard/review",
-  "/dashboard/saved",
+  "/dashboard/learn",
   "/dashboard/settings",
-  "/dashboard/analytics",
-  "/dashboard/profile",
 ]
 
 export function PrefetchLinks() {

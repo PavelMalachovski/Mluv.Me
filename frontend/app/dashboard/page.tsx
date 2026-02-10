@@ -1,12 +1,13 @@
 "use client"
 
 import { Suspense, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
 import { DashboardStats } from "@/components/features/DashboardStats"
 import { DashboardProgress } from "@/components/features/DashboardProgress"
 import { DashboardAchievements } from "@/components/features/DashboardAchievements"
 import { QuickActions } from "@/components/features/QuickActions"
+import { StatsTab } from "@/components/features/StatsTab"
 import {
   HonzikVideoAvatar,
   hasSeenWelcomeVideo,
@@ -18,6 +19,7 @@ import {
   ProgressCardSkeleton,
   AchievementsSkeleton,
 } from "@/components/ui/skeletons"
+import { BarChart2, Home } from "lucide-react"
 
 /**
  * Get user initials for avatar
@@ -54,8 +56,11 @@ function getAvatarColor(name: string): string {
  */
 export default function DashboardPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const user = useAuthStore((state) => state.user)
   const [showWelcomeVideo, setShowWelcomeVideo] = useState(false)
+  const initialProfileTab = searchParams.get("tab") === "stats" ? "stats" : "overview"
+  const [profileTab, setProfileTab] = useState<"overview" | "stats">(initialProfileTab as "overview" | "stats")
 
   // Check if this is first visit — show welcome video
   useEffect(() => {
@@ -107,25 +112,57 @@ export default function DashboardPage() {
 
       <div className="mx-auto max-w-2xl px-4 pt-14">
 
-        {/* Stats Section - loads with own suspense boundary */}
-        <Suspense fallback={<StatsSkeletons />}>
-          <DashboardStats telegramId={user.telegram_id} />
-        </Suspense>
+        {/* Profile Tab Switcher */}
+        <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl mb-6">
+          <button
+            onClick={() => setProfileTab("overview")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+              profileTab === "overview"
+                ? "bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            }`}
+          >
+            <Home className="w-4 h-4" />
+            <span>Přehled</span>
+          </button>
+          <button
+            onClick={() => setProfileTab("stats")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+              profileTab === "stats"
+                ? "bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            }`}
+          >
+            <BarChart2 className="w-4 h-4" />
+            <span>Statistiky</span>
+          </button>
+        </div>
 
-        {/* Quick Actions - loads quickly */}
-        <Suspense fallback={<QuickActionsSkeleton />}>
-          <QuickActions />
-        </Suspense>
+        {profileTab === "overview" ? (
+          <>
+            {/* Stats Section */}
+            <Suspense fallback={<StatsSkeletons />}>
+              <DashboardStats telegramId={user.telegram_id} />
+            </Suspense>
 
-        {/* Progress Section */}
-        <Suspense fallback={<ProgressCardSkeleton />}>
-          <DashboardProgress telegramId={user.telegram_id} />
-        </Suspense>
+            {/* Quick Actions */}
+            <Suspense fallback={<QuickActionsSkeleton />}>
+              <QuickActions />
+            </Suspense>
 
-        {/* Achievements Section */}
-        <Suspense fallback={<AchievementsSkeleton />}>
-          <DashboardAchievements telegramId={user.telegram_id} />
-        </Suspense>
+            {/* Progress Section */}
+            <Suspense fallback={<ProgressCardSkeleton />}>
+              <DashboardProgress telegramId={user.telegram_id} />
+            </Suspense>
+
+            {/* Achievements Section */}
+            <Suspense fallback={<AchievementsSkeleton />}>
+              <DashboardAchievements telegramId={user.telegram_id} />
+            </Suspense>
+          </>
+        ) : (
+          <StatsTab telegramId={user.telegram_id} />
+        )}
 
 
       </div>

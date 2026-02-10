@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { User, BookmarkCheck, Settings, BarChart2, GraduationCap } from "lucide-react"
+import { User, Settings, GraduationCap } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCallback } from "react"
 
@@ -20,16 +20,6 @@ const navigationItems = [
     href: "/dashboard/learn",
     label: "Procvičování",
     icon: GraduationCap,
-  },
-  {
-    href: "/dashboard/analytics",
-    label: "Statistiky",
-    icon: BarChart2,
-  },
-  {
-    href: "/dashboard/saved",
-    label: "Uložené",
-    icon: BookmarkCheck,
   },
   {
     href: "/dashboard/settings",

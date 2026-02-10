@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Gamepad2, BookOpen, Target, Trophy, Star } from "lucide-react"
+import { Gamepad2, BookOpen, Target, Trophy, Star, BookmarkCheck } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { ProfileMiniGames } from "@/components/features/ProfileMiniGames"
 import { ProfileGrammar } from "@/components/features/ProfileGrammar"
+import { SavedWordsTab } from "@/components/features/SavedWordsTab"
 import { apiClient } from "@/lib/api-client"
 import { ChallengeList } from "@/components/features/ChallengeCard"
 
@@ -30,11 +31,12 @@ interface Challenge {
 
 // ===== Tab definitions =====
 
-type LearnTab = "games" | "grammar" | "challenges"
+type LearnTab = "games" | "grammar" | "challenges" | "words"
 
 const TABS: { id: LearnTab; label: string; icon: React.ElementType; emoji: string }[] = [
   { id: "games", label: "Mini hry", icon: Gamepad2, emoji: "🎮" },
   { id: "grammar", label: "Gramatika", icon: BookOpen, emoji: "📖" },
+  { id: "words", label: "Slovíčka", icon: BookmarkCheck, emoji: "📚" },
   { id: "challenges", label: "Výzvy", icon: Target, emoji: "🏆" },
 ]
 
@@ -118,8 +120,12 @@ function ChallengesSection({ telegramId }: { telegramId: number }) {
 
 export default function LearnPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const user = useAuthStore((state) => state.user)
-  const [activeTab, setActiveTab] = useState<LearnTab>("games")
+  const initialTab = (searchParams.get("tab") as LearnTab) || "games"
+  const [activeTab, setActiveTab] = useState<LearnTab>(
+    ["games", "grammar", "words", "challenges"].includes(initialTab) ? initialTab : "games"
+  )
 
   useEffect(() => {
     if (!user) {
@@ -203,6 +209,18 @@ export default function LearnPage() {
               transition={{ duration: 0.2 }}
             >
               <ChallengesSection telegramId={user.telegram_id} />
+            </motion.div>
+          )}
+
+          {activeTab === "words" && (
+            <motion.div
+              key="words"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <SavedWordsTab telegramId={user.telegram_id} />
             </motion.div>
           )}
         </AnimatePresence>

@@ -41,29 +41,36 @@ class GrammarRepository:
 
     async def get_rules_by_category(
         self,
-        category: str,
+        category: str | None = None,
         level: str | None = None,
         active_only: bool = True,
+        limit: int = 50,
+        offset: int = 0,
     ) -> list[GrammarRule]:
         """
         Получить правила по категории.
 
         Args:
-            category: Грамматическая категория
+            category: Грамматическая категория (None = все)
             level: CEFR уровень (A1, A2, B1, B2) — optional фильтр
             active_only: Только активные правила
+            limit: Макс. количество записей
+            offset: Смещение для пагинации
 
         Returns:
             list[GrammarRule]: Список правил, отсортированных по sort_order
         """
-        query = select(GrammarRule).where(GrammarRule.category == category)
+        query = select(GrammarRule)
 
+        if category:
+            query = query.where(GrammarRule.category == category)
         if level:
             query = query.where(GrammarRule.level == level)
         if active_only:
             query = query.where(GrammarRule.is_active.is_(True))
 
         query = query.order_by(GrammarRule.sort_order, GrammarRule.id)
+        query = query.limit(limit).offset(offset)
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
@@ -401,11 +408,8 @@ class GrammarRepository:
 
         return {
             "total_rules": total_rules,
-            "new": total_rules - sum(levels.values()),
-            "seen": levels.get("seen", 0),
-            "practiced": levels.get("practiced", 0),
-            "known": levels.get("known", 0),
-            "mastered": levels.get("mastered", 0),
-            "total_answers": total_answers,
-            "avg_accuracy": round(correct / total_answers * 100, 1) if total_answers > 0 else 0,
+            "practiced_rules": sum(levels.values()),
+            "mastered_rules": levels.get("mastered", 0) + levels.get("known", 0),
+            "weak_rules": levels.get("seen", 0) + levels.get("practiced", 0),
+            "average_accuracy": round(correct / total_answers * 100, 1) if total_answers > 0 else 0,
         }
