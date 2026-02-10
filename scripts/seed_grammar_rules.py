@@ -18,7 +18,7 @@ import os
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.db.database import AsyncSessionLocal, init_db
+from backend.db.database import get_session_maker, init_db
 from backend.models.grammar import GrammarRule
 
 
@@ -1336,7 +1336,8 @@ async def seed_grammar_rules():
 
     await init_db()
 
-    async with AsyncSessionLocal() as session:
+    session_maker = get_session_maker()
+    async with session_maker() as session:
         inserted = 0
         updated = 0
 

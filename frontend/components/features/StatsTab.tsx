@@ -6,7 +6,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     AreaChart, Area, PieChart, Pie, Cell
 } from "recharts"
-import { TrendingUp, Target, Flame, Star, MessageCircle, BookOpen } from "lucide-react"
+import { TrendingUp, Target, Flame, Star, MessageCircle, BookOpen, Trophy } from "lucide-react"
 
 // Helper to format date
 function formatDayName(dateStr: string): string {
@@ -206,6 +206,58 @@ export function StatsTab({ telegramId }: StatsTabProps) {
                     )}
                 </ul>
             </div>
+
+            {/* Achievements Section */}
+            <div className="illustrated-card p-4">
+                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-yellow-500" />
+                    Úspěchy
+                </h3>
+                <div className="grid gap-3 grid-cols-2">
+                    {stats?.streak && stats.streak >= 7 && (
+                        <AchievementBadge
+                            emoji="🔥"
+                            name="Week Warrior"
+                            description="7 dní v řadě"
+                            bgClass="bg-orange-50 dark:bg-orange-900/20"
+                        />
+                    )}
+                    {stats?.messages_count && stats.messages_count >= 50 && (
+                        <AchievementBadge
+                            emoji="💬"
+                            name="Chatty"
+                            description="50+ zpráv"
+                            bgClass="bg-purple-50 dark:bg-purple-900/20"
+                        />
+                    )}
+                    {stats?.stars && stats.stars >= 100 && (
+                        <AchievementBadge
+                            emoji="⭐"
+                            name="Star Collector"
+                            description="100+ hvězd"
+                            bgClass="bg-yellow-50 dark:bg-yellow-900/20"
+                        />
+                    )}
+                    {stats?.words_said && stats.words_said >= 100 && (
+                        <AchievementBadge
+                            emoji="📚"
+                            name="Word Master"
+                            description="100+ slov"
+                            bgClass="bg-blue-50 dark:bg-blue-900/20"
+                        />
+                    )}
+                </div>
+                {/* Empty achievements message */}
+                {(!stats?.streak || stats.streak < 7) &&
+                    (!stats?.messages_count || stats.messages_count < 50) &&
+                    (!stats?.stars || stats.stars < 100) &&
+                    (!stats?.words_said || stats.words_said < 100) && (
+                        <div className="text-center py-6">
+                            <div className="text-4xl mb-2">🎯</div>
+                            <p className="text-sm text-muted-foreground">Pokračuj ve cvičení a odemkni úspěchy!</p>
+                        </div>
+                    )}
+            </div>
         </div>
     )
 }
@@ -223,6 +275,25 @@ function StatCard({ icon, label, value, suffix = "" }: StatCardProps) {
             <div className="flex justify-center mb-2">{icon}</div>
             <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{value}{suffix}</div>
             <div className="text-xs text-gray-500">{label}</div>
+        </div>
+    )
+}
+
+interface AchievementBadgeProps {
+    emoji: string
+    name: string
+    description: string
+    bgClass: string
+}
+
+function AchievementBadge({ emoji, name, description, bgClass }: AchievementBadgeProps) {
+    return (
+        <div className={`flex items-center gap-3 rounded-lg ${bgClass} p-3`}>
+            <div className="text-2xl">{emoji}</div>
+            <div>
+                <div className="font-medium text-foreground">{name}</div>
+                <div className="text-xs text-muted-foreground">{description}</div>
+            </div>
         </div>
     )
 }

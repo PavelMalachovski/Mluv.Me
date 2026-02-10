@@ -7,11 +7,10 @@ import Image from "next/image"
 import { useAuthStore } from "@/lib/auth-store"
 import { apiClient } from "@/lib/api-client"
 import { UserStats } from "@/lib/types"
-import { Calendar } from "lucide-react"
+import { Calendar, BarChart2 } from "lucide-react"
 import { IllustratedHeader } from "@/components/ui/IllustratedHeader"
 import { IllustratedStatCard } from "@/components/ui/IllustratedStatCard"
-import { ProfileMiniGames } from "@/components/features/ProfileMiniGames"
-import { ProfileGrammar } from "@/components/features/ProfileGrammar"
+import { Button } from "@/components/ui/button"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -129,75 +128,25 @@ export default function ProfilePage() {
           })()}
         </div>
 
-        {/* Grammar Section */}
-        <ProfileGrammar
-          userId={user.id}
-          telegramId={user.telegram_id}
-          level={user.level}
-        />
-
-        {/* Mini Games Section */}
-        <ProfileMiniGames
-          userId={user.id}
-          telegramId={user.telegram_id}
-          level={user.level}
-        />
-
-        {/* Achievements Section */}
+        {/* Link to detailed statistics */}
         <div className="illustrated-card p-4">
-          <h3 className="mb-4 text-lg font-semibold text-foreground">Achievements</h3>
-          <div className="grid gap-3 grid-cols-2">
-            {stats?.streak && stats.streak >= 7 && (
-              <div className="flex items-center gap-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 p-3">
-                <div className="text-2xl">🔥</div>
-                <div>
-                  <div className="font-medium text-foreground">Week Warrior</div>
-                  <div className="text-xs text-muted-foreground">7 day streak</div>
-                </div>
-              </div>
-            )}
-
-            {stats?.messages_count && stats.messages_count >= 50 && (
-              <div className="flex items-center gap-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 p-3">
-                <div className="text-2xl">💬</div>
-                <div>
-                  <div className="font-medium text-foreground">Chatty</div>
-                  <div className="text-xs text-muted-foreground">50+ messages</div>
-                </div>
-              </div>
-            )}
-
-            {stats?.stars && stats.stars >= 100 && (
-              <div className="flex items-center gap-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 p-3">
-                <div className="text-2xl">⭐</div>
-                <div>
-                  <div className="font-medium text-foreground">Star Collector</div>
-                  <div className="text-xs text-muted-foreground">100+ stars</div>
-                </div>
-              </div>
-            )}
-
-            {stats?.words_said && stats.words_said >= 100 && (
-              <div className="flex items-center gap-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
-                <div className="text-2xl">📚</div>
-                <div>
-                  <div className="font-medium text-foreground">Word Master</div>
-                  <div className="text-xs text-muted-foreground">100+ words</div>
-                </div>
-              </div>
-            )}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BarChart2 className="h-5 w-5 text-purple-500" />
+              <h3 className="font-semibold text-foreground">Podrobné statistiky</h3>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push("/dashboard?tab=stats")}
+              className="text-xs"
+            >
+              Zobrazit →
+            </Button>
           </div>
-
-          {/* Empty achievements message */}
-          {(!stats?.streak || stats.streak < 7) &&
-            (!stats?.messages_count || stats.messages_count < 50) &&
-            (!stats?.stars || stats.stars < 100) &&
-            (!stats?.words_said || stats.words_said < 100) && (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-2">🎯</div>
-                <p className="text-sm text-muted-foreground">Keep practicing to unlock achievements!</p>
-              </div>
-            )}
+          <p className="text-sm text-muted-foreground mt-2">
+            Grafy aktivity, trend přesnosti, ovládání slovíček a úspěchy
+          </p>
         </div>
       </div>
     </div>
