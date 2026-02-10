@@ -306,13 +306,10 @@ class GrammarRepository:
         seen_ids = [row[0] for row in seen_result.all()]
 
         # Get unseen rules
-        query = (
-            select(GrammarRule)
-            .where(
-                GrammarRule.is_active.is_(True),
-                not_(GrammarRule.id.in_(seen_ids)) if seen_ids else True,
-            )
-        )
+        query = select(GrammarRule).where(GrammarRule.is_active.is_(True))
+        
+        if seen_ids:
+            query = query.where(not_(GrammarRule.id.in_(seen_ids)))
 
         if level:
             query = query.where(GrammarRule.level == level)
