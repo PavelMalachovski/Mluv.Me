@@ -233,3 +233,56 @@ async def get_progress_details(
                 )
             )
     return results
+
+
+# === Admin endpoint for seeding (temporary) ===
+
+@router.post("/admin/seed")
+async def seed_grammar_rules(
+    session: AsyncSession = Depends(get_session),
+    secret: str = Query(..., description="Admin secret key"),
+) -> dict:
+    """
+    Seed grammar rules from the built-in data.
+    Requires admin secret key for security.
+    """
+    import os
+    admin_secret = os.getenv("ADMIN_SECRET", "mluv-seed-2026")
+    
+    if secret != admin_secret:
+        raise HTTPException(status_code=403, detail="Invalid secret")
+    
+    from backend.models.grammar import GrammarRule
+    from scripts.seed_grammar_rules import GRAMMAR_RULES
+    
+    inserted = 0
+    updated = 0
+    
+    for rule_data in GRAMMAR_RULES:
+        # Check if rule already exists
+        from sqlalchemy import select
+        result = await session.execute(
+            select(GrammarRule).where(GrammarRule.code == rule_data["code"])
+        )
+        existing = result.scalar_one_or_none()
+        
+        if existing:
+            # Update existing rule
+            for key, value in rule_data.items():
+                if key != "code":
+                    setattr(existing, key, value)
+            updated += 1
+        else:
+            # Insert new rule
+            rule = GrammarRule(**rule_data)
+            session.add(rule)
+            inserted += 1
+    
+    await session.commit()
+    
+    return {
+        "status": "success",
+        "inserted": inserted,
+        "updated": updated,
+        "total_rules": len(GRAMMAR_RULES),
+    }
