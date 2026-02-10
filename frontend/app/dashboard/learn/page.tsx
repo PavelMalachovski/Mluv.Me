@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Gamepad2, BookOpen, Target, Trophy, Star, BookmarkCheck } from "lucide-react"
@@ -118,20 +118,13 @@ function ChallengesSection({ telegramId }: { telegramId: number }) {
 
 // ===== Main Page =====
 
-export default function LearnPage() {
-  const router = useRouter()
+function LearnContent() {
   const searchParams = useSearchParams()
   const user = useAuthStore((state) => state.user)
   const initialTab = (searchParams.get("tab") as LearnTab) || "games"
   const [activeTab, setActiveTab] = useState<LearnTab>(
     ["games", "grammar", "words", "challenges"].includes(initialTab) ? initialTab : "games"
   )
-
-  useEffect(() => {
-    if (!user) {
-      router.push("/login")
-    }
-  }, [user, router])
 
   if (!user) return null
 
@@ -226,5 +219,28 @@ export default function LearnPage() {
         </AnimatePresence>
       </div>
     </div>
+  )
+}
+
+export default function LearnPage() {
+  const router = useRouter()
+  const user = useAuthStore((state) => state.user)
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/login")
+    }
+  }, [user, router])
+
+  if (!user) return null
+
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center cream-bg">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    }>
+      <LearnContent />
+    </Suspense>
   )
 }

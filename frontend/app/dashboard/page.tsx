@@ -1,7 +1,7 @@
 "use client"
 
 import { Suspense, useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
 import { DashboardStats } from "@/components/features/DashboardStats"
 import { DashboardProgress } from "@/components/features/DashboardProgress"
@@ -54,13 +54,10 @@ function getAvatarColor(name: string): string {
  *
  * Data is fetched in parallel by isolated client components.
  */
-export default function DashboardPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+function DashboardContent() {
   const user = useAuthStore((state) => state.user)
   const [showWelcomeVideo, setShowWelcomeVideo] = useState(false)
-  const initialProfileTab = searchParams.get("tab") === "stats" ? "stats" : "overview"
-  const [profileTab, setProfileTab] = useState<"overview" | "stats">(initialProfileTab as "overview" | "stats")
+  const [profileTab, setProfileTab] = useState<"overview" | "stats">("overview")
 
   // Check if this is first visit — show welcome video
   useEffect(() => {
@@ -72,14 +69,6 @@ export default function DashboardPage() {
     }
   }, [user])
 
-  // Auth check - use useEffect to avoid SSR issues
-  useEffect(() => {
-    if (!user) {
-      router.push("/login")
-    }
-  }, [user, router])
-
-  // Auth check - redirect if not logged in
   if (!user) {
     return null
   }
@@ -167,5 +156,28 @@ export default function DashboardPage() {
 
       </div>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  const router = useRouter()
+  const user = useAuthStore((state) => state.user)
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/login")
+    }
+  }, [user, router])
+
+  if (!user) return null
+
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center cream-bg">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   )
 }
