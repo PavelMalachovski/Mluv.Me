@@ -260,6 +260,9 @@ async def seed_grammar_rules_endpoint(
     updated = 0
     
     for rule_data in GRAMMAR_RULES:
+        # Ensure is_active is set (server_default doesn't apply via ORM)
+        rule_data["is_active"] = True
+        
         # Check if rule already exists
         result = await session.execute(
             select(GrammarRule).where(GrammarRule.code == rule_data["code"])
