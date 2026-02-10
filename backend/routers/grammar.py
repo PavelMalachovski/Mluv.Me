@@ -7,6 +7,7 @@ Provides endpoints for:
 - User grammar progress
 """
 
+import json
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -121,9 +122,9 @@ async def get_rules(
             title_cs=r.title_cs,
             rule_cs=r.rule_cs,
             explanation_cs=r.explanation_cs,
-            examples=r.examples,
+            examples=json.loads(r.examples) if r.examples else None,
             mnemonic=r.mnemonic,
-            common_mistakes=r.common_mistakes,
+            common_mistakes=json.loads(r.common_mistakes) if r.common_mistakes else None,
             source_ref=r.source_ref,
         )
         for r in rules
@@ -159,9 +160,9 @@ async def get_rule(
         title_cs=rule.title_cs,
         rule_cs=rule.rule_cs,
         explanation_cs=rule.explanation_cs,
-        examples=rule.examples,
+        examples=json.loads(rule.examples) if rule.examples else None,
         mnemonic=rule.mnemonic,
-        common_mistakes=rule.common_mistakes,
+        common_mistakes=json.loads(rule.common_mistakes) if rule.common_mistakes else None,
         source_ref=rule.source_ref,
     )
 
@@ -190,9 +191,9 @@ async def get_daily_rule(
             title_cs=rule.title_cs,
             rule_cs=rule.rule_cs,
             explanation_cs=rule.explanation_cs,
-            examples=rule.examples,
+            examples=json.loads(rule.examples) if rule.examples else None,
             mnemonic=rule.mnemonic,
-            common_mistakes=rule.common_mistakes,
+            common_mistakes=json.loads(rule.common_mistakes) if rule.common_mistakes else None,
             source_ref=rule.source_ref,
         ),
     )
