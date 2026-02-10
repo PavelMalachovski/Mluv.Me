@@ -291,59 +291,60 @@ class GameService:
         return self._fallback_question(game_type, level)
 
     def _format_exercise(self, game_type: GameType, exercise: dict) -> dict:
-        """Format a grammar exercise for the game UI."""
+        """Format a grammar exercise for the game UI.
+
+        Returns dict with keys matching frontend GameQuestion.question interface:
+        prompt, options, hint, word, sentence, words.
+        """
+        hint = exercise.get("hint", exercise.get("rule_title", ""))
+
         if game_type == "pravopisny_duel":
             return {
                 "type": "choose",
-                "question": exercise["question"],
+                "prompt": exercise["question"],
                 "options": exercise.get("options", []),
-                "rule_title": exercise.get("rule_title", ""),
-                "category": exercise.get("category", ""),
+                "hint": hint,
             }
 
         elif game_type == "doplnka":
             return {
                 "type": "fill_gap",
-                "question": exercise["question"],
-                "rule_title": exercise.get("rule_title", ""),
-                "category": exercise.get("category", ""),
+                "prompt": exercise["question"],
+                "hint": hint,
             }
 
         elif game_type == "kde_je_chyba":
-            # For "find the error" — present incorrect sentence
             return {
                 "type": "find_error",
-                "question": exercise["question"],
+                "prompt": exercise["question"],
                 "options": exercise.get("options", []),
-                "rule_title": exercise.get("rule_title", ""),
+                "hint": hint,
             }
 
         elif game_type == "spravna_veta":
-            # Shuffle words from the answer sentence
             answer = exercise["answer"]
             words = answer.replace("?", " ?").replace(".", " .").replace(",", " ,").split()
             shuffled = words.copy()
-            # Make sure shuffled != original
             for _ in range(10):
                 random.shuffle(shuffled)
                 if shuffled != words:
                     break
             return {
                 "type": "order",
+                "prompt": exercise.get("question", "Seřaď slova do věty:"),
                 "words": shuffled,
-                "word_count": len(words),
-                "question": exercise.get("question", "Seřaď slova do věty:"),
+                "hint": hint,
             }
 
         elif game_type == "carky_prosim":
             return {
                 "type": "transform",
+                "prompt": exercise["question"],
                 "sentence": exercise["question"],
-                "instruction": "Doplň čárky na správná místa:",
-                "rule_title": exercise.get("rule_title", ""),
+                "hint": hint,
             }
 
-        return {"type": "unknown", "question": exercise.get("question", "")}
+        return {"type": "unknown", "prompt": exercise.get("question", "")}
 
     def _fallback_question(
         self,
@@ -354,33 +355,35 @@ class GameService:
 
         if game_type == "pravopisny_duel":
             questions = [
-                {"q": "b_dlit — doplň i nebo y:", "a": "y", "opts": ["i", "y"]},
-                {"q": "ch_ba — doplň i nebo y:", "a": "y", "opts": ["i", "y"]},
-                {"q": "č_slo — doplň í nebo ý:", "a": "í", "opts": ["í", "ý"]},
-                {"q": "v_běhnout — doplň i nebo y:", "a": "y", "opts": ["i", "y"]},
-                {"q": "jaz_k — doplň i nebo y:", "a": "y", "opts": ["i", "y"]},
-                {"q": "_kol — ú nebo ů?", "a": "ú", "opts": ["ú", "ů"]},
-                {"q": "d_m — ú nebo ů?", "a": "ů", "opts": ["ú", "ů"]},
+                {"q": "b_dlit — doplň i nebo y:", "a": "y", "opts": ["i", "y"], "h": "bydlit = to live"},
+                {"q": "ch_ba — doplň i nebo y:", "a": "y", "opts": ["i", "y"], "h": "chyba = mistake"},
+                {"q": "č_slo — doplň í nebo ý:", "a": "í", "opts": ["í", "ý"], "h": "číslo = number"},
+                {"q": "v_běhnout — doplň i nebo y:", "a": "y", "opts": ["i", "y"], "h": "Předpona vy-"},
+                {"q": "jaz_k — doplň i nebo y:", "a": "y", "opts": ["i", "y"], "h": "jazyk = language"},
+                {"q": "_kol — ú nebo ů?", "a": "ú", "opts": ["ú", "ů"], "h": "Na začátku slova: ú"},
+                {"q": "d_m — ú nebo ů?", "a": "ů", "opts": ["ú", "ů"], "h": "Uprostřed slova: ů"},
             ]
             q = random.choice(questions)
             return {
                 "type": "choose",
-                "question": q["q"],
+                "prompt": q["q"],
                 "options": q["opts"],
+                "hint": q.get("h", ""),
             }, q["a"], None
 
         elif game_type == "doplnka":
             questions = [
-                {"q": "Jdu do ___. (škola, 2. p.)", "a": "školy"},
-                {"q": "Vidím ___. (žena, 4. p.)", "a": "ženu"},
-                {"q": "Vidím ___. (student, 4. p.)", "a": "studenta"},
-                {"q": "Já ___ česky. (mluvit)", "a": "mluvím"},
-                {"q": "Oni ___ doma. (být)", "a": "jsou"},
+                {"q": "Jdu do ___. (škola, 2. p.)", "a": "školy", "h": "Vzor žena"},
+                {"q": "Vidím ___. (žena, 4. p.)", "a": "ženu", "h": "Vzor žena"},
+                {"q": "Vidím ___. (student, 4. p.)", "a": "studenta", "h": "Vzor pán"},
+                {"q": "Já ___ česky. (mluvit)", "a": "mluvím", "h": "1. os. sg."},
+                {"q": "Oni ___ doma. (být)", "a": "jsou", "h": "3. os. pl."},
             ]
             q = random.choice(questions)
             return {
                 "type": "fill_gap",
-                "question": q["q"],
+                "prompt": q["q"],
+                "hint": q.get("h", ""),
             }, q["a"], None
 
         elif game_type == "kde_je_chyba":
@@ -392,40 +395,42 @@ class GameService:
             q = random.choice(questions)
             return {
                 "type": "find_error",
-                "question": q["q"],
+                "prompt": q["q"],
                 "options": q["opts"],
+                "hint": "",
             }, q["a"], None
 
         elif game_type == "spravna_veta":
             sentences = [
-                {"q": "jsem / Včera / v kině / byl", "a": "Včera jsem byl v kině."},
-                {"q": "auto / Koupil / si / jsem", "a": "Koupil jsem si auto."},
-                {"q": "česky / se / Učím", "a": "Učím se česky."},
+                {"q": "jsem / Včera / v kině / byl", "a": "Včera jsem byl v kině.", "h": "Příklonky na 2. místo"},
+                {"q": "auto / Koupil / si / jsem", "a": "Koupil jsem si auto.", "h": "jsem = příklonka"},
+                {"q": "česky / se / Učím", "a": "Učím se česky.", "h": "se = příklonka"},
             ]
             s = random.choice(sentences)
             words = s["q"].split(" / ")
             random.shuffle(words)
             return {
                 "type": "order",
+                "prompt": "Seřaď slova do věty:",
                 "words": words,
-                "word_count": len(words),
-                "question": "Seřaď slova do věty:",
+                "hint": s.get("h", ""),
             }, s["a"], None
 
         elif game_type == "carky_prosim":
             sentences = [
-                {"q": "Myslím že máš pravdu.", "a": "Myslím, že máš pravdu."},
-                {"q": "Řekl že přijde zítra.", "a": "Řekl, že přijde zítra."},
-                {"q": "Je hezky ale studené.", "a": "Je hezky, ale studené."},
+                {"q": "Myslím že máš pravdu.", "a": "Myslím, že máš pravdu.", "h": "Čárka před že"},
+                {"q": "Řekl že přijde zítra.", "a": "Řekl, že přijde zítra.", "h": "Čárka před že"},
+                {"q": "Je hezky ale studené.", "a": "Je hezky, ale studené.", "h": "Čárka před ale"},
             ]
             s = random.choice(sentences)
             return {
                 "type": "transform",
+                "prompt": s["q"],
                 "sentence": s["q"],
-                "instruction": "Doplň čárky na správná místa:",
+                "hint": s.get("h", ""),
             }, s["a"], None
 
-        return {"type": "unknown"}, "", None
+        return {"type": "unknown", "prompt": ""}, "", None
 
     def _check_answer(
         self,

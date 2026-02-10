@@ -238,8 +238,8 @@ class GamificationService:
         if today_stats and today_stats.get("messages_count", 0) == 1:
             # Первое сообщение сегодня - обновляем streak
             if yesterday_stats and yesterday_stats.get("streak_day", 0) > 0:
-                # Продолжаем streak
-                new_streak = current_streak + 1
+                # Продолжаем streak — берём streak из вчерашнего дня + 1
+                new_streak = yesterday_stats["streak_day"] + 1
             else:
                 # Начинаем новый streak
                 new_streak = 1

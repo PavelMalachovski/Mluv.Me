@@ -12,7 +12,6 @@ import {
   hasSeenWelcomeVideo,
   preloadVideoImages,
 } from "@/components/features/HonzikVideoAvatar"
-import { ProfileMiniGames } from "@/components/features/ProfileMiniGames"
 import {
   StatsSkeletons,
   QuickActionsSkeleton,
@@ -122,15 +121,6 @@ export default function DashboardPage() {
         <Suspense fallback={<ProgressCardSkeleton />}>
           <DashboardProgress telegramId={user.telegram_id} />
         </Suspense>
-
-        {/* Mini Games Section */}
-        <div id="mini-games-section">
-          <ProfileMiniGames
-            userId={user.id}
-            telegramId={user.telegram_id}
-            level={user.level}
-          />
-        </div>
 
         {/* Achievements Section */}
         <Suspense fallback={<AchievementsSkeleton />}>
