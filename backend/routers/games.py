@@ -75,7 +75,7 @@ class LeaderboardEntry(BaseModel):
 # === Dependencies ===
 
 async def get_game_service(
-    session: Annotated[AsyncSession, Depends(get_async_session)],
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> GameService:
     """Get game service with grammar support."""
     repo = GrammarRepository(session)
