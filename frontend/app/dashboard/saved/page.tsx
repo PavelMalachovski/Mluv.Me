@@ -104,23 +104,6 @@ export default function SavedPage() {
     },
   })
 
-  // Auth check - use useEffect to avoid SSR issues
-  useEffect(() => {
-    if (!user) {
-      router.push("/login")
-    }
-  }, [user, router])
-
-  if (!user) {
-    return null
-  }
-
-  const filteredWords = savedWords?.filter(
-    (word) =>
-      word.word_czech.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      word.translation.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
   // Start review mode — shuffle words
   const startReview = useCallback(() => {
     if (!savedWords || savedWords.length === 0) return
@@ -146,6 +129,23 @@ export default function SavedPage() {
     setShowTranslation(false)
     setReviewIndex((prev) => prev + 1)
   }, [reviewIndex, reviewQueue, reviewMutation])
+
+  // Auth check - use useEffect to avoid SSR issues
+  useEffect(() => {
+    if (!user) {
+      router.push("/login")
+    }
+  }, [user, router])
+
+  if (!user) {
+    return null
+  }
+
+  const filteredWords = savedWords?.filter(
+    (word) =>
+      word.word_czech.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      word.translation.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   return (
     <div className="min-h-screen cream-bg landscape-bg pb-20">
