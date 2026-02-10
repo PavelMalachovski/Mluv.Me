@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.db.database import get_async_session
+from backend.db.database import get_session
 from backend.db.grammar_repository import GrammarRepository
 from backend.services.grammar_service import GrammarService
 
@@ -77,7 +77,7 @@ class RuleProgressResponse(BaseModel):
 
 
 def get_grammar_service(
-    session: AsyncSession = Depends(get_async_session),
+    session: AsyncSession = Depends(get_session),
 ) -> GrammarService:
     """Create GrammarService with repository."""
     repo = GrammarRepository(session)
