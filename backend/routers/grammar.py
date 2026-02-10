@@ -173,30 +173,32 @@ async def get_daily_rule(
     service: GrammarService = Depends(get_grammar_service),
 ) -> DailyRuleResponse:
     """Get today's grammar rule for a user (prioritizes unseen/weak rules)."""
-    rule_data = await service.get_daily_rule(user_id)
-    if not rule_data:
-        return DailyRuleResponse(message="Žádná pravidla k zobrazení")
+    try:
+        rule_data = await service.get_daily_rule(user_id)
+        if not rule_data:
+            return DailyRuleResponse(message="Žádná pravidla k zobrazení")
 
-    rule = await service.grammar_repo.get_rule_by_id(rule_data["id"])
-    if not rule:
-        return DailyRuleResponse(message="Pravidlo nenalezeno")
-
-    return DailyRuleResponse(
-        rule=GrammarRuleResponse(
-            id=rule.id,
-            code=rule.code,
-            category=rule.category,
-            subcategory=rule.subcategory,
-            level=rule.level,
-            title_cs=rule.title_cs,
-            rule_cs=rule.rule_cs,
-            explanation_cs=rule.explanation_cs,
-            examples=json.loads(rule.examples) if rule.examples else None,
-            mnemonic=rule.mnemonic,
-            common_mistakes=json.loads(rule.common_mistakes) if rule.common_mistakes else None,
-            source_ref=rule.source_ref,
-        ),
-    )
+        # rule_data already contains all rule fields from _rule_to_dict
+        return DailyRuleResponse(
+            rule=GrammarRuleResponse(
+                id=rule_data["id"],
+                code=rule_data["code"],
+                category=rule_data["category"],
+                subcategory=rule_data["subcategory"],
+                level=rule_data["level"],
+                title_cs=rule_data["title_cs"],
+                rule_cs=rule_data["rule_cs"],
+                explanation_cs=rule_data.get("explanation_cs"),
+                examples=rule_data.get("examples"),
+                mnemonic=rule_data.get("mnemonic"),
+                common_mistakes=rule_data.get("common_mistakes"),
+                source_ref=rule_data.get("source_ref"),
+            ),
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return DailyRuleResponse(message=f"Chyba: {str(e)}")
 
 
 @router.get("/progress/{user_id}", response_model=ProgressSummary)
