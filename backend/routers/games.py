@@ -1,7 +1,7 @@
 """
-Router for language learning mini-games.
+Router for grammar-based mini-games.
 
-Endpoints для мини-игр.
+5 gramatických her založených na Internetové jazykové příručce.
 """
 
 from typing import Annotated
@@ -10,8 +10,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from backend.services.game_service import GameService, GAMES
-from backend.services.openai_client import OpenAIClient
+from backend.services.grammar_service import GrammarService
+from backend.db.grammar_repository import GrammarRepository
+from backend.db.database import get_async_session
 from backend.config import Settings, get_settings
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/v1/games", tags=["games"])
 
@@ -19,24 +22,22 @@ router = APIRouter(prefix="/api/v1/games", tags=["games"])
 # === Pydantic Models ===
 
 class GameInfo(BaseModel):
-    """Информация об игре."""
+    """Game information."""
     id: str
     name_cs: str
-    name_ru: str
     description_cs: str
-    description_ru: str
     reward_stars: int
     time_limit_seconds: int
 
 
 class StartGameRequest(BaseModel):
-    """Запрос на начало игры."""
-    user_id: int = Field(..., description="ID пользователя")
-    level: str = Field("beginner", description="Уровень сложности")
+    """Start game request."""
+    user_id: int = Field(..., description="User ID")
+    level: str = Field("beginner", description="beginner|intermediate|advanced|native")
 
 
 class StartGameResponse(BaseModel):
-    """Ответ на начало игры."""
+    """Start game response."""
     game_id: str
     game_type: str
     name_cs: str
@@ -46,13 +47,13 @@ class StartGameResponse(BaseModel):
 
 
 class SubmitAnswerRequest(BaseModel):
-    """Запрос на отправку ответа."""
-    user_id: int = Field(..., description="ID пользователя")
-    answer: str = Field(..., description="Ответ пользователя")
+    """Submit answer request."""
+    user_id: int = Field(..., description="User ID")
+    answer: str = Field(..., description="User answer")
 
 
 class SubmitAnswerResponse(BaseModel):
-    """Результат игры."""
+    """Game result."""
     is_correct: bool
     correct_answer: str
     user_answer: str
@@ -64,7 +65,7 @@ class SubmitAnswerResponse(BaseModel):
 
 
 class LeaderboardEntry(BaseModel):
-    """Запись в лидерборде."""
+    """Leaderboard entry."""
     user_id: int
     total_stars: int
     games_played: int
@@ -73,16 +74,13 @@ class LeaderboardEntry(BaseModel):
 
 # === Dependencies ===
 
-def get_openai_client(settings: Annotated[Settings, Depends(get_settings)]) -> OpenAIClient:
-    """Get OpenAI client."""
-    return OpenAIClient(settings)
-
-
-def get_game_service(
-    openai_client: Annotated[OpenAIClient, Depends(get_openai_client)]
+async def get_game_service(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> GameService:
-    """Get game service."""
-    return GameService(openai_client)
+    """Get game service with grammar support."""
+    repo = GrammarRepository(session)
+    grammar_service = GrammarService(repo)
+    return GameService(grammar_service)
 
 
 # === Endpoints ===
@@ -91,24 +89,23 @@ def get_game_service(
 async def get_available_games(
     game_service: GameService = Depends(get_game_service),
 ):
-    """
-    Получить список всех доступных игр.
-    """
+    """Get list of available grammar games."""
     return game_service.get_available_games()
 
 
 @router.get("/{game_type}")
 async def get_game_details(game_type: str):
-    """
-    Получить детальную информацию об игре.
-    """
+    """Get details about a specific game."""
     if game_type not in GAMES:
         raise HTTPException(status_code=404, detail="Game not found")
 
     game = GAMES[game_type]
     return {
         "id": game_type,
-        **game,
+        "name_cs": game["name_cs"],
+        "description_cs": game["description_cs"],
+        "reward_stars": game["reward_stars"],
+        "time_limit_seconds": game["time_limit_seconds"],
     }
 
 
@@ -118,9 +115,7 @@ async def start_game(
     request: StartGameRequest,
     game_service: GameService = Depends(get_game_service),
 ):
-    """
-    Начать новую игру.
-    """
+    """Start a new grammar game."""
     try:
         result = await game_service.start_game(
             user_id=request.user_id,
@@ -137,9 +132,7 @@ async def submit_answer(
     request: SubmitAnswerRequest,
     game_service: GameService = Depends(get_game_service),
 ):
-    """
-    Отправить ответ на текущую игру.
-    """
+    """Submit an answer for the active game."""
     try:
         result = await game_service.submit_answer(
             user_id=request.user_id,
@@ -156,9 +149,7 @@ async def get_leaderboard(
     limit: int = Query(10, le=100),
     game_service: GameService = Depends(get_game_service),
 ):
-    """
-    Получить лидерборд для игры.
-    """
+    """Get leaderboard for a game type."""
     if game_type not in GAMES:
         raise HTTPException(status_code=404, detail="Game not found")
 
@@ -170,9 +161,7 @@ async def cancel_game(
     user_id: int,
     game_service: GameService = Depends(get_game_service),
 ):
-    """
-    Отменить активную игру.
-    """
+    """Cancel an active game."""
     cancelled = game_service.cancel_game(user_id)
     if not cancelled:
         raise HTTPException(status_code=404, detail="No active game to cancel")

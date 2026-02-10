@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from backend.models.stats import DailyStats, Stars
     from backend.models.achievement import UserAchievement
     from backend.models.challenge import UserChallenge, TopicMessageCount
+    from backend.models.grammar import UserGrammarProgress
 
 
 class User(Base):
@@ -135,6 +136,12 @@ class User(Base):
 
     topic_counts: Mapped[list["TopicMessageCount"]] = relationship(
         "TopicMessageCount",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    grammar_progress: Mapped[list["UserGrammarProgress"]] = relationship(
+        "UserGrammarProgress",
         back_populates="user",
         cascade="all, delete-orphan"
     )

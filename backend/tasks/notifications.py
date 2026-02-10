@@ -1,10 +1,10 @@
 """
 Notification background tasks for Mluv.Me.
 
-Содержит задачи для:
-- Напоминаний о streak
-- Daily challenge уведомлений
-- Еженедельных отчетов
+Evening grammar notifications (19:00 CET = 18:00 UTC):
+- Grammar rule of the day
+- Practice reminder with streak info
+- Czech-only content (immersion)
 """
 
 from datetime import datetime, timedelta
@@ -16,6 +16,8 @@ from sqlalchemy import select, func
 from backend.tasks.celery_app import celery_app
 from backend.db.database import AsyncSessionLocal
 from backend.db.repositories import StatsRepository, UserRepository
+from backend.db.grammar_repository import GrammarRepository
+from backend.services.grammar_service import GrammarService
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -35,79 +37,51 @@ class AsyncTask(Task):
 
 
 @celery_app.task(bind=True, base=AsyncTask, max_retries=5)
-async def send_streak_reminder(self, user_id: int) -> Dict[str, Any]:
+async def send_grammar_reminder(self, user_id: int) -> Dict[str, Any]:
     """
-    Отправить напоминание о streak пользователю.
+    Send evening grammar reminder to a user.
 
-    Проверяет, практиковался ли пользователь сегодня.
-    Если нет - отправляет уведомление в Telegram.
+    Includes:
+    - A grammar rule (unseen → weak → random)
+    - Practice motivation with streak info
+    - All in Czech (immersion approach)
 
     Args:
-        user_id: ID пользователя
+        user_id: User ID
 
     Returns:
-        dict: Результат отправки
-
-    Raises:
-        Exception: При ошибке отправки (с retry)
+        dict: Send result
     """
     try:
         async with AsyncSessionLocal() as db:
             user_repo = UserRepository(db)
             stats_repo = StatsRepository(db)
+            grammar_repo = GrammarRepository(db)
+            grammar_service = GrammarService(grammar_repo)
 
-            # Получаем пользователя
+            # Get user
             user = await user_repo.get_by_id(user_id)
             if not user:
                 logger.warning("user_not_found_for_reminder", user_id=user_id)
-                return {
-                    "user_id": user_id,
-                    "sent": False,
-                    "reason": "user_not_found"
-                }
+                return {"user_id": user_id, "sent": False, "reason": "user_not_found"}
 
-            # Проверяем настройки уведомлений
+            # Check notification settings
             if user.settings and not user.settings.notifications_enabled:
-                logger.debug(
-                    "notifications_disabled",
-                    user_id=user_id,
-                    telegram_id=user.telegram_id
-                )
-                return {
-                    "user_id": user_id,
-                    "sent": False,
-                    "reason": "notifications_disabled"
-                }
+                return {"user_id": user_id, "sent": False, "reason": "notifications_disabled"}
 
-            # Получаем текущий streak
+            # Get streak and stars info
             user_stats = await stats_repo.get_user_summary(user_id)
             current_streak = user_stats.get("current_streak", 0)
+            total_stars = user_stats.get("total_stars", 0)
 
-            # Проверяем активность сегодня
-            from backend.services.gamification import GamificationService
-            gamification = GamificationService(stats_repo, user_repo)
-
-            user_date = gamification.get_user_date(
-                user.settings.timezone if user.settings else None
+            # Generate grammar notification message (Czech only)
+            message = await grammar_service.get_notification_message(
+                user_id=user_id,
+                streak=current_streak,
+                stars=total_stars,
             )
 
-            today_stats = await stats_repo.get_daily_stats(user_id, user_date)
-            messages_today = today_stats.get("messages_count", 0) if today_stats else 0
-
-            # Если сегодня уже практиковался - не отправляем
-            if messages_today > 0:
-                logger.debug(
-                    "user_already_practiced_today",
-                    user_id=user_id,
-                    messages_today=messages_today
-                )
-                return {
-                    "user_id": user_id,
-                    "sent": False,
-                    "reason": "already_practiced"
-                }
-
-            # Отправляем уведомление через Telegram Bot API
+            # Send via Telegram Bot API
             try:
                 from aiogram import Bot
                 from backend.config import get_settings
@@ -115,98 +89,71 @@ async def send_streak_reminder(self, user_id: int) -> Dict[str, Any]:
                 settings = get_settings()
                 bot = Bot(token=settings.telegram_bot_token)
 
-                # Формируем сообщение в зависимости от языка и streak
-                ui_lang = user.ui_language or "ru"
-
-                if current_streak > 0:
-                    # Есть активный streak - мотивируем его сохранить
-                    if ui_lang == "uk":
-                        message = (
-                            f"🔥 Не втрати свій streak {current_streak} днів!\n\n"
-                            "Попрактикуй чеську мову сьогодні, щоб продовжити. "
-                            "Хонзік чекає на твоє повідомлення! 🇨🇿"
-                        )
-                    else:  # ru
-                        message = (
-                            f"🔥 Не потеряй свой streak {current_streak} дней!\n\n"
-                            "Попрактикуй чешский сегодня, чтобы продолжить. "
-                            "Хонзик ждет твоего сообщения! 🇨🇿"
-                        )
-                else:
-                    # Нет streak - общая мотивация
-                    if ui_lang == "uk":
-                        message = (
-                            "👋 Привіт! Сьогодні ще не практикувався?\n\n"
-                            "Відправ голосове повідомлення Хонзіку і заробляй зірки! ⭐\n"
-                            "Регулярна практика - ключ до успіху! 🎯"
-                        )
-                    else:  # ru
-                        message = (
-                            "👋 Привет! Сегодня еще не практиковался?\n\n"
-                            "Отправь голосовое Хонзику и зарабатывай звезды! ⭐\n"
-                            "Регулярная практика - ключ к успеху! 🎯"
-                        )
-
-                await bot.send_message(user.telegram_id, message)
+                await bot.send_message(
+                    user.telegram_id,
+                    message,
+                    parse_mode="HTML",
+                )
                 await bot.session.close()
 
                 logger.info(
-                    "streak_reminder_sent",
+                    "grammar_reminder_sent",
                     user_id=user_id,
                     telegram_id=user.telegram_id,
-                    current_streak=current_streak
+                    streak=current_streak,
                 )
 
                 return {
                     "user_id": user_id,
                     "sent": True,
                     "telegram_id": user.telegram_id,
-                    "current_streak": current_streak
+                    "streak": current_streak,
                 }
 
             except Exception as bot_exc:
                 logger.error(
                     "telegram_send_failed",
                     user_id=user_id,
-                    error=str(bot_exc)
+                    error=str(bot_exc),
                 )
-                raise self.retry(exc=bot_exc, countdown=300)  # Retry после 5 минут
+                raise self.retry(exc=bot_exc, countdown=300)
 
     except Exception as exc:
         logger.error(
-            "streak_reminder_failed",
+            "grammar_reminder_failed",
             user_id=user_id,
-            error=str(exc)
+            error=str(exc),
         )
         raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
 
 
 @celery_app.task(bind=True, base=AsyncTask)
-async def send_daily_reminders(self) -> Dict[str, Any]:
+async def send_evening_grammar_notifications(self) -> Dict[str, Any]:
     """
-    Отправить ежедневные напоминания всем активным пользователям.
+    Send evening grammar notifications to all active users.
 
-    Вызывается автоматически в 18:00 UTC каждый день.
-    Обрабатывает только пользователей с включенными уведомлениями,
-    которые были активны в последние 7 дней и еще не практиковались сегодня.
+    Triggered daily at 18:00 UTC (= 19:00 CET).
+    Processes users who:
+    - Have notifications enabled
+    - Were active in last 14 days
 
     Returns:
-        dict: Статистика отправки
+        dict: Send statistics
     """
     try:
         async with AsyncSessionLocal() as db:
             from backend.models.message import Message
             from backend.models.user_settings import UserSettings
 
-            # Находим активных пользователей за последние 7 дней
-            week_ago = datetime.now() - timedelta(days=7)
+            # Find active users from last 14 days
+            two_weeks_ago = datetime.now() - timedelta(days=14)
 
             query = (
                 select(func.distinct(Message.user_id))
                 .join(UserSettings, Message.user_id == UserSettings.user_id)
                 .where(
-                    Message.created_at >= week_ago,
-                    UserSettings.notifications_enabled
+                    Message.created_at >= two_weeks_ago,
+                    UserSettings.notifications_enabled,
                 )
             )
 
@@ -214,28 +161,26 @@ async def send_daily_reminders(self) -> Dict[str, Any]:
             active_user_ids = [row[0] for row in result.all()]
 
             logger.info(
-                "sending_daily_reminders",
-                user_count=len(active_user_ids)
+                "sending_evening_grammar_notifications",
+                user_count=len(active_user_ids),
             )
 
-            # Запускаем задачи отправки для каждого пользователя
             sent = 0
             failed = 0
 
             for user_id in active_user_ids:
                 try:
-                    # Запускаем задачу асинхронно с небольшой задержкой
-                    # чтобы не перегрузить Telegram API
-                    send_streak_reminder.apply_async(
+                    # Stagger sends to avoid Telegram rate limits
+                    send_grammar_reminder.apply_async(
                         args=[user_id],
-                        countdown=sent * 2  # 2 секунды между отправками
+                        countdown=sent * 2,  # 2 seconds between sends
                     )
                     sent += 1
                 except Exception as e:
                     logger.error(
-                        "failed_to_schedule_reminder",
+                        "failed_to_schedule_grammar_reminder",
                         user_id=user_id,
-                        error=str(e)
+                        error=str(e),
                     )
                     failed += 1
 
@@ -243,232 +188,74 @@ async def send_daily_reminders(self) -> Dict[str, Any]:
                 "total_users": len(active_user_ids),
                 "scheduled": sent,
                 "failed": failed,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
-            logger.info(
-                "daily_reminders_completed",
-                **result
-            )
-
+            logger.info("evening_grammar_notifications_completed", **result)
             return result
 
     except Exception as exc:
-        logger.error(
-            "daily_reminders_failed",
-            error=str(exc)
-        )
+        logger.error("evening_grammar_notifications_failed", error=str(exc))
         raise
-
-
-@celery_app.task(bind=True, base=AsyncTask)
-async def send_daily_challenge_notification(self, user_id: int) -> Dict[str, Any]:
-    """
-    Отправить уведомление о Daily Challenge.
-
-    Вызывается когда пользователь близок к выполнению daily challenge
-    (например, отправил 3 или 4 сообщения из 5).
-
-    Args:
-        user_id: ID пользователя
-
-    Returns:
-        dict: Результат отправки
-    """
-    try:
-        async with AsyncSessionLocal() as db:
-            user_repo = UserRepository(db)
-            stats_repo = StatsRepository(db)
-
-            # Получаем пользователя
-            user = await user_repo.get_by_id(user_id)
-            if not user or (user.settings and not user.settings.notifications_enabled):
-                return {
-                    "user_id": user_id,
-                    "sent": False,
-                    "reason": "notifications_disabled"
-                }
-
-            # Проверяем прогресс challenge
-            from backend.services.gamification import GamificationService
-            gamification = GamificationService(stats_repo, user_repo)
-
-            user_date = gamification.get_user_date(
-                user.settings.timezone if user.settings else None
-            )
-
-            today_stats = await stats_repo.get_daily_stats(user_id, user_date)
-            messages_today = today_stats.get("messages_count", 0) if today_stats else 0
-
-            # Отправляем уведомление если 3 или 4 сообщения
-            if messages_today not in [3, 4]:
-                return {
-                    "user_id": user_id,
-                    "sent": False,
-                    "reason": "not_applicable",
-                    "messages_today": messages_today
-                }
-
-            needed = 5 - messages_today
-
-            # Формируем сообщение
-            ui_lang = user.ui_language or "ru"
-
-            if ui_lang == "uk":
-                message = (
-                    f"🎯 Daily Challenge майже виконано!\n\n"
-                    f"Відправ ще {needed} повідомлень і отримай +5 зірок! ⭐\n"
-                    f"Прогрес: {messages_today}/5"
-                )
-            else:  # ru
-                message = (
-                    f"🎯 Daily Challenge почти выполнен!\n\n"
-                    f"Отправь еще {needed} сообщений и получи +5 звезд! ⭐\n"
-                    f"Прогресс: {messages_today}/5"
-                )
-
-            # Отправляем через Telegram
-            from aiogram import Bot
-            from backend.config import get_settings
-
-            settings = get_settings()
-            bot = Bot(token=settings.telegram_bot_token)
-
-            await bot.send_message(user.telegram_id, message)
-            await bot.session.close()
-
-            logger.info(
-                "daily_challenge_notification_sent",
-                user_id=user_id,
-                messages_today=messages_today
-            )
-
-            return {
-                "user_id": user_id,
-                "sent": True,
-                "messages_today": messages_today,
-                "needed": needed
-            }
-
-    except Exception as exc:
-        logger.error(
-            "daily_challenge_notification_failed",
-            user_id=user_id,
-            error=str(exc)
-        )
-        return {
-            "user_id": user_id,
-            "sent": False,
-            "error": str(exc)
-        }
 
 
 @celery_app.task(bind=True, base=AsyncTask)
 async def send_weekly_report_notification(self, user_id: int) -> Dict[str, Any]:
     """
-    Отправить еженедельный отчет пользователю.
+    Send weekly report to a user.
 
-    Вызывается каждый понедельник для всех активных пользователей.
-    Генерирует отчет и отправляет его в Telegram.
-
-    Args:
-        user_id: ID пользователя
-
-    Returns:
-        dict: Результат отправки
+    Triggered every Monday for active users.
     """
     try:
         async with AsyncSessionLocal() as db:
             user_repo = UserRepository(db)
+            grammar_repo = GrammarRepository(db)
+            grammar_service = GrammarService(grammar_repo)
 
-            # Получаем пользователя
             user = await user_repo.get_by_id(user_id)
             if not user or (user.settings and not user.settings.notifications_enabled):
-                return {
-                    "user_id": user_id,
-                    "sent": False,
-                    "reason": "notifications_disabled"
-                }
+                return {"user_id": user_id, "sent": False, "reason": "notifications_disabled"}
 
-            # Генерируем отчет (используем задачу из analytics)
-            from backend.tasks.analytics import generate_weekly_report
+            # Get grammar progress summary
+            summary = await grammar_service.get_progress_summary(user_id)
 
-            report_result = await generate_weekly_report.apply_async(args=[user_id])
-            report = await report_result.get()
+            # Build weekly report (Czech only)
+            message = (
+                "📊 <b>Týdenní přehled</b>\n\n"
+            )
 
-            if not report.get("active"):
-                return {
-                    "user_id": user_id,
-                    "sent": False,
-                    "reason": "no_activity"
-                }
-
-            # Формируем сообщение
-            ui_lang = user.ui_language or "ru"
-
-            if ui_lang == "uk":
-                message = (
-                    "📊 Твій тижневий звіт\n\n"
-                    f"📝 Повідомлень: {report['total_messages']}\n"
-                    f"💬 Слів: {report['total_words']}\n"
-                    f"✅ Правильність: {report['avg_correctness']}%\n"
-                    f"📅 Активних днів: {report['active_days']}/7\n"
-                    f"🔥 Поточний streak: {report['current_streak']}\n"
-                    f"🏆 Максимальний streak: {report['max_streak']}\n\n"
+            if summary["total_practiced"] > 0:
+                message += (
+                    f"📝 Procvičená pravidla: {summary['total_practiced']}\n"
+                    f"✅ Celková přesnost: {summary['average_accuracy']}%\n"
+                    f"🏆 Zvládnutá pravidla: {summary['mastered_count']}\n"
+                    f"📚 Celkem pravidel: {summary['total_rules']}\n\n"
                 )
 
-                if report.get("recommendations"):
-                    message += "💡 Рекомендації:\n"
-                    for rec in report["recommendations"]:
-                        message += f"• {rec}\n"
-            else:  # ru
-                message = (
-                    "📊 Твой недельный отчет\n\n"
-                    f"📝 Сообщений: {report['total_messages']}\n"
-                    f"💬 Слов: {report['total_words']}\n"
-                    f"✅ Правильность: {report['avg_correctness']}%\n"
-                    f"📅 Активных дней: {report['active_days']}/7\n"
-                    f"🔥 Текущий streak: {report['current_streak']}\n"
-                    f"🏆 Максимальный streak: {report['max_streak']}\n\n"
+                if summary['weak_count'] > 0:
+                    message += f"💪 K procvičení: {summary['weak_count']} pravidel\n\n"
+
+                message += "Pokračuj dál — každý den se zlepšuješ! 🚀"
+            else:
+                message += (
+                    "Tento týden jsi ještě neprocvičoval(a) gramatiku.\n\n"
+                    "Začni dnes — stačí jedna minihra denně! 🎮\n"
+                    "Učení je cesta, ne cíl. 💪"
                 )
 
-                if report.get("recommendations"):
-                    message += "💡 Рекомендации:\n"
-                    for rec in report["recommendations"]:
-                        message += f"• {rec}\n"
-
-            message += "\nПродолжай в том же духе! 🚀"
-
-            # Отправляем через Telegram
+            # Send via Telegram
             from aiogram import Bot
             from backend.config import get_settings
 
             settings = get_settings()
             bot = Bot(token=settings.telegram_bot_token)
 
-            await bot.send_message(user.telegram_id, message)
+            await bot.send_message(user.telegram_id, message, parse_mode="HTML")
             await bot.session.close()
 
-            logger.info(
-                "weekly_report_notification_sent",
-                user_id=user_id,
-                total_messages=report["total_messages"]
-            )
-
-            return {
-                "user_id": user_id,
-                "sent": True,
-                "report": report
-            }
+            logger.info("weekly_report_sent", user_id=user_id)
+            return {"user_id": user_id, "sent": True}
 
     except Exception as exc:
-        logger.error(
-            "weekly_report_notification_failed",
-            user_id=user_id,
-            error=str(exc)
-        )
-        return {
-            "user_id": user_id,
-            "sent": False,
-            "error": str(exc)
-        }
+        logger.error("weekly_report_failed", user_id=user_id, error=str(exc))
+        return {"user_id": user_id, "sent": False, "error": str(exc)}

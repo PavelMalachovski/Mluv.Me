@@ -56,108 +56,69 @@ interface ProfileMiniGamesProps {
   level?: string
 }
 
-// ===== Local Vocabulary Bank (mirrors backend) =====
+// ===== Local Grammar Exercise Bank (mirrors backend grammar rules) =====
 
-interface WordEntry {
-  word: string
-  hint: string
-  category: string
+interface GrammarExercise {
+  prompt: string
+  options?: string[]
+  correct: string
+  hint?: string
+  rule?: string
 }
 
-interface SentenceEntry {
-  sentence: string
-  translation: string
-}
-
-interface QuickEntry {
-  question: string
-  answer: string
-  options: string[]
-}
-
-const VOCABULARY: Record<string, { words: WordEntry[]; sentences: SentenceEntry[]; quick: QuickEntry[] }> = {
-  beginner: {
-    words: [
-      { word: "pivo", hint: "Oblíbený český nápoj 🍺", category: "drink" },
-      { word: "chleba", hint: "Jíme ho každý den 🍞", category: "food" },
-      { word: "voda", hint: "Tekutina, kterou pijeme 💧", category: "drink" },
-      { word: "dům", hint: "Kde bydlíme 🏠", category: "place" },
-      { word: "auto", hint: "Dopravní prostředek se 4 koly 🚗", category: "transport" },
-      { word: "kniha", hint: "Čteme ji 📚", category: "object" },
-      { word: "pes", hint: "Domácí mazlíček, štěká 🐕", category: "animal" },
-      { word: "kočka", hint: "Domácí mazlíček, mňouká 🐱", category: "animal" },
-      { word: "škola", hint: "Místo, kde se učíme 🏫", category: "place" },
-      { word: "Praha", hint: "Hlavní město Česka 🏰", category: "place" },
-      { word: "mlíko", hint: "Bílý nápoj od krávy 🥛", category: "drink" },
-      { word: "vlak", hint: "Jezdí po kolejích 🚂", category: "transport" },
-    ],
-    sentences: [
-      { sentence: "Jak se máš?", translation: "Как дела?" },
-      { sentence: "Mám se dobře.", translation: "У меня всё хорошо." },
-      { sentence: "Děkuji moc.", translation: "Большое спасибо." },
-      { sentence: "Jedno pivo, prosím.", translation: "Одно пиво, пожалуйста." },
-      { sentence: "Kde je zastávka?", translation: "Где остановка?" },
-      { sentence: "Jak se jmenuješ?", translation: "Как тебя зовут?" },
-      { sentence: "Dobrý den!", translation: "Добрый день!" },
-    ],
-    quick: [
-      { question: "Jak se řekne 'hello' česky?", answer: "ahoj", options: ["ahoj", "sbohem", "prosím", "děkuji"] },
-      { question: "Jaké je hlavní město Česka?", answer: "Praha", options: ["Praha", "Brno", "Ostrava", "Plzeň"] },
-      { question: "Co pijeme v hospodě? 🍺", answer: "pivo", options: ["pivo", "mléko", "čaj", "kávu"] },
-      { question: "Jak se řekne 'thank you' česky?", answer: "děkuji", options: ["prosím", "ahoj", "děkuji", "pardon"] },
-      { question: "Jak se řekne 'goodbye' česky?", answer: "na shledanou", options: ["ahoj", "na shledanou", "prosím", "ano"] },
-      { question: "Co je 'pes'? 🐕", answer: "dog", options: ["cat", "dog", "bird", "fish"] },
-      { question: "Jakou barvu má nebe? ☀️", answer: "modrá", options: ["červená", "zelená", "modrá", "žlutá"] },
-      { question: "Kolik dní má týden?", answer: "sedm", options: ["pět", "šest", "sedm", "deset"] },
-    ],
-  },
-  intermediate: {
-    words: [
-      { word: "hospoda", hint: "Typické české místo pro pivo 🍺", category: "place" },
-      { word: "knedlík", hint: "Příloha k svíčkové", category: "food" },
-      { word: "krásný", hint: "Velmi hezký ✨", category: "adjective" },
-      { word: "důležitý", hint: "Velmi významný ❗", category: "adjective" },
-      { word: "cestovat", hint: "Jezdit do různých míst ✈️", category: "verb" },
-      { word: "překvapení", hint: "Něco nečekaného 🎁", category: "noun" },
-      { word: "nádraží", hint: "Místo odkud jezdí vlaky 🚉", category: "place" },
-      { word: "počasí", hint: "Jaké je venku? ☁️", category: "noun" },
-    ],
-    sentences: [
-      { sentence: "Rád bych si objednal svíčkovou.", translation: "Я бы хотел заказать свичкову." },
-      { sentence: "Můžete mi prosím pomoct?", translation: "Вы можете мне помочь?" },
-      { sentence: "Jak dlouho trvá cesta?", translation: "Сколько времени занимает дорога?" },
-      { sentence: "Máte nějakou slevu?", translation: "У вас есть скидка?" },
-      { sentence: "Kde je nejbližší lékárna?", translation: "Где ближайшая аптека?" },
-    ],
-    quick: [
-      { question: "Co je 'svíčková'?", answer: "tradiční české jídlo", options: ["tradiční české jídlo", "druh piva", "typ svíčky", "název města"] },
-      { question: "Jak se řekne 'I don't understand'?", answer: "nerozumím", options: ["nerozumím", "nevím", "nemůžu", "nechci"] },
-      { question: "Co znamená 'hospoda'?", answer: "pub", options: ["hospital", "pub", "hotel", "house"] },
-      { question: "Jaká je česká měna?", answer: "koruna", options: ["euro", "koruna", "zlotý", "dolar"] },
-      { question: "Co je 'tramvaj'? 🚊", answer: "tram", options: ["tram", "bus", "train", "taxi"] },
-      { question: "Jaký je nejznámější český hrad?", answer: "Karlštejn", options: ["Karlštejn", "Křivoklát", "Bouzov", "Loket"] },
-    ],
-  },
-  advanced: {
-    words: [
-      { word: "zodpovědnost", hint: "Odpovědnost za něco", category: "noun" },
-      { word: "překážka", hint: "Něco, co brání v cestě 🚧", category: "noun" },
-      { word: "přehodnotit", hint: "Znovu promyslet 🤔", category: "verb" },
-      { word: "záležitost", hint: "Věc nebo problém", category: "noun" },
-      { word: "spravedlnost", hint: "Férovost a rovnost ⚖️", category: "noun" },
-    ],
-    sentences: [
-      { sentence: "Bylo by možné přeložit schůzku na příští týden?", translation: "Можно ли перенести встречу на следующую неделю?" },
-      { sentence: "Rád bych vás upozornil na důležitý detail.", translation: "Хотел бы обратить ваше внимание на важную деталь." },
-      { sentence: "To záleží na okolnostech.", translation: "Это зависит от обстоятельств." },
-    ],
-    quick: [
-      { question: "Co znamená 'nicméně'?", answer: "nevertheless", options: ["never", "nevertheless", "nothing", "nowhere"] },
-      { question: "Jaký je rozdíl mezi 'být' a 'mít'?", answer: "to be vs to have", options: ["to be vs to have", "to go vs to come", "to say vs to tell", "to do vs to make"] },
-      { question: "Co je 'soudce'?", answer: "judge", options: ["lawyer", "judge", "police", "doctor"] },
-      { question: "Jaký pád používáme po 'bez'?", answer: "genitiv", options: ["nominativ", "akuzativ", "genitiv", "dativ"] },
-    ],
-  },
+const GRAMMAR_EXERCISES: Record<string, GrammarExercise[]> = {
+  // pravopisny_duel — choose i/y/ě/ú
+  pravopisny_duel: [
+    { prompt: "B_t nebo nebýt?", options: ["ý", "í"], correct: "ý", hint: "být = to be", rule: "Vyjmenovaná slova po B" },
+    { prompt: "Ml_n stojí u potoka.", options: ["ý", "í"], correct: "ý", hint: "mlýn = mill", rule: "Vyjmenovaná slova po M" },
+    { prompt: "V_chováme psa.", options: ["y", "i"], correct: "y", hint: "vychovat = to raise", rule: "Předpona vy-" },
+    { prompt: "P_vo je studené.", options: ["í", "ý"], correct: "í", hint: "pivo = beer", rule: "Měkká souhláska" },
+    { prompt: "L_ška běží lesem.", options: ["i", "y"], correct: "i", hint: "liška = fox", rule: "Měkká souhláska L" },
+    { prompt: "S_r je žlutý.", options: ["ý", "í"], correct: "ý", hint: "sýr = cheese", rule: "Vyjmenovaná slova po S" },
+    { prompt: "Zv_ře žije v lese.", options: ["í", "ý"], correct: "í", hint: "zvíře = animal", rule: "Měkká souhláska" },
+    { prompt: "M_dlo voní hezky.", options: ["ý", "í"], correct: "ý", hint: "mýdlo = soap", rule: "Vyjmenovaná slova po M" },
+    { prompt: "P_šný otec.", options: ["y", "i"], correct: "y", hint: "pyšný = proud", rule: "Vyjmenovaná slova po P" },
+    { prompt: "Kob_lka skáče.", options: ["y", "i"], correct: "y", hint: "kobylka = grasshopper", rule: "Vyjmenovaná slova po B" },
+    { prompt: "Bab_čka plete.", options: ["i", "y"], correct: "i", hint: "babička = grandmother", rule: "Měkká souhláska" },
+    { prompt: "S_n spí v posteli.", options: ["y", "i"], correct: "y", hint: "syn = son", rule: "Vyjmenovaná slova po S" },
+  ],
+  // doplnka — fill_gap endings
+  doplnka: [
+    { prompt: "Kluci hráli fotbal na hřišt_.", correct: "i", hint: "6. pád, hřiště (město)", rule: "Vzor město" },
+    { prompt: "Šel jsem do škol_.", correct: "y", hint: "2. pád, škola (žena)", rule: "Vzor žena" },
+    { prompt: "Dej to ps_!", correct: "ovi", hint: "3. pád, pes (pán)", rule: "Vzor pán" },
+    { prompt: "Vidím krásn_ dům.", correct: "ý", hint: "4. pád, přídavné jméno tvrdé", rule: "Přídavná jména tvrdá" },
+    { prompt: "Auto stojí před dom_.", correct: "em", hint: "7. pád, dům (hrad)", rule: "Vzor hrad" },
+    { prompt: "Mluvíme o Praz_.", correct: "e", hint: "6. pád, Praha (žena)", rule: "Vzor žena" },
+    { prompt: "Kniha leží na stol_.", correct: "e", hint: "6. pád, stůl (hrad)", rule: "Vzor hrad" },
+    { prompt: "Přišel bez klíč_.", correct: "e", hint: "2. pád, klíč (stroj)", rule: "Vzor stroj" },
+  ],
+  // kde_je_chyba — find the error
+  kde_je_chyba: [
+    { prompt: "Která věta obsahuje chybu?", options: ["Psi běhají po parku.", "Kočki sedí na střeše.", "Ptáci zpívají v lese."], correct: "Kočki sedí na střeše.", hint: "Správně: Kočky", rule: "y po k" },
+    { prompt: "Která věta obsahuje chybu?", options: ["Dnes je hezky.", "Na stole je kniha.", "Jdeme do kína."], correct: "Jdeme do kína.", hint: "Správně: kina (2. pád)", rule: "Skloňování" },
+    { prompt: "Která věta obsahuje chybu?", options: ["Mám nový auto.", "Mám červené auto.", "Auto je v garáži."], correct: "Mám nový auto.", hint: "Správně: nové (střední rod)", rule: "Shoda přídavného jména" },
+    { prompt: "Která věta obsahuje chybu?", options: ["Jedeme na výlet.", "Bydlíme v Praze.", "Jdu na školu."], correct: "Jdu na školu.", hint: "Správně: do školy", rule: "Předložky v/na" },
+    { prompt: "Která věta obsahuje chybu?", options: ["Viděl jsem pěknou zahradu.", "Šli jsme s kamarádou.", "Koupil jsem čerstvý chleba."], correct: "Šli jsme s kamarádou.", hint: "Správně: s kamarádem (muž. rod)", rule: "7. pád" },
+    { prompt: "Která věta obsahuje chybu?", options: ["Byli jsme v Německu.", "Mluvíme česky.", "Přijdeme v pondělí."], correct: "Byli jsme v Německu.", hint: "Správně: v Německu (správná předložka)", rule: "Předložky" },
+  ],
+  // spravna_veta — word order
+  spravna_veta: [
+    { prompt: "Seřaď slova do věty:", correct: "Včera jsem byl v kině.", hint: "Příklonky na 2. místo" },
+    { prompt: "Seřaď slova do věty:", correct: "Rád bych si objednal pivo.", hint: "bych jako příklonka" },
+    { prompt: "Seřaď slova do věty:", correct: "Jak se máte dnes?", hint: "se = příklonka" },
+    { prompt: "Seřaď slova do věty:", correct: "Maminka mi koupila novou knihu.", hint: "mi = příklonka" },
+    { prompt: "Seřaď slova do věty:", correct: "V Praze jsme bydleli dva roky.", hint: "jsme = příklonka na 2. místo" },
+  ],
+  // carky_prosim — punctuation
+  carky_prosim: [
+    { prompt: "Doplň čárky: Nevím jestli přijde.", correct: "Nevím, jestli přijde.", hint: "Čárka před vedlejší větou", rule: "Interpunkce" },
+    { prompt: "Doplň čárky: Petr který je můj bratr studuje.", correct: "Petr, který je můj bratr, studuje.", hint: "Čárka kolem vedlejší věty", rule: "Interpunkce" },
+    { prompt: "Doplň čárky: Koupil jsem chleba mléko a máslo.", correct: "Koupil jsem chleba, mléko a máslo.", hint: "Čárka ve výčtu (ne před a)", rule: "Interpunkce" },
+    { prompt: "Doplň čárky: Přišel ale nikdo tam nebyl.", correct: "Přišel, ale nikdo tam nebyl.", hint: "Čárka před ale", rule: "Interpunkce" },
+    { prompt: "Doplň čárky: Říkal že přijde.", correct: "Říkal, že přijde.", hint: "Čárka před spojkou že", rule: "Interpunkce" },
+    { prompt: "Doplň čárky: Pane Nováku pojďte sem.", correct: "Pane Nováku, pojďte sem.", hint: "Čárka za oslovením", rule: "Interpunkce" },
+  ],
 }
 
 // Helper: pick random element from array
@@ -177,7 +138,7 @@ function shuffle<T>(arr: T[]): T[] {
 
 /**
  * Generate a local question + correct answer for a given game type.
- * This mirrors the backend's game_service._generate_question logic.
+ * This mirrors the backend's grammar-based game_service logic.
  */
 function generateLocalQuestion(
   gameId: string,
@@ -186,75 +147,71 @@ function generateLocalQuestion(
   timeLimit: number,
   reward: number,
 ): { question: GameQuestion; correctAnswer: string } {
-  const vocab = VOCABULARY[level] || VOCABULARY.beginner
+  const exercises = GRAMMAR_EXERCISES[gameId] || GRAMMAR_EXERCISES.pravopisny_duel
+  const exercise = pickRandom(exercises)
 
-  if (gameId === "slovni_hadanka") {
-    const entry = pickRandom(vocab.words)
+  if (gameId === "pravopisny_duel") {
     return {
       question: {
         game_id: gameId,
         game_type: gameId,
         name_cs: gameName,
         question: {
-          type: "guess_word",
-          prompt: `Uhádni slovo (${entry.word.length} písmen):`,
-          hint: entry.hint,
+          type: "choose",
+          prompt: exercise.prompt,
+          options: shuffle(exercise.options || []),
+          hint: exercise.hint,
         },
         time_limit_seconds: timeLimit,
         reward_stars: reward,
       },
-      correctAnswer: entry.word,
+      correctAnswer: exercise.correct,
     }
   }
 
-  if (gameId === "dopln_pismeno") {
-    const entry = pickRandom(vocab.words)
-    const word = entry.word
-    const idx = Math.floor(Math.random() * word.length)
-    const display = word.slice(0, idx) + "_" + word.slice(idx + 1)
+  if (gameId === "doplnka") {
     return {
       question: {
         game_id: gameId,
         game_type: gameId,
         name_cs: gameName,
         question: {
-          type: "fill_letter",
-          prompt: `Doplň chybějící písmeno:`,
-          word: display,
-          hint: entry.hint,
+          type: "fill_gap",
+          prompt: exercise.prompt,
+          hint: exercise.hint,
         },
         time_limit_seconds: timeLimit,
         reward_stars: reward,
       },
-      correctAnswer: word[idx],
+      correctAnswer: exercise.correct,
     }
   }
 
-  if (gameId === "rychla_odpoved") {
-    const entry = pickRandom(vocab.quick)
+  if (gameId === "kde_je_chyba") {
     return {
       question: {
         game_id: gameId,
         game_type: gameId,
         name_cs: gameName,
         question: {
-          type: "quick_answer",
-          prompt: entry.question,
-          options: shuffle(entry.options),
+          type: "choose",
+          prompt: exercise.prompt,
+          options: shuffle(exercise.options || []),
+          hint: exercise.hint,
         },
         time_limit_seconds: timeLimit,
         reward_stars: reward,
       },
-      correctAnswer: entry.answer,
+      correctAnswer: exercise.correct,
     }
   }
 
-  if (gameId === "sestav_vetu") {
-    const entry = pickRandom(vocab.sentences)
-    const words = entry.sentence
+  if (gameId === "spravna_veta") {
+    const words = exercise.correct
       .replace(/\?/g, " ?")
       .replace(/\./g, " .")
       .replace(/,/g, " ,")
+      .replace(/!/g, " !")
       .split(/\s+/)
       .filter(Boolean)
     return {
@@ -263,53 +220,52 @@ function generateLocalQuestion(
         game_type: gameId,
         name_cs: gameName,
         question: {
-          type: "build_sentence",
-          prompt: `Sestav větu (${entry.translation}):`,
+          type: "order",
+          prompt: exercise.prompt,
           words: shuffle(words),
+          hint: exercise.hint,
         },
         time_limit_seconds: timeLimit,
         reward_stars: reward,
       },
-      correctAnswer: entry.sentence,
+      correctAnswer: exercise.correct,
     }
   }
 
-  if (gameId === "co_slyses") {
-    const entry = pickRandom(vocab.words)
+  if (gameId === "carky_prosim") {
     return {
       question: {
         game_id: gameId,
         game_type: gameId,
         name_cs: gameName,
         question: {
-          type: "listen_write",
-          prompt: `Napiš slovo, které vidíš:`,
-          hint: `${entry.hint} (${entry.category})`,
-          word: entry.word.split("").join(" · "), // show as spaced letters as hint
+          type: "transform",
+          prompt: exercise.prompt,
+          hint: exercise.hint,
         },
         time_limit_seconds: timeLimit,
         reward_stars: reward,
       },
-      correctAnswer: entry.word,
+      correctAnswer: exercise.correct,
     }
   }
 
-  // Fallback — should not happen
-  const entry = pickRandom(vocab.quick)
+  // Fallback
   return {
     question: {
       game_id: gameId,
       game_type: gameId,
       name_cs: gameName,
       question: {
-        type: "quick_answer",
-        prompt: entry.question,
-        options: shuffle(entry.options),
+        type: "choose",
+        prompt: exercise.prompt,
+        options: shuffle(exercise.options || ["a", "b"]),
+        hint: exercise.hint,
       },
       time_limit_seconds: timeLimit,
       reward_stars: reward,
     },
-    correctAnswer: entry.answer,
+    correctAnswer: exercise.correct,
   }
 }
 
@@ -320,10 +276,22 @@ function checkLocalAnswer(userAnswer: string, correctAnswer: string, gameType: s
   const uNorm = userAnswer.trim().toLowerCase()
   const cNorm = correctAnswer.trim().toLowerCase()
 
-  if (gameType === "sestav_vetu") {
-    const uClean = uNorm.replace(/ \?/g, "?").replace(/ \./g, ".").replace(/ ,/g, ",")
-    const cClean = cNorm.replace(/ \?/g, "?").replace(/ \./g, ".").replace(/ ,/g, ",")
+  if (gameType === "spravna_veta") {
+    const uClean = uNorm.replace(/ \?/g, "?").replace(/ \./g, ".").replace(/ ,/g, ",").replace(/ !/g, "!")
+    const cClean = cNorm.replace(/ \?/g, "?").replace(/ \./g, ".").replace(/ ,/g, ",").replace(/ !/g, "!")
     return uClean === cClean
+  }
+
+  if (gameType === "carky_prosim") {
+    // Normalize whitespace around punctuation
+    const uClean = uNorm.replace(/\s+/g, " ").replace(/\s*,\s*/g, ", ").trim()
+    const cClean = cNorm.replace(/\s+/g, " ").replace(/\s*,\s*/g, ", ").trim()
+    return uClean === cClean
+  }
+
+  // Support | for multiple valid answers
+  if (cNorm.includes("|")) {
+    return cNorm.split("|").map(s => s.trim()).includes(uNorm)
   }
 
   return uNorm === cNorm
@@ -333,54 +301,54 @@ function checkLocalAnswer(userAnswer: string, correctAnswer: string, gameType: s
 
 const MINI_GAMES: MiniGame[] = [
   {
-    id: "slovni_hadanka",
-    name: "🎯 Slovní hádanka",
-    description: "Uhádni slovo podle popisu",
-    icon: "🎯",
-    color: "text-red-500",
-    gradient: "from-red-400 to-orange-400",
-    reward: 3,
-    timeLimit: 60,
-  },
-  {
-    id: "dopln_pismeno",
-    name: "🔤 Doplň písmeno",
-    description: "Doplň chybějící písmeno",
-    icon: "🔤",
+    id: "pravopisny_duel",
+    name: "📝 Pravopisný duel",
+    description: "Zvol správné i/y, ě/je, ú/ů",
+    icon: "📝",
     color: "text-blue-500",
     gradient: "from-blue-400 to-cyan-400",
-    reward: 2,
+    reward: 3,
     timeLimit: 30,
   },
   {
-    id: "rychla_odpoved",
-    name: "⚡ Rychlá odpověď",
-    description: "Odpověz za 10 sekund!",
-    icon: "⚡",
-    color: "text-yellow-500",
-    gradient: "from-yellow-400 to-amber-400",
-    reward: 5,
-    timeLimit: 10,
-  },
-  {
-    id: "sestav_vetu",
-    name: "🧩 Sestav větu",
-    description: "Sestav větu ze slov",
-    icon: "🧩",
+    id: "doplnka",
+    name: "🔤 Doplňka",
+    description: "Doplň správnou koncovku",
+    icon: "🔤",
     color: "text-green-500",
     gradient: "from-green-400 to-emerald-400",
+    reward: 3,
+    timeLimit: 45,
+  },
+  {
+    id: "kde_je_chyba",
+    name: "🔍 Kde je chyba?",
+    description: "Najdi větu s chybou",
+    icon: "🔍",
+    color: "text-red-500",
+    gradient: "from-red-400 to-orange-400",
+    reward: 4,
+    timeLimit: 30,
+  },
+  {
+    id: "spravna_veta",
+    name: "🧩 Správná věta",
+    description: "Seřaď slova do správné věty",
+    icon: "🧩",
+    color: "text-purple-500",
+    gradient: "from-purple-400 to-violet-400",
     reward: 4,
     timeLimit: 45,
   },
   {
-    id: "co_slyses",
-    name: "👂 Co slyšíš?",
-    description: "Napiš co uslyšíš",
-    icon: "👂",
-    color: "text-purple-500",
-    gradient: "from-purple-400 to-violet-400",
-    reward: 3,
-    timeLimit: 30,
+    id: "carky_prosim",
+    name: "✏️ Čárky, prosím!",
+    description: "Doplň čárky na správné místo",
+    icon: "✏️",
+    color: "text-yellow-500",
+    gradient: "from-yellow-400 to-amber-400",
+    reward: 5,
+    timeLimit: 45,
   },
 ]
 
@@ -737,7 +705,7 @@ export function ProfileMiniGames({
     }
   }, [selectedGame, handleStartGame])
 
-  // Render word arrangement for "sestav_vetu"
+  // Render word arrangement for "spravna_veta" (word order game)
   const renderWordChips = useMemo(() => {
     if (!question?.question?.words) return null
     return (
@@ -761,7 +729,7 @@ export function ProfileMiniGames({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Gamepad2 className="w-5 h-5 text-purple-500" />
-          <h3 className="font-semibold text-foreground">Mini hry</h3>
+          <h3 className="font-semibold text-foreground">Gramatické hry</h3>
         </div>
 
         {/* Stats Badge */}

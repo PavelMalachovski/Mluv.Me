@@ -1,12 +1,12 @@
 """
-Game Service for language learning mini-games.
+Game Service for grammar-based mini-games.
 
-Реализует 5 мини-игр для изучения чешского:
-- Slovní hádanka (Угадай слово)
-- Doplň písmeno (Вставь букву)
-- Rychlá odpověď (Быстрый ответ)
-- Sestav větu (Собери предложение)
-- Co slyšíš? (Что слышишь?)
+5 gramatických her založených na Internetové jazykové příručce:
+- Pravopisný duel (📝 Vyber správnou variantu i/y, ě/je, ú/ů)
+- Doplňka (🔤 Doplň správný tvar / koncovku)
+- Kde je chyba? (🔍 Najdi chybu ve větě)
+- Správná věta (🧩 Seřaď slova do správného pořadí)
+- Čárky, prosím! (✏️ Doplň čárky do věty)
 """
 
 import random
@@ -17,142 +17,70 @@ from dataclasses import dataclass
 
 import structlog
 
-from backend.services.openai_client import OpenAIClient
+from backend.services.grammar_service import GrammarService
 
 logger = structlog.get_logger(__name__)
 
-# Типы игр
+# Game types
 GameType = Literal[
-    "slovni_hadanka",
-    "dopln_pismeno",
-    "rychla_odpoved",
-    "sestav_vetu",
-    "co_slyses",
+    "pravopisny_duel",
+    "doplnka",
+    "kde_je_chyba",
+    "spravna_veta",
+    "carky_prosim",
 ]
 
 CzechLevel = Literal["beginner", "intermediate", "advanced", "native"]
 
 
-# Определения игр
+# Game definitions
 GAMES = {
-    "slovni_hadanka": {
-        "name_cs": "🎯 Slovní hádanka",
-        "name_ru": "Угадай слово",
-        "description_cs": "Uhádni slovo podle popisu.",
-        "description_ru": "Угадай слово по описанию.",
+    "pravopisny_duel": {
+        "name_cs": "📝 Pravopisný duel",
+        "description_cs": "Vyber správnou variantu: i/y, ě/je, ú/ů a další.",
         "reward_stars": 3,
-        "time_limit_seconds": 60,
-        "difficulty_multiplier": 1.0,
-    },
-    "dopln_pismeno": {
-        "name_cs": "🔤 Doplň písmeno",
-        "name_ru": "Вставь букву",
-        "description_cs": "Doplň chybějící písmeno ve slově.",
-        "description_ru": "Вставь пропущенную букву в слово.",
-        "reward_stars": 2,
         "time_limit_seconds": 30,
-        "difficulty_multiplier": 0.8,
+        "difficulty_multiplier": 1.0,
+        "exercise_type": "choose",
     },
-    "rychla_odpoved": {
-        "name_cs": "🎭 Rychlá odpověď",
-        "name_ru": "Быстрый ответ",
-        "description_cs": "Odpověz na otázku za 10 sekund!",
-        "description_ru": "Ответь на вопрос за 10 секунд!",
-        "reward_stars": 5,
-        "time_limit_seconds": 10,
-        "difficulty_multiplier": 1.5,
+    "doplnka": {
+        "name_cs": "🔤 Doplňka",
+        "description_cs": "Doplň správný tvar, koncovku nebo písmeno.",
+        "reward_stars": 3,
+        "time_limit_seconds": 45,
+        "difficulty_multiplier": 1.0,
+        "exercise_type": "fill_gap",
     },
-    "sestav_vetu": {
-        "name_cs": "🧩 Sestav větu",
-        "name_ru": "Собери предложение",
-        "description_cs": "Sestav větu ze slov ve správném pořadí.",
-        "description_ru": "Собери предложение из слов в правильном порядке.",
+    "kde_je_chyba": {
+        "name_cs": "🔍 Kde je chyba?",
+        "description_cs": "Najdi a oprav chybu ve větě.",
+        "reward_stars": 4,
+        "time_limit_seconds": 30,
+        "difficulty_multiplier": 1.2,
+        "exercise_type": "choose",  # uses common_mistakes
+    },
+    "spravna_veta": {
+        "name_cs": "🧩 Správná věta",
+        "description_cs": "Seřaď slova do správného pořadí.",
         "reward_stars": 4,
         "time_limit_seconds": 45,
         "difficulty_multiplier": 1.2,
+        "exercise_type": "order",
     },
-    "co_slyses": {
-        "name_cs": "👂 Co slyšíš?",
-        "name_ru": "Что слышишь?",
-        "description_cs": "Napiš slovo, které uslyšíš.",
-        "description_ru": "Напиши слово, которое услышишь.",
-        "reward_stars": 3,
-        "time_limit_seconds": 30,
-        "difficulty_multiplier": 1.0,
-    },
-}
-
-
-# Банк слов и предложений по уровням
-VOCABULARY_BANK = {
-    "beginner": {
-        "words": [
-            {"word": "pivo", "hint_cs": "Oblíbený český nápoj 🍺", "category": "drink"},
-            {"word": "chleba", "hint_cs": "Jíme ho každý den", "category": "food"},
-            {"word": "voda", "hint_cs": "Tekutina, kterou pijeme", "category": "drink"},
-            {"word": "dům", "hint_cs": "Kde bydlíme", "category": "place"},
-            {"word": "auto", "hint_cs": "Dopravní prostředek se 4 koly", "category": "transport"},
-            {"word": "kniha", "hint_cs": "Čteme ji 📚", "category": "object"},
-            {"word": "pes", "hint_cs": "Domácí mazlíček, štěká 🐕", "category": "animal"},
-            {"word": "kočka", "hint_cs": "Domácí mazlíček, mňouká 🐱", "category": "animal"},
-            {"word": "škola", "hint_cs": "Místo, kde se učíme", "category": "place"},
-            {"word": "Praha", "hint_cs": "Hlavní město Česka 🏰", "category": "place"},
-        ],
-        "sentences": [
-            {"sentence": "Jak se máš?", "translation_ru": "Как дела?"},
-            {"sentence": "Mám se dobře.", "translation_ru": "У меня всё хорошо."},
-            {"sentence": "Děkuji moc.", "translation_ru": "Большое спасибо."},
-            {"sentence": "Jedno pivo, prosím.", "translation_ru": "Одно пиво, пожалуйста."},
-            {"sentence": "Kde je zastávka?", "translation_ru": "Где остановка?"},
-        ],
-    },
-    "intermediate": {
-        "words": [
-            {"word": "hospoda", "hint_cs": "Typické české místo pro pivo 🍺", "category": "place"},
-            {"word": "knedlík", "hint_cs": "Příloha k svíčkové", "category": "food"},
-            {"word": "krásný", "hint_cs": "Velmi hezký", "category": "adjective"},
-            {"word": "důležitý", "hint_cs": "Velmi významný", "category": "adjective"},
-            {"word": "cestovat", "hint_cs": "Jezdit do různých míst", "category": "verb"},
-            {"word": "pomáhat", "hint_cs": "Asistovat někomu", "category": "verb"},
-            {"word": "překvapení", "hint_cs": "Něco nečekaného", "category": "noun"},
-            {"word": "společnost", "hint_cs": "Lidé kolem nás, nebo firma", "category": "noun"},
-        ],
-        "sentences": [
-            {"sentence": "Rád bych si objednal svíčkovou.", "translation_ru": "Я бы хотел заказать свичкову."},
-            {"sentence": "Můžete mi prosím pomoct?", "translation_ru": "Вы можете мне помочь?"},
-            {"sentence": "Jak dlouho trvá cesta?", "translation_ru": "Сколько времени занимает дорога?"},
-            {"sentence": "Máte nějakou slevu?", "translation_ru": "У вас есть скидка?"},
-        ],
-    },
-    "advanced": {
-        "words": [
-            {"word": "překážka", "hint_cs": "Něco, co brání v cestě", "category": "noun"},
-            {"word": "zodpovědnost", "hint_cs": "Odpovědnost za něco", "category": "noun"},
-            {"word": "přehodnotit", "hint_cs": "Znovu promyslet", "category": "verb"},
-            {"word": "prostřednictvím", "hint_cs": "Pomocí něčeho", "category": "preposition"},
-            {"word": "záležitost", "hint_cs": "Věc nebo problém", "category": "noun"},
-        ],
-        "sentences": [
-            {"sentence": "Bylo by možné přeložit schůzku na příští týden?", "translation_ru": "Можно ли перенести встречу на следующую неделю?"},
-            {"sentence": "Rád bych vás upozornil na důležitý detail.", "translation_ru": "Хотел бы обратить ваше внимание на важную деталь."},
-        ],
-    },
-    "native": {
-        "words": [
-            {"word": "přelétavý", "hint_cs": "Měnící často partnery nebo zájmy", "category": "adjective"},
-            {"word": "rozhořčení", "hint_cs": "Silné pobouření", "category": "noun"},
-            {"word": "zatraceně", "hint_cs": "Expresivní slovo pro zdůraznění", "category": "adverb"},
-        ],
-        "sentences": [
-            {"sentence": "To je ale pěkná pakáž!", "translation_ru": "Ну и сброд! (разг.)"},
-        ],
+    "carky_prosim": {
+        "name_cs": "✏️ Čárky, prosím!",
+        "description_cs": "Doplň čárky do věty na správná místa.",
+        "reward_stars": 5,
+        "time_limit_seconds": 45,
+        "difficulty_multiplier": 1.5,
+        "exercise_type": "transform",
     },
 }
 
 
 @dataclass
 class ActiveGame:
-    """Активная игра пользователя."""
+    """Active game for a user."""
     game_id: str
     game_type: GameType
     user_id: int
@@ -160,47 +88,36 @@ class ActiveGame:
     correct_answer: str
     started_at: datetime
     level: str
+    rule_id: int | None = None  # Track which grammar rule was used
 
 
 class GameService:
     """
-    Сервис для языковых мини-игр.
+    Grammar-based mini-games service.
 
-    Управляет играми, подсчётом очков и лидербордом.
+    Pulls exercises from GrammarRule.exercise_data via GrammarService.
+    Manages active games, scoring, and leaderboard.
     """
 
-    def __init__(self, openai_client: OpenAIClient | None = None):
-        """
-        Инициализация игрового сервиса.
-
-        Args:
-            openai_client: Клиент OpenAI для генерации динамического контента
-        """
-        self.openai_client = openai_client
+    def __init__(self, grammar_service: GrammarService | None = None):
+        self.grammar_service = grammar_service
         self.logger = logger.bind(service="game_service")
 
-        # In-memory хранилище активных игр
+        # In-memory active games
         self._active_games: dict[int, ActiveGame] = {}
 
-        # In-memory лидерборд (в продакшене заменить на БД)
+        # In-memory leaderboard (replace with DB in production)
         self._leaderboard: dict[str, list[dict]] = {
             game_type: [] for game_type in GAMES
         }
 
     def get_available_games(self) -> list[dict]:
-        """
-        Получить список всех доступных игр.
-
-        Returns:
-            list: Список игр с информацией
-        """
+        """Get list of available games."""
         return [
             {
                 "id": game_id,
                 "name_cs": info["name_cs"],
-                "name_ru": info["name_ru"],
                 "description_cs": info["description_cs"],
-                "description_ru": info["description_ru"],
                 "reward_stars": info["reward_stars"],
                 "time_limit_seconds": info["time_limit_seconds"],
             }
@@ -214,15 +131,9 @@ class GameService:
         level: CzechLevel = "beginner",
     ) -> dict:
         """
-        Начать новую игру.
+        Start a new game.
 
-        Args:
-            user_id: ID пользователя
-            game_type: Тип игры
-            level: Уровень сложности
-
-        Returns:
-            dict: Информация об игре с вопросом
+        Fetches exercises from grammar rules matching the game type and level.
         """
         if game_type not in GAMES:
             raise ValueError(f"Unknown game type: {game_type}")
@@ -230,12 +141,11 @@ class GameService:
         game_info = GAMES[game_type]
         game_id = f"{user_id}_{game_type}_{datetime.utcnow().timestamp()}"
 
-        # Генерируем вопрос в зависимости от типа игры
-        question, correct_answer = await self._generate_question(
+        # Generate question from grammar rules
+        question, correct_answer, rule_id = await self._generate_question(
             game_type, level
         )
 
-        # Сохраняем активную игру
         active_game = ActiveGame(
             game_id=game_id,
             game_type=game_type,
@@ -244,6 +154,7 @@ class GameService:
             correct_answer=correct_answer,
             started_at=datetime.utcnow(),
             level=level,
+            rule_id=rule_id,
         )
         self._active_games[user_id] = active_game
 
@@ -252,6 +163,7 @@ class GameService:
             user_id=user_id,
             game_type=game_type,
             level=level,
+            rule_id=rule_id,
         )
 
         return {
@@ -268,39 +180,41 @@ class GameService:
         user_id: int,
         answer: str,
     ) -> dict:
-        """
-        Отправить ответ на текущую игру.
-
-        Args:
-            user_id: ID пользователя
-            answer: Ответ пользователя
-
-        Returns:
-            dict: Результат с оценкой
-        """
+        """Submit an answer for the active game."""
         if user_id not in self._active_games:
             raise ValueError("No active game for this user")
 
         active_game = self._active_games[user_id]
         game_info = GAMES[active_game.game_type]
 
-        # Проверяем время
+        # Check time
         elapsed = (datetime.utcnow() - active_game.started_at).total_seconds()
         time_bonus = max(0, 1 - elapsed / game_info["time_limit_seconds"])
 
-        # Проверяем ответ
+        # Check answer
         is_correct = self._check_answer(
-            answer.strip().lower(),
-            active_game.correct_answer.lower(),
+            answer.strip(),
+            active_game.correct_answer,
             active_game.game_type,
         )
 
-        # Рассчитываем награду
+        # Calculate reward
         base_stars = game_info["reward_stars"] if is_correct else 0
         bonus_stars = int(base_stars * time_bonus * 0.5) if is_correct else 0
         total_stars = base_stars + bonus_stars
 
-        # Обновляем лидерборд
+        # Record grammar progress if we have a grammar service
+        if self.grammar_service and active_game.rule_id:
+            try:
+                await self.grammar_service.record_practice(
+                    user_id=user_id,
+                    rule_id=active_game.rule_id,
+                    correct=is_correct,
+                )
+            except Exception as e:
+                self.logger.warning("progress_record_failed", error=str(e))
+
+        # Update leaderboard
         if is_correct:
             self._update_leaderboard(
                 active_game.game_type,
@@ -309,7 +223,7 @@ class GameService:
                 elapsed,
             )
 
-        # Удаляем активную игру
+        # Remove active game
         del self._active_games[user_id]
 
         self.logger.info(
@@ -337,16 +251,7 @@ class GameService:
         game_type: GameType,
         limit: int = 10,
     ) -> list[dict]:
-        """
-        Получить лидерборд для игры.
-
-        Args:
-            game_type: Тип игры
-            limit: Количество записей
-
-        Returns:
-            list: Топ игроков
-        """
+        """Get leaderboard for a game type."""
         if game_type not in self._leaderboard:
             return []
 
@@ -359,87 +264,170 @@ class GameService:
         self,
         game_type: GameType,
         level: CzechLevel,
-    ) -> tuple[dict, str]:
+    ) -> tuple[dict, str, int | None]:
         """
-        Сгенерировать вопрос для игры.
+        Generate a question from grammar rules.
 
         Returns:
-            tuple: (question_dict, correct_answer)
+            tuple: (question_dict, correct_answer, rule_id)
         """
-        vocab = VOCABULARY_BANK.get(level, VOCABULARY_BANK["beginner"])
+        exercise_type = GAMES[game_type]["exercise_type"]
+        rule_id = None
 
-        if game_type == "slovni_hadanka":
-            # Угадай слово по описанию
-            word_data = random.choice(vocab["words"])
+        # Try to get exercises from grammar service (DB)
+        if self.grammar_service:
+            try:
+                exercises = await self.grammar_service.get_game_exercises(
+                    exercise_type=exercise_type,
+                    level=level,
+                    count=5,
+                )
+                if exercises:
+                    ex = random.choice(exercises)
+                    rule_id = ex.get("rule_id")
+                    return self._format_exercise(game_type, ex), ex["answer"], rule_id
+            except Exception as e:
+                self.logger.warning("grammar_exercises_fetch_failed", error=str(e))
+
+        # Fallback: use hardcoded exercises
+        return self._fallback_question(game_type, level)
+
+    def _format_exercise(self, game_type: GameType, exercise: dict) -> dict:
+        """Format a grammar exercise for the game UI."""
+        if game_type == "pravopisny_duel":
             return {
-                "type": "guess_word",
-                "hint": word_data["hint_cs"],
-                "category": word_data["category"],
-                "word_length": len(word_data["word"]),
-            }, word_data["word"]
+                "type": "choose",
+                "question": exercise["question"],
+                "options": exercise.get("options", []),
+                "rule_title": exercise.get("rule_title", ""),
+                "category": exercise.get("category", ""),
+            }
 
-        elif game_type == "dopln_pismeno":
-            # Вставь букву
-            word_data = random.choice(vocab["words"])
-            word = word_data["word"]
-            # Убираем случайную букву
-            idx = random.randint(0, len(word) - 1)
-            hidden_letter = word[idx]
-            display = word[:idx] + "_" + word[idx + 1:]
+        elif game_type == "doplnka":
             return {
-                "type": "fill_letter",
-                "word_with_gap": display,
-                "hint": word_data["hint_cs"],
-                "missing_position": idx,
-            }, hidden_letter
+                "type": "fill_gap",
+                "question": exercise["question"],
+                "rule_title": exercise.get("rule_title", ""),
+                "category": exercise.get("category", ""),
+            }
 
-        elif game_type == "rychla_odpoved":
-            # Быстрый ответ
-            question_templates = [
-                {"q": "Jak se řekne 'hello' česky?", "a": "ahoj"},
-                {"q": "Jaké je hlavní město Česka?", "a": "praha"},
-                {"q": "Co pijeme v hospodě? 🍺", "a": "pivo"},
-                {"q": "Jak se řekne 'thank you' česky?", "a": "děkuji"},
-                {"q": "Kolik má Česko 🇨🇿 obyvatel? (v milionech)", "a": "10"},
-            ]
-            q = random.choice(question_templates)
+        elif game_type == "kde_je_chyba":
+            # For "find the error" — present incorrect sentence
             return {
-                "type": "quick_answer",
-                "question": q["q"],
-            }, q["a"]
+                "type": "find_error",
+                "question": exercise["question"],
+                "options": exercise.get("options", []),
+                "rule_title": exercise.get("rule_title", ""),
+            }
 
-        elif game_type == "sestav_vetu":
-            # Собери предложение
-            if vocab["sentences"]:
-                sentence_data = random.choice(vocab["sentences"])
-                words = sentence_data["sentence"].replace("?", " ?").replace(".", " .").replace(",", " ,").split()
-                shuffled = words.copy()
+        elif game_type == "spravna_veta":
+            # Shuffle words from the answer sentence
+            answer = exercise["answer"]
+            words = answer.replace("?", " ?").replace(".", " .").replace(",", " ,").split()
+            shuffled = words.copy()
+            # Make sure shuffled != original
+            for _ in range(10):
                 random.shuffle(shuffled)
-                return {
-                    "type": "build_sentence",
-                    "words": shuffled,
-                    "word_count": len(words),
-                    "translation_hint": sentence_data.get("translation_ru", ""),
-                }, sentence_data["sentence"]
-            else:
-                # Fallback
-                return {
-                    "type": "build_sentence",
-                    "words": ["Jak", "se", "máš", "?"],
-                    "word_count": 4,
-                }, "Jak se máš?"
-
-        elif game_type == "co_slyses":
-            # Что слышишь - используется с TTS
-            word_data = random.choice(vocab["words"])
+                if shuffled != words:
+                    break
             return {
-                "type": "listen_write",
-                "word": word_data["word"],  # Будет преобразовано в аудио
-                "category": word_data["category"],
-                "hint": f"Kategorija: {word_data['category']}",
-            }, word_data["word"]
+                "type": "order",
+                "words": shuffled,
+                "word_count": len(words),
+                "question": exercise.get("question", "Seřaď slova do věty:"),
+            }
 
-        return {"type": "unknown"}, ""
+        elif game_type == "carky_prosim":
+            return {
+                "type": "transform",
+                "sentence": exercise["question"],
+                "instruction": "Doplň čárky na správná místa:",
+                "rule_title": exercise.get("rule_title", ""),
+            }
+
+        return {"type": "unknown", "question": exercise.get("question", "")}
+
+    def _fallback_question(
+        self,
+        game_type: GameType,
+        level: CzechLevel,
+    ) -> tuple[dict, str, None]:
+        """Fallback questions when DB is not available."""
+
+        if game_type == "pravopisny_duel":
+            questions = [
+                {"q": "b_dlit — doplň i nebo y:", "a": "y", "opts": ["i", "y"]},
+                {"q": "ch_ba — doplň i nebo y:", "a": "y", "opts": ["i", "y"]},
+                {"q": "č_slo — doplň í nebo ý:", "a": "í", "opts": ["í", "ý"]},
+                {"q": "v_běhnout — doplň i nebo y:", "a": "y", "opts": ["i", "y"]},
+                {"q": "jaz_k — doplň i nebo y:", "a": "y", "opts": ["i", "y"]},
+                {"q": "_kol — ú nebo ů?", "a": "ú", "opts": ["ú", "ů"]},
+                {"q": "d_m — ú nebo ů?", "a": "ů", "opts": ["ú", "ů"]},
+            ]
+            q = random.choice(questions)
+            return {
+                "type": "choose",
+                "question": q["q"],
+                "options": q["opts"],
+            }, q["a"], None
+
+        elif game_type == "doplnka":
+            questions = [
+                {"q": "Jdu do ___. (škola, 2. p.)", "a": "školy"},
+                {"q": "Vidím ___. (žena, 4. p.)", "a": "ženu"},
+                {"q": "Vidím ___. (student, 4. p.)", "a": "studenta"},
+                {"q": "Já ___ česky. (mluvit)", "a": "mluvím"},
+                {"q": "Oni ___ doma. (být)", "a": "jsou"},
+            ]
+            q = random.choice(questions)
+            return {
+                "type": "fill_gap",
+                "question": q["q"],
+            }, q["a"], None
+
+        elif game_type == "kde_je_chyba":
+            questions = [
+                {"q": "Která věta je správně?", "a": "bydlím v Praze", "opts": ["bidlím v Praze", "bydlím v Praze"]},
+                {"q": "Která věta je správně?", "a": "jsou doma", "opts": ["sou doma", "jsou doma"]},
+                {"q": "Která věta je správně?", "a": "Myslím, že ano.", "opts": ["Myslím že ano.", "Myslím, že ano."]},
+            ]
+            q = random.choice(questions)
+            return {
+                "type": "find_error",
+                "question": q["q"],
+                "options": q["opts"],
+            }, q["a"], None
+
+        elif game_type == "spravna_veta":
+            sentences = [
+                {"q": "jsem / Včera / v kině / byl", "a": "Včera jsem byl v kině."},
+                {"q": "auto / Koupil / si / jsem", "a": "Koupil jsem si auto."},
+                {"q": "česky / se / Učím", "a": "Učím se česky."},
+            ]
+            s = random.choice(sentences)
+            words = s["q"].split(" / ")
+            random.shuffle(words)
+            return {
+                "type": "order",
+                "words": words,
+                "word_count": len(words),
+                "question": "Seřaď slova do věty:",
+            }, s["a"], None
+
+        elif game_type == "carky_prosim":
+            sentences = [
+                {"q": "Myslím že máš pravdu.", "a": "Myslím, že máš pravdu."},
+                {"q": "Řekl že přijde zítra.", "a": "Řekl, že přijde zítra."},
+                {"q": "Je hezky ale studené.", "a": "Je hezky, ale studené."},
+            ]
+            s = random.choice(sentences)
+            return {
+                "type": "transform",
+                "sentence": s["q"],
+                "instruction": "Doplň čárky na správná místa:",
+            }, s["a"], None
+
+        return {"type": "unknown"}, "", None
 
     def _check_answer(
         self,
@@ -447,19 +435,28 @@ class GameService:
         correct_answer: str,
         game_type: GameType,
     ) -> bool:
-        """Проверить правильность ответа."""
-        # Нормализуем ответы
-        user_norm = user_answer.strip().lower()
-        correct_norm = correct_answer.strip().lower()
+        """Check if the answer is correct."""
+        user_norm = user_answer.strip()
+        correct_norm = correct_answer.strip()
 
-        if game_type == "sestav_vetu":
-            # Для предложений убираем пробелы перед пунктуацией
-            user_clean = user_norm.replace(" ?", "?").replace(" .", ".").replace(" ,", ",")
-            correct_clean = correct_norm.replace(" ?", "?").replace(" .", ".").replace(" ,", ",")
-            return user_clean == correct_clean
+        if game_type in ("spravna_veta", "carky_prosim"):
+            # Normalize punctuation spacing
+            user_clean = (
+                user_norm.replace(" ?", "?").replace(" .", ".")
+                .replace(" ,", ",").replace("  ", " ").strip()
+            )
+            correct_clean = (
+                correct_norm.replace(" ?", "?").replace(" .", ".")
+                .replace(" ,", ",").replace("  ", " ").strip()
+            )
+            return user_clean.lower() == correct_clean.lower()
 
-        # Для остальных игр - точное совпадение
-        return user_norm == correct_norm
+        # Support multiple correct answers separated by |
+        if "|" in correct_norm:
+            valid_answers = [a.strip().lower() for a in correct_norm.split("|")]
+            return user_norm.lower() in valid_answers
+
+        return user_norm.lower() == correct_norm.lower()
 
     def _update_leaderboard(
         self,
@@ -468,10 +465,9 @@ class GameService:
         stars: int,
         time_seconds: float,
     ):
-        """Обновить лидерборд."""
+        """Update leaderboard."""
         leaderboard = self._leaderboard[game_type]
 
-        # Ищем существующую запись
         existing = next((x for x in leaderboard if x["user_id"] == user_id), None)
 
         if existing:
@@ -488,7 +484,7 @@ class GameService:
             })
 
     def cancel_game(self, user_id: int) -> bool:
-        """Отменить активную игру."""
+        """Cancel active game."""
         if user_id in self._active_games:
             del self._active_games[user_id]
             return True
