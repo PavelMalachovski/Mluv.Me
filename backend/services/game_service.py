@@ -99,17 +99,15 @@ class GameService:
     Manages active games, scoring, and leaderboard.
     """
 
+    # Class-level shared state — persists across request-scoped instances
+    _active_games: dict[int, "ActiveGame"] = {}
+    _leaderboard: dict[str, list[dict]] = {
+        game_type: [] for game_type in GAMES
+    }
+
     def __init__(self, grammar_service: GrammarService | None = None):
         self.grammar_service = grammar_service
         self.logger = logger.bind(service="game_service")
-
-        # In-memory active games
-        self._active_games: dict[int, ActiveGame] = {}
-
-        # In-memory leaderboard (replace with DB in production)
-        self._leaderboard: dict[str, list[dict]] = {
-            game_type: [] for game_type in GAMES
-        }
 
     def get_available_games(self) -> list[dict]:
         """Get list of available games."""

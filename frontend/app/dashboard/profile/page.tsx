@@ -11,6 +11,7 @@ import { Calendar } from "lucide-react"
 import { IllustratedHeader } from "@/components/ui/IllustratedHeader"
 import { IllustratedStatCard } from "@/components/ui/IllustratedStatCard"
 import { ProfileMiniGames } from "@/components/features/ProfileMiniGames"
+import { ProfileGrammar } from "@/components/features/ProfileGrammar"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -127,6 +128,13 @@ export default function ProfilePage() {
             );
           })()}
         </div>
+
+        {/* Grammar Section */}
+        <ProfileGrammar
+          userId={user.id}
+          telegramId={user.telegram_id}
+          level={user.level}
+        />
 
         {/* Mini Games Section */}
         <ProfileMiniGames

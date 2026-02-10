@@ -53,13 +53,35 @@ export function TranslationPopup({
         return () => document.removeEventListener("keydown", handleEscape)
     }, [onClose])
 
+    // Keep popup within viewport bounds
+    useEffect(() => {
+        if (!popupRef.current) return
+        const el = popupRef.current
+        const rect = el.getBoundingClientRect()
+        const vw = window.innerWidth
+        const vh = window.innerHeight
+        const pad = 12
+
+        // Clamp left edge so popup doesn't overflow left or right
+        if (rect.left < pad) {
+            el.style.left = `${pad + rect.width / 2}px`
+        } else if (rect.right > vw - pad) {
+            el.style.left = `${vw - pad - rect.width / 2}px`
+        }
+
+        // If popup goes below viewport, show above the word
+        if (rect.bottom > vh - pad) {
+            el.style.top = `${position.top - rect.height - 20}px`
+        }
+    }, [position])
+
     return (
         <div
             ref={popupRef}
-            className="absolute z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-4 min-w-[250px] max-w-[350px]"
+            className="absolute z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-4 min-w-[220px] max-w-[300px]"
             style={{
                 top: `${position.top + 10}px`,
-                left: `${position.left}px`,
+                left: `clamp(140px, ${position.left}px, calc(100vw - 160px))`,
                 transform: "translateX(-50%)",
             }}
         >
