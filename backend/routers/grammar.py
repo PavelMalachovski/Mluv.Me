@@ -292,3 +292,70 @@ async def seed_grammar_rules_endpoint(
         "updated": updated,
         "total_rules": len(GRAMMAR_RULES),
     }
+
+
+# === Admin: trigger notifications manually ===
+
+@router.post("/admin/send-notifications")
+async def trigger_notifications(
+    secret: str = Query(..., description="Admin secret key"),
+    test_telegram_id: int = Query(None, description="Send only to this telegram_id (test mode)"),
+) -> dict:
+    """
+    Trigger evening grammar notifications immediately.
+
+    - Without test_telegram_id: sends to ALL active users with notifications enabled.
+    - With test_telegram_id: sends only to that one user (for testing).
+
+    Requires ADMIN_SECRET.
+    """
+    import os
+    admin_secret = os.getenv("ADMIN_SECRET", "mluv-seed-2026")
+    if secret != admin_secret:
+        raise HTTPException(status_code=403, detail="Invalid secret")
+
+    if test_telegram_id:
+        # Test mode: send to one specific telegram user
+        from aiogram import Bot
+        from backend.config import get_settings
+        from backend.db.grammar_repository import GrammarRepository
+        from backend.services.grammar_service import GrammarService
+        from backend.db.database import AsyncSessionLocal
+
+        cfg = get_settings()
+
+        async with AsyncSessionLocal() as db:
+            grammar_repo = GrammarRepository(db)
+            grammar_service = GrammarService(grammar_repo)
+
+            # Find user by telegram_id
+            from sqlalchemy import select as sa_select
+            from backend.models.user import User
+            result = await db.execute(
+                sa_select(User).where(User.telegram_id == test_telegram_id)
+            )
+            user = result.scalar_one_or_none()
+            if not user:
+                raise HTTPException(status_code=404, detail=f"User with telegram_id={test_telegram_id} not found")
+
+            message = await grammar_service.get_notification_message(
+                user_id=user.id,
+                streak=0,
+                stars=0,
+            )
+
+            bot = Bot(token=cfg.telegram_bot_token)
+            await bot.send_message(test_telegram_id, message, parse_mode="HTML")
+            await bot.session.close()
+
+        return {"status": "sent", "mode": "test", "telegram_id": test_telegram_id}
+
+    else:
+        # Full broadcast via Celery task
+        from backend.tasks.notifications import send_evening_grammar_notifications
+        task = send_evening_grammar_notifications.apply_async()
+        return {
+            "status": "scheduled",
+            "mode": "broadcast",
+            "task_id": task.id,
+        }

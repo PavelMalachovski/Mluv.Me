@@ -67,8 +67,8 @@ set -e\n\
 # Function to handle graceful shutdown\n\
 cleanup() {\n\
     echo "Shutting down services..."\n\
-    kill $BACKEND_PID $BOT_PID $FRONTEND_PID 2>/dev/null\n\
-    wait $BACKEND_PID $BOT_PID $FRONTEND_PID 2>/dev/null\n\
+    kill $BACKEND_PID $BOT_PID $FRONTEND_PID $WORKER_PID $BEAT_PID 2>/dev/null\n\
+    wait $BACKEND_PID $BOT_PID $FRONTEND_PID $WORKER_PID $BEAT_PID 2>/dev/null\n\
     exit 0\n\
 }\n\
 \n\
@@ -93,13 +93,23 @@ echo "Starting Telegram bot..."\n\
 python -m bot.main &\n\
 BOT_PID=$!\n\
 \n\
+echo "Starting Celery worker..."\n\
+celery -A backend.tasks.celery_app worker --loglevel=info --concurrency=2 --max-tasks-per-child=1000 &\n\
+WORKER_PID=$!\n\
+\n\
+echo "Starting Celery beat (scheduler)..."\n\
+celery -A backend.tasks.celery_app beat --loglevel=info &\n\
+BEAT_PID=$!\n\
+\n\
 echo "All services started."\n\
 echo "Backend PID: $BACKEND_PID"\n\
 echo "Frontend PID: $FRONTEND_PID"\n\
 echo "Bot PID: $BOT_PID"\n\
+echo "Celery Worker PID: $WORKER_PID"\n\
+echo "Celery Beat PID: $BEAT_PID"\n\
 \n\
 # Wait for all processes\n\
-wait $BACKEND_PID $BOT_PID $FRONTEND_PID\n\
+wait $BACKEND_PID $BOT_PID $FRONTEND_PID $WORKER_PID $BEAT_PID\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
 # Run startup script
