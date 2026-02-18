@@ -134,7 +134,7 @@ async def telegram_web_auth(
             telegram_id=auth_data.id,
             first_name=auth_data.first_name,
             username=auth_data.username,
-            ui_language="ru",  # Default language
+            native_language="ru",  # Default language
             level="beginner"  # Default level
         )
         await db.commit()
@@ -168,7 +168,7 @@ async def telegram_web_auth(
             "telegram_id": user.telegram_id,
             "first_name": user.first_name,
             "username": user.username,
-            "ui_language": user.ui_language,
+            "ui_language": user.native_language,
             "level": user.level,
             "created_at": format_datetime(user.created_at)
         },
@@ -230,7 +230,7 @@ async def get_current_user(
         "telegram_id": user.telegram_id,
         "first_name": user.first_name,
         "username": user.username,
-        "ui_language": user.ui_language,
+        "ui_language": user.native_language,
         "level": user.level,
         "created_at": format_datetime(user.created_at)
     }
@@ -359,7 +359,7 @@ async def authenticate_web_app(
                 "telegram_id": user.telegram_id,
                 "first_name": user.first_name,
                 "username": user.username,
-                "ui_language": user.ui_language,
+                "ui_language": user.native_language,
                 "level": user.level,
                 "created_at": format_datetime(user.created_at)
             }

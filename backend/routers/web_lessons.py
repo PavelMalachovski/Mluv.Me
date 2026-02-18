@@ -100,7 +100,7 @@ async def process_text_message(
         style=settings.conversation_style if settings else "friendly",
         level=user.level,
         corrections_level=settings.corrections_level if settings else "balanced",
-        ui_language=user.ui_language,
+        ui_language=user.native_language,
         conversation_history=conversation_history
     )
 
