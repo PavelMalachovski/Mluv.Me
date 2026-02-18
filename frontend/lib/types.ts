@@ -111,36 +111,6 @@ export interface ReviewStats {
 
 export type ReviewQuality = 0 | 1 | 2 | 3 // again, hard, good, easy
 
-// Analytics Types
-export interface DailyActivity {
-  date: string
-  messages: number
-  words_reviewed: number
-  accuracy: number
-  stars_earned: number
-}
-
-export interface WeeklyStats {
-  week_start: string
-  total_messages: number
-  total_reviews: number
-  average_accuracy: number
-  new_words: number
-}
-
-export interface AnalyticsData {
-  daily_activity: DailyActivity[]
-  weekly_stats: WeeklyStats[]
-  all_time: {
-    total_messages: number
-    total_words: number
-    total_reviews: number
-    average_accuracy: number
-    total_stars: number
-    longest_streak: number
-  }
-}
-
 // Achievement Types
 export interface Achievement {
   id: number

@@ -30,12 +30,3 @@ export const useThemeStore = create<ThemeState>()(
     }
   )
 );
-
-// Helper to apply theme to document
-export function applyTheme(theme: Theme) {
-  if (typeof document !== 'undefined') {
-    const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-  }
-}

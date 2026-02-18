@@ -3,7 +3,7 @@ Repository pattern для работы с базой данных.
 Абстрагирует SQL запросы от бизнес-логики.
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any
 
 from sqlalchemy import select, update, delete, and_
@@ -142,7 +142,7 @@ class UserRepository:
         await self.session.execute(
             update(User)
             .where(User.id == user_id)
-            .values(**kwargs, updated_at=datetime.utcnow())
+            .values(**kwargs, updated_at=datetime.now(timezone.utc))
         )
         await self.session.commit()
 
@@ -528,7 +528,7 @@ class SavedWordRepository:
             return None
 
         word.times_reviewed = (word.times_reviewed or 0) + 1
-        word.last_reviewed_at = datetime.utcnow()
+        word.last_reviewed_at = datetime.now(timezone.utc)
 
         await self.session.flush()
         await self.session.refresh(word)
@@ -656,7 +656,7 @@ class StatsRepository:
                 total=total,
                 available=available,
                 lifetime=lifetime,
-                updated_at=datetime.utcnow()
+                updated_at=datetime.now(timezone.utc)
             )
         )
         await self.session.commit()
@@ -762,7 +762,7 @@ class StatsRepository:
             available: Доступно (если None, не обновляется)
             lifetime: За все время (если None, не обновляется)
         """
-        values = {"updated_at": datetime.utcnow()}
+        values = {"updated_at": datetime.now(timezone.utc)}
         if total is not None:
             values["total"] = total
         if available is not None:

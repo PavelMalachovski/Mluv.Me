@@ -5,7 +5,7 @@ Podcast Service for Honzík's AI-generated podcasts.
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
 import structlog
@@ -155,7 +155,7 @@ Odpověz ve formátu JSON:
 
             response_data = json.loads(response_text)
 
-            episode_id = f"ep_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+            episode_id = f"ep_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
 
             episode = {
                 "id": episode_id,
@@ -169,7 +169,7 @@ Odpověz ve formátu JSON:
                 "quiz": response_data.get("quiz", []),
                 "duration_minutes": duration_minutes,
                 "word_count": len(response_data.get("script", "").split()),
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
 
             # Сохраняем эпизод

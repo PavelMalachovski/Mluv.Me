@@ -4,7 +4,7 @@ Seasonal Service for time-limited events.
 Реализует сезонные события с особыми достижениями и словарём.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
 import structlog
@@ -159,7 +159,7 @@ class SeasonalService:
         Returns:
             dict | None: Активное событие или None
         """
-        today = datetime.utcnow()
+        today = datetime.now(timezone.utc)
         current_date = today.strftime("%m-%d")
 
         for event_id, event in SEASONAL_EVENTS.items():
@@ -301,7 +301,7 @@ class SeasonalService:
         Returns:
             list: Все события с информацией о статусе
         """
-        today = datetime.utcnow()
+        today = datetime.now(timezone.utc)
         current_date = today.strftime("%m-%d")
 
         events = []

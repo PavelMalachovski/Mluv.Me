@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Gamepad2, BookOpen, Target, Trophy, Star, BookmarkCheck } from "lucide-react"
+import { Gamepad2, BookOpen, Target, BookmarkCheck } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { ProfileMiniGames } from "@/components/features/ProfileMiniGames"
 import { ProfileGrammar } from "@/components/features/ProfileGrammar"

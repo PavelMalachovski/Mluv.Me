@@ -77,7 +77,7 @@ export function useVoiceMutation({ telegramId, onSuccess, onError }: UseVoiceMut
           const lessonResponse: LessonResponse = {
             honzik_text: data.honzik_response_text || "",
             honzik_transcript: data.honzik_response_transcript || data.honzik_response_text || "",
-            user_mistakes: data.corrections?.mistakes?.map((m: { original: string }) => m.original) || [],
+            user_mistakes: data.corrections?.mistakes || [],
             suggestions: data.corrections?.suggestion ? [data.corrections.suggestion] : [],
             stars_earned: data.stars_earned || 0,
             correctness_score: data.corrections?.correctness_score || 0,
@@ -180,7 +180,7 @@ export function useTextMutation({
           const lessonResponse: LessonResponse = {
             honzik_text: data.honzik_response_text || "",
             honzik_transcript: data.honzik_response_transcript || data.honzik_response_text || "",
-            user_mistakes: data.corrections?.mistakes?.map((m: { original: string }) => m.original) || [],
+            user_mistakes: data.corrections?.mistakes || [],
             suggestions: data.corrections?.suggestion ? [data.corrections.suggestion] : [],
             stars_earned: data.stars_earned || 0,
             correctness_score: data.corrections?.correctness_score || 0,

@@ -31,14 +31,19 @@ logger = structlog.get_logger()
 # Key: "chat_id:message_id", Value: {"mistakes": [...], "suggestion": str, "timestamp": float}
 _corrections_cache: dict[str, dict] = {}
 _CACHE_TTL = 3600  # 1 hour
+_CACHE_MAX_SIZE = 1000
 
 
 def _cleanup_old_corrections():
-    """Remove corrections older than TTL."""
+    """Remove corrections older than TTL and enforce max size."""
     now = time.time()
     expired = [k for k, v in _corrections_cache.items() if now - v["timestamp"] > _CACHE_TTL]
     for k in expired:
         del _corrections_cache[k]
+    # If still over cap, drop oldest entries
+    while len(_corrections_cache) > _CACHE_MAX_SIZE:
+        oldest = min(_corrections_cache, key=lambda k: _corrections_cache[k]["timestamp"])
+        del _corrections_cache[oldest]
 
 
 @router.message(F.voice)

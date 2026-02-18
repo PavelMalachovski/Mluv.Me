@@ -11,7 +11,7 @@ Game Service for grammar-based mini-games.
 
 import random
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 from dataclasses import dataclass
 
@@ -104,6 +104,22 @@ class GameService:
     _leaderboard: dict[str, list[dict]] = {
         game_type: [] for game_type in GAMES
     }
+    _MAX_ACTIVE_GAMES = 500
+    _GAME_TTL_SECONDS = 1800  # 30 minutes
+
+    @classmethod
+    def _cleanup_stale_games(cls):
+        """Remove games older than TTL and enforce max size."""
+        now = datetime.now(timezone.utc)
+        expired = [
+            uid for uid, g in cls._active_games.items()
+            if (now - g.started_at).total_seconds() > cls._GAME_TTL_SECONDS
+        ]
+        for uid in expired:
+            del cls._active_games[uid]
+        while len(cls._active_games) > cls._MAX_ACTIVE_GAMES:
+            oldest_uid = min(cls._active_games, key=lambda k: cls._active_games[k].started_at)
+            del cls._active_games[oldest_uid]
 
     def __init__(self, grammar_service: GrammarService | None = None):
         self.grammar_service = grammar_service
@@ -136,8 +152,9 @@ class GameService:
         if game_type not in GAMES:
             raise ValueError(f"Unknown game type: {game_type}")
 
+        self._cleanup_stale_games()
         game_info = GAMES[game_type]
-        game_id = f"{user_id}_{game_type}_{datetime.utcnow().timestamp()}"
+        game_id = f"{user_id}_{game_type}_{datetime.now(timezone.utc).timestamp()}"
 
         # Generate question from grammar rules
         question, correct_answer, rule_id = await self._generate_question(
@@ -150,7 +167,7 @@ class GameService:
             user_id=user_id,
             question=question,
             correct_answer=correct_answer,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
             level=level,
             rule_id=rule_id,
         )
@@ -186,7 +203,7 @@ class GameService:
         game_info = GAMES[active_game.game_type]
 
         # Check time
-        elapsed = (datetime.utcnow() - active_game.started_at).total_seconds()
+        elapsed = (datetime.now(timezone.utc) - active_game.started_at).total_seconds()
         time_bonus = max(0, 1 - elapsed / game_info["time_limit_seconds"])
 
         # Check answer

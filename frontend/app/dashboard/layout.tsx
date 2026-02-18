@@ -1,10 +1,7 @@
 "use client"
 
-import { Suspense } from "react"
-import dynamic from "next/dynamic"
 import { Navigation } from "@/components/ui/navigation"
 import { PrefetchLinks } from "@/components/ui/PrefetchLinks"
-import { Skeleton } from "@/components/ui/skeletons"
 
 /**
  * Dashboard Layout with Prefetching

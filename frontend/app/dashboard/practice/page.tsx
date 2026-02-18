@@ -169,6 +169,7 @@ export default function PracticePage() {
 
   // Handlers - useCallback must be called before early returns
   const handleTextSubmit = useCallback((text: string) => {
+    if (!user?.telegram_id) return
     // Add optimistic message immediately
     setConversation((prev) => [
       ...prev,
@@ -180,9 +181,10 @@ export default function PracticePage() {
       },
     ])
     sendMessage.mutate(text)
-  }, [sendMessage])
+  }, [sendMessage, user])
 
   const handleVoiceSubmit = useCallback((blob: Blob) => {
+    if (!user?.telegram_id) return
     // Add optimistic message
     setConversation((prev) => [
       ...prev,
@@ -194,7 +196,7 @@ export default function PracticePage() {
       },
     ])
     processVoice.mutate(blob)
-  }, [processVoice])
+  }, [processVoice, user])
 
   const toggleTranscript = useCallback((index: number) => {
     setConversation((prev) =>

@@ -6,7 +6,7 @@ from typing import Optional
 import hashlib
 import hmac
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qsl
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -128,6 +128,19 @@ async def get_authenticated_user(
     return user
 
 
+def _user_response_dict(user) -> dict:
+    """Build a consistent user response dict from a User ORM object."""
+    return {
+        "id": user.id,
+        "telegram_id": user.telegram_id,
+        "first_name": user.first_name,
+        "username": user.username,
+        "ui_language": user.native_language,
+        "level": user.level,
+        "created_at": format_datetime(user.created_at),
+    }
+
+
 def verify_telegram_auth(auth_data: TelegramAuthData) -> bool:
     """
     Verify Telegram auth data hash
@@ -219,15 +232,7 @@ async def telegram_web_auth(
     )
 
     return {
-        "user": {
-            "id": user.id,
-            "telegram_id": user.telegram_id,
-            "first_name": user.first_name,
-            "username": user.username,
-            "ui_language": user.native_language,
-            "level": user.level,
-            "created_at": format_datetime(user.created_at)
-        },
+        "user": _user_response_dict(user),
         "access_token": session_token
     }
 
@@ -257,15 +262,7 @@ async def get_current_user(
     Get current authenticated user.
     Uses get_authenticated_user dependency (Bearer header or httpOnly cookie).
     """
-    return {
-        "id": user.id,
-        "telegram_id": user.telegram_id,
-        "first_name": user.first_name,
-        "username": user.username,
-        "ui_language": user.native_language,
-        "level": user.level,
-        "created_at": format_datetime(user.created_at)
-    }
+    return _user_response_dict(user)
 
 
 class WebAppAuthData(BaseModel):
@@ -321,7 +318,7 @@ def validate_telegram_web_app_data(init_data: str, bot_token: str) -> dict:
         # Check auth_date (not older than 1 hour)
         if 'auth_date' in parsed_data:
             auth_date = int(parsed_data['auth_date'])
-            current_time = int(datetime.utcnow().timestamp())
+            current_time = int(datetime.now(timezone.utc).timestamp())
             if current_time - auth_date > 3600:  # 1 hour
                 raise ValueError("Auth data expired")
 
@@ -359,8 +356,6 @@ async def authenticate_web_app(
             raise HTTPException(status_code=400, detail="No user data in initData")
 
         telegram_id = user_data['id']
-        user_data.get('first_name', 'User')
-        user_data.get('username')
 
         # Get or create user
         user_repo = UserRepository(db)
@@ -378,15 +373,7 @@ async def authenticate_web_app(
         return {
             "success": True,
             "token": session_token,
-            "user": {
-                "id": user.id,
-                "telegram_id": user.telegram_id,
-                "first_name": user.first_name,
-                "username": user.username,
-                "ui_language": user.native_language,
-                "level": user.level,
-                "created_at": format_datetime(user.created_at)
-            }
+            "user": _user_response_dict(user)
         }
 
     except ValueError as e:

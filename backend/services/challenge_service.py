@@ -13,7 +13,7 @@ Challenge Service.
 - weekly_saved_words: Сохранённые слова за неделю
 """
 
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from typing import Any
 import random
 from zoneinfo import ZoneInfo
@@ -91,7 +91,7 @@ class ChallengeService:
         user_challenge.progress = progress
         if progress >= challenge.goal_value and not user_challenge.completed:
             user_challenge.completed = True
-            user_challenge.completed_at = datetime.utcnow()
+            user_challenge.completed_at = datetime.now(timezone.utc)
 
         await session.flush()
 
@@ -158,7 +158,7 @@ class ChallengeService:
             user_challenge.progress = progress
             if progress >= challenge.goal_value and not user_challenge.completed:
                 user_challenge.completed = True
-                user_challenge.completed_at = datetime.utcnow()
+                user_challenge.completed_at = datetime.now(timezone.utc)
 
             challenges_data.append({
                 "id": challenge.id,
@@ -523,7 +523,7 @@ class ChallengeService:
             stars.total += challenge.reward_stars
             stars.available += challenge.reward_stars
             stars.lifetime += challenge.reward_stars
-            stars.updated_at = datetime.utcnow()
+            stars.updated_at = datetime.now(timezone.utc)
         else:
             stars = Stars(
                 user_id=user_id,

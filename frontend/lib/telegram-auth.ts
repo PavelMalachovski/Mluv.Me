@@ -19,52 +19,6 @@ export interface TelegramAuthResult {
 }
 
 /**
- * Initialize Telegram Login Widget
- * @param botUsername - Telegram bot username (without @)
- * @param onAuth - Callback function when user is authenticated
- */
-export function initTelegramAuth(
-  botUsername: string,
-  onAuth: (user: TelegramUser) => void
-): void {
-  // This function will be called by Telegram Widget
-  (window as any).onTelegramAuth = (user: TelegramUser) => {
-    onAuth(user);
-  };
-
-  // Load Telegram Widget script
-  if (!document.getElementById('telegram-widget-script')) {
-    const script = document.createElement('script');
-    script.id = 'telegram-widget-script';
-    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-    script.setAttribute('data-telegram-login', botUsername);
-    script.setAttribute('data-size', 'large');
-    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-    script.setAttribute('data-request-access', 'write');
-    script.async = true;
-    document.body.appendChild(script);
-  }
-}
-
-/**
- * Verify Telegram authentication data
- * This should be done on the backend, but we provide client-side validation too
- */
-export function validateTelegramAuth(data: TelegramUser, botToken: string): boolean {
-  // Note: Real validation should happen on backend
-  // This is just a basic client-side check
-  const authDate = data.auth_date;
-  const currentTime = Math.floor(Date.now() / 1000);
-
-  // Check if auth is not older than 24 hours
-  if (currentTime - authDate > 86400) {
-    return false;
-  }
-
-  return true;
-}
-
-/**
  * Get Telegram user from URL parameters (after redirect)
  */
 export function getTelegramUserFromUrl(): TelegramUser | null {

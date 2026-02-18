@@ -4,6 +4,8 @@
 Language Immersion: UI на чешском, выбираем только родной язык для объяснений.
 """
 
+import time
+
 from aiogram import F, Router
 from aiogram.filters import CommandStart
 from aiogram.types import CallbackQuery, Message
@@ -18,6 +20,20 @@ logger = structlog.get_logger()
 
 # Временное хранилище данных онбординга (telegram_id -> data)
 onboarding_data: dict[int, dict] = {}
+_ONBOARDING_MAX_SIZE = 500
+_ONBOARDING_TTL = 3600  # 1 hour — abandon timeout
+
+
+def _cleanup_onboarding():
+    """Remove stale onboarding entries and enforce max size."""
+    now = time.time()
+    expired = [k for k, v in onboarding_data.items() if now - v.get("_ts", 0) > _ONBOARDING_TTL]
+    for k in expired:
+        del onboarding_data[k]
+    # If still over cap, drop oldest
+    while len(onboarding_data) > _ONBOARDING_MAX_SIZE:
+        oldest = min(onboarding_data, key=lambda k: onboarding_data[k].get("_ts", 0))
+        del onboarding_data[oldest]
 
 
 @router.message(CommandStart())
@@ -42,9 +58,11 @@ async def command_start_handler(message: Message, api_client: APIClient) -> None
         return
 
     # Начинаем онбординг
+    _cleanup_onboarding()
     onboarding_data[telegram_id] = {
         "username": message.from_user.username,
         "first_name": message.from_user.first_name or "User",
+        "_ts": time.time(),
     }
 
     # Приветствие на чешском + выбор родного языка

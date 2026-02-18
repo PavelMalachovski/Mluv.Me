@@ -5,7 +5,7 @@ Abstrahuje SQL dotazy pro gramatická pravidla.
 
 import json
 import random
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import select, update, func, and_, not_
@@ -239,7 +239,7 @@ class GrammarRepository:
         """Обновить прогресс: правило показано в уведомлении."""
         progress = await self.get_or_create_progress(user_id, rule_id)
         progress.times_shown += 1
-        progress.last_shown_at = datetime.utcnow()
+        progress.last_shown_at = datetime.now(timezone.utc)
 
         if progress.mastery_level == "new":
             progress.mastery_level = "seen"
@@ -263,7 +263,7 @@ class GrammarRepository:
         """
         progress = await self.get_or_create_progress(user_id, rule_id)
         progress.times_practiced += 1
-        progress.last_practiced_at = datetime.utcnow()
+        progress.last_practiced_at = datetime.now(timezone.utc)
 
         if correct:
             progress.correct_count += 1

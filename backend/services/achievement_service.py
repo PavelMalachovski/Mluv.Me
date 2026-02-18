@@ -15,7 +15,7 @@ Achievement Service V2.
 - challenge: Выполненные челленджи
 """
 
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from typing import Any
 from enum import Enum
 from zoneinfo import ZoneInfo
@@ -357,7 +357,7 @@ class AchievementService:
             stars.total += amount
             stars.available += amount
             stars.lifetime += amount
-            stars.updated_at = datetime.utcnow()
+            stars.updated_at = datetime.now(timezone.utc)
         else:
             # Создаём запись если нет
             stars = Stars(
@@ -430,7 +430,7 @@ class AchievementService:
 
         if topic_count:
             topic_count.count += 1
-            topic_count.updated_at = datetime.utcnow()
+            topic_count.updated_at = datetime.now(timezone.utc)
         else:
             topic_count = TopicMessageCount(
                 user_id=user_id,

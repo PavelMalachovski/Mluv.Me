@@ -10,7 +10,7 @@ Provides endpoints for:
 import json
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -244,7 +244,7 @@ async def get_progress_details(
 @router.post("/admin/seed")
 async def seed_grammar_rules_endpoint(
     session: AsyncSession = Depends(get_session),
-    secret: str = Query(..., description="Admin secret key"),
+    secret: str = Header(..., alias="X-Admin-Secret", description="Admin secret key"),
 ) -> dict:
     """
     Seed grammar rules from the built-in data.
@@ -301,7 +301,7 @@ async def seed_grammar_rules_endpoint(
 
 @router.post("/admin/send-notifications")
 async def trigger_notifications(
-    secret: str = Query(..., description="Admin secret key"),
+    secret: str = Header(..., alias="X-Admin-Secret", description="Admin secret key"),
     test_telegram_id: int = Query(None, description="Send only to this telegram_id (test mode)"),
 ) -> dict:
     """

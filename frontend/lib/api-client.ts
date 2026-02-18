@@ -42,8 +42,10 @@ class APIClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
-          // Unauthorized - logout user
+        const url = error.config?.url || '';
+        const isAuthEndpoint = url.includes('/auth/');
+        if (error.response?.status === 401 && !isAuthEndpoint) {
+          // Unauthorized - logout user (skip for auth endpoints to avoid redirect loops)
           useAuthStore.getState().logout();
           if (typeof window !== 'undefined') {
             window.location.href = '/login';

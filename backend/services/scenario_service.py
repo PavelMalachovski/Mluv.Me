@@ -10,7 +10,7 @@ Scenario Service for role-play scenarios.
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
 import structlog
@@ -259,6 +259,22 @@ class ScenarioService:
 
         # In-memory хранилище активных сценариев (в продакшене заменить на БД)
         self._active_scenarios: dict[int, dict] = {}
+        self._MAX_ACTIVE_SCENARIOS = 500
+        self._SCENARIO_TTL = 3600  # 1 hour
+
+    def _cleanup_stale_scenarios(self):
+        """Remove scenarios older than TTL and enforce max size."""
+        import time as _time
+        now = _time.time()
+        expired = [
+            uid for uid, s in self._active_scenarios.items()
+            if now - s.get("_ts", 0) > self._SCENARIO_TTL
+        ]
+        for uid in expired:
+            del self._active_scenarios[uid]
+        while len(self._active_scenarios) > self._MAX_ACTIVE_SCENARIOS:
+            oldest = min(self._active_scenarios, key=lambda k: self._active_scenarios[k].get("_ts", 0))
+            del self._active_scenarios[oldest]
 
     def get_available_scenarios(self, user_level: CzechLevel) -> list[dict]:
         """
@@ -331,10 +347,12 @@ class ScenarioService:
         )
 
         # Сохраняем состояние сценария
+        self._cleanup_stale_scenarios()
         self._active_scenarios[user_id] = {
             "scenario_id": scenario_id,
             "step": 1,
-            "started_at": datetime.utcnow().isoformat(),
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "_ts": __import__("time").time(),
             "conversation_history": [
                 {"role": "assistant", "text": initial_message["honzik_message"]}
             ],

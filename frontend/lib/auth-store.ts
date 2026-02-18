@@ -66,20 +66,3 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
-
-// Helper hook to get auth status
-export function useAuth() {
-  const { user, token, isAuthenticated } = useAuthStore();
-  return { user, token, isAuthenticated };
-}
-
-// Helper hook to check if user is authenticated
-export function useRequireAuth() {
-  const { isAuthenticated, user } = useAuthStore();
-
-  if (typeof window !== 'undefined' && !isAuthenticated) {
-    window.location.href = '/login';
-  }
-
-  return { isAuthenticated, user };
-}

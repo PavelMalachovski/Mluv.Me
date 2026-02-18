@@ -7,7 +7,7 @@ Exam Preparation Service for official Czech language exams.
 - B1 (Гражданство) - Státní občanství
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 import random
 
@@ -215,7 +215,7 @@ class ExamPrepService:
         weeks = exam["study_weeks"]
 
         if start_date is None:
-            start_date = datetime.utcnow()
+            start_date = datetime.now(timezone.utc)
 
         # Генерируем план по неделям
         weekly_plan = []
