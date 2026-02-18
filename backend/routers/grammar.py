@@ -338,11 +338,14 @@ async def trigger_notifications(
                 if not user:
                     raise HTTPException(status_code=404, detail=f"User with telegram_id={test_telegram_id} not found")
 
-                message = await grammar_service.get_notification_message(
+                msg_data = await grammar_service.get_notification_message(
                     user_id=user.id,
                     streak=0,
                     stars=0,
                 )
+                if not msg_data:
+                    raise HTTPException(status_code=404, detail="No grammar rule available")
+                message = msg_data["message"] if isinstance(msg_data, dict) else msg_data
 
                 bot = Bot(token=cfg.telegram_bot_token)
                 await bot.send_message(test_telegram_id, message, parse_mode="HTML")
@@ -410,11 +413,15 @@ async def trigger_notifications(
                         streak = user_stats.get("current_streak", 0)
                         stars = user_stats.get("total_stars", 0)
 
-                        message = await grammar_service.get_notification_message(
+                        msg_data = await grammar_service.get_notification_message(
                             user_id=uid,
                             streak=streak,
                             stars=stars,
                         )
+                        if not msg_data:
+                            skipped += 1
+                            continue
+                        message = msg_data["message"] if isinstance(msg_data, dict) else msg_data
 
                         await bot.send_message(user.telegram_id, message, parse_mode="HTML")
                         sent += 1
