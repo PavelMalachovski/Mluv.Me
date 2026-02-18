@@ -34,9 +34,9 @@ interface Challenge {
 type LearnTab = "games" | "grammar" | "challenges" | "words"
 
 const TABS: { id: LearnTab; label: string; icon: React.ElementType; emoji: string }[] = [
-  { id: "games", label: "Mini hry", icon: Gamepad2, emoji: "🎮" },
-  { id: "grammar", label: "Gramatika", icon: BookOpen, emoji: "📖" },
   { id: "words", label: "Slovíčka", icon: BookmarkCheck, emoji: "📚" },
+  { id: "grammar", label: "Gramatika", icon: BookOpen, emoji: "📖" },
+  { id: "games", label: "Mini hry", icon: Gamepad2, emoji: "🎮" },
   { id: "challenges", label: "Výzvy", icon: Target, emoji: "🏆" },
 ]
 
@@ -121,9 +121,9 @@ function ChallengesSection({ telegramId }: { telegramId: number }) {
 function LearnContent() {
   const searchParams = useSearchParams()
   const user = useAuthStore((state) => state.user)
-  const initialTab = (searchParams.get("tab") as LearnTab) || "games"
+  const initialTab = (searchParams.get("tab") as LearnTab) || "words"
   const [activeTab, setActiveTab] = useState<LearnTab>(
-    ["games", "grammar", "words", "challenges"].includes(initialTab) ? initialTab : "games"
+    ["games", "grammar", "words", "challenges"].includes(initialTab) ? initialTab : "words"
   )
 
   if (!user) return null
