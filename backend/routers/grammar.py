@@ -321,11 +321,11 @@ async def trigger_notifications(
             from backend.config import get_settings
             from backend.db.grammar_repository import GrammarRepository
             from backend.services.grammar_service import GrammarService
-            from backend.db.database import AsyncSessionLocal
+            from backend.db.database import get_session_maker
 
             cfg = get_settings()
 
-            async with AsyncSessionLocal() as db:
+            async with get_session_maker()() as db:
                 grammar_repo = GrammarRepository(db)
                 grammar_service = GrammarService(grammar_repo)
 
@@ -365,7 +365,7 @@ async def trigger_notifications(
             from sqlalchemy import select as sa_select
             from sqlalchemy import func
             from backend.config import get_settings
-            from backend.db.database import AsyncSessionLocal
+            from backend.db.database import get_session_maker
             from backend.db.grammar_repository import GrammarRepository
             from backend.db.repositories import UserRepository, StatsRepository
             from backend.services.grammar_service import GrammarService
@@ -378,7 +378,7 @@ async def trigger_notifications(
             skipped = 0
             errors = []
 
-            async with AsyncSessionLocal() as db:
+            async with get_session_maker()() as db:
                 two_weeks_ago = datetime.now() - timedelta(days=14)
 
                 query = (
