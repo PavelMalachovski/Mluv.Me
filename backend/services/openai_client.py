@@ -281,6 +281,7 @@ class OpenAIClient:
         json_mode: bool = False,
         model: str | None = None,
         stream: bool = False,
+        max_tokens: int | None = None,
     ) -> str:
         """
         Сгенерировать ответ от GPT модели.
@@ -291,6 +292,7 @@ class OpenAIClient:
             json_mode: Использовать JSON mode для структурированных ответов
             model: Модель для использования (если None, используется из настроек)
             stream: Использовать streaming (не совместимо с json_mode)
+            max_tokens: Максимальное количество токенов в ответе (None = без ограничения)
 
         Returns:
             str: Ответ от модели (JSON строка если json_mode=True)
@@ -325,6 +327,9 @@ class OpenAIClient:
                 "temperature": temperature,
                 "stream": stream,
             }
+
+            if max_tokens is not None:
+                params["max_tokens"] = max_tokens
 
             if json_mode:
                 params["response_format"] = {"type": "json_object"}
