@@ -370,7 +370,7 @@ async def trigger_notifications(
             from backend.db.repositories import UserRepository, StatsRepository
             from backend.services.grammar_service import GrammarService
             from backend.models.message import Message
-            from backend.models.user_settings import UserSettings
+            from backend.models.user import UserSettings
 
             cfg = get_settings()
             sent = 0
