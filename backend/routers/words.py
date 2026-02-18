@@ -21,6 +21,7 @@ from backend.schemas.translation import (
 from backend.services.translation_service import TranslationService
 from backend.services.spaced_repetition_service import SpacedRepetitionService
 from backend.models.word import SavedWord
+from backend.routers.web_auth import get_authenticated_user
 
 logger = structlog.get_logger()
 
@@ -189,32 +190,40 @@ async def save_word(
 )
 async def delete_word(
     word_id: int,
+    auth_user=Depends(get_authenticated_user),
     session: AsyncSession = Depends(get_session),
 ):
     """
     Удалить сохраненное слово.
-
-    Args:
-        word_id: ID слова
-        session: Database session
-
-    Returns:
-        Статус успешности
-
-    Raises:
-        HTTPException: Если слово не найдено
+    Requires authentication. Verifies ownership before deleting.
     """
     word_repo = SavedWordRepository(session)
-    deleted = await word_repo.delete(word_id)
 
-    if not deleted:
+    # Fetch word and verify ownership
+    word = await word_repo.get_by_id(word_id)
+    if not word:
         logger.warning("word_not_found", word_id=word_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Word with id {word_id} not found",
         )
 
-    logger.info("word_deleted", word_id=word_id)
+    if word.user_id != auth_user.id:
+        logger.warning("word_delete_forbidden", word_id=word_id, owner=word.user_id, requester=auth_user.id)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only delete your own words",
+        )
+
+    deleted = await word_repo.delete(word_id)
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Word with id {word_id} not found",
+        )
+
+    logger.info("word_deleted", word_id=word_id, user_id=auth_user.id)
 
     return {"status": "success", "message": "Word deleted"}
 

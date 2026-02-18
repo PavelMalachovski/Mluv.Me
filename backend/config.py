@@ -37,8 +37,7 @@ class Settings(BaseSettings):
 
     # Telegram
     telegram_bot_token: str = Field(
-        default="7471812936:AAFoji4k74oAo347ahNaa1K1WAPtiSQ_ox8",
-        description="Telegram Bot API token"
+        description="Telegram Bot API token (set via TELEGRAM_BOT_TOKEN env var)"
     )
 
     # Application

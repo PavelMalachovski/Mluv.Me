@@ -11,10 +11,8 @@ from pydantic_settings import BaseSettings
 class BotConfig(BaseSettings):
     """Настройки Telegram бота."""
 
-    # Telegram Bot Token
-    telegram_bot_token: str = os.getenv(
-        "TELEGRAM_BOT_TOKEN", "7471812936:AAFoji4k74oAo347ahNaa1K1WAPtiSQ_ox8"
-    )
+    # Telegram Bot Token (MUST be set via env var TELEGRAM_BOT_TOKEN)
+    telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
 
     # Backend API URL
     backend_api_url: str = os.getenv("BACKEND_API_URL", "http://localhost:8000")

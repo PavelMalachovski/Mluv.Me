@@ -251,7 +251,9 @@ async def seed_grammar_rules_endpoint(
     Requires admin secret key for security.
     """
     import os
-    admin_secret = os.getenv("ADMIN_SECRET", "mluv-seed-2026")
+    admin_secret = os.getenv("ADMIN_SECRET")
+    if not admin_secret:
+        raise HTTPException(status_code=500, detail="ADMIN_SECRET not configured")
     
     if secret != admin_secret:
         raise HTTPException(status_code=403, detail="Invalid secret")
@@ -311,7 +313,9 @@ async def trigger_notifications(
     Requires ADMIN_SECRET.
     """
     import os
-    admin_secret = os.getenv("ADMIN_SECRET", "mluv-seed-2026")
+    admin_secret = os.getenv("ADMIN_SECRET")
+    if not admin_secret:
+        raise HTTPException(status_code=500, detail="ADMIN_SECRET not configured")
     if secret != admin_secret:
         raise HTTPException(status_code=403, detail="Invalid secret")
 

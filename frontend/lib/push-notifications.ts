@@ -2,6 +2,8 @@
  * Push notification utilities for PWA
  */
 
+import { apiClient } from '@/lib/api-client';
+
 // Convert VAPID key to Uint8Array for subscription
 export function urlBase64ToUint8Array(base64String: string): Uint8Array {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -167,22 +169,12 @@ export async function getSubscriptionStatus(): Promise<{
     }
 }
 
-// Save subscription to server
+// Save subscription to server (with auth via apiClient)
 async function saveSubscriptionToServer(subscription: PushSubscription): Promise<void> {
     try {
-        const response = await fetch('/api/v1/notifications/subscribe', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                subscription: subscription.toJSON(),
-            }),
+        await apiClient.post('/api/v1/notifications/subscribe', {
+            subscription: subscription.toJSON(),
         });
-
-        if (!response.ok) {
-            throw new Error(`Server responded with ${response.status}`);
-        }
 
         console.log('Subscription saved to server');
     } catch (error) {
@@ -191,22 +183,12 @@ async function saveSubscriptionToServer(subscription: PushSubscription): Promise
     }
 }
 
-// Remove subscription from server
+// Remove subscription from server (with auth via apiClient)
 async function removeSubscriptionFromServer(subscription: PushSubscription): Promise<void> {
     try {
-        const response = await fetch('/api/v1/notifications/unsubscribe', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                endpoint: subscription.endpoint,
-            }),
+        await apiClient.post('/api/v1/notifications/unsubscribe', {
+            endpoint: subscription.endpoint,
         });
-
-        if (!response.ok) {
-            throw new Error(`Server responded with ${response.status}`);
-        }
 
         console.log('Subscription removed from server');
     } catch (error) {

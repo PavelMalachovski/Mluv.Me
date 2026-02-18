@@ -1,6 +1,6 @@
 """Web authentication endpoints for Telegram Login Widget and Web App"""
 
-from fastapi import APIRouter, HTTPException, Response, Depends
+from fastapi import APIRouter, Cookie, Header, HTTPException, Response, Depends
 from pydantic import BaseModel
 from typing import Optional
 import hashlib
@@ -54,7 +54,78 @@ class SessionData(BaseModel):
 
 
 # Simple in-memory session storage (for MVP, replace with Redis in production)
+# Limit to prevent DoS via session flooding
+MAX_SESSIONS = 5000
 sessions: dict[str, SessionData] = {}
+
+
+def _cleanup_expired_sessions():
+    """Remove expired sessions to prevent memory leaks."""
+    now = datetime.now()
+    expired = [k for k, v in sessions.items() if now > v.expires_at]
+    for k in expired:
+        del sessions[k]
+
+
+def _create_session(user_id: int) -> str:
+    """Create a new session, cleaning up old ones if needed."""
+    _cleanup_expired_sessions()
+
+    # If still too many sessions, evict oldest ones
+    if len(sessions) >= MAX_SESSIONS:
+        sorted_sessions = sorted(sessions.items(), key=lambda x: x[1].created_at)
+        for key, _ in sorted_sessions[:len(sessions) - MAX_SESSIONS + 100]:
+            del sessions[key]
+
+    session_token = secrets.token_urlsafe(32)
+    sessions[session_token] = SessionData(
+        user_id=user_id,
+        session_token=session_token,
+        created_at=datetime.now(),
+        expires_at=datetime.now() + timedelta(days=30),
+    )
+    return session_token
+
+
+def _resolve_session_token(
+    authorization: Optional[str] = Header(None),
+    session_token: Optional[str] = Cookie(None),
+) -> Optional[str]:
+    """Extract session token from Bearer header or httpOnly cookie."""
+    # Prefer Authorization header (Bearer token)
+    if authorization and authorization.startswith("Bearer "):
+        return authorization[7:]
+    # Fall back to httpOnly cookie
+    if session_token:
+        return session_token
+    return None
+
+
+async def get_authenticated_user(
+    token: Optional[str] = Depends(_resolve_session_token),
+    db: AsyncSession = Depends(get_session),
+):
+    """
+    FastAPI dependency: validate session and return the authenticated User ORM object.
+    Raises 401 if not authenticated.
+    Use this dependency in any router that needs an authenticated user.
+    """
+    if not token or token not in sessions:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    session_data = sessions[token]
+
+    if datetime.now() > session_data.expires_at:
+        del sessions[token]
+        raise HTTPException(status_code=401, detail="Session expired")
+
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_id(session_data.user_id)
+    if not user:
+        del sessions[token]
+        raise HTTPException(status_code=401, detail="User not found")
+
+    return user
 
 
 def verify_telegram_auth(auth_data: TelegramAuthData) -> bool:
@@ -91,11 +162,6 @@ def verify_telegram_auth(auth_data: TelegramAuthData) -> bool:
     ).hexdigest()
 
     return expected_hash == auth_data.hash
-
-
-def generate_session_token() -> str:
-    """Generate secure session token"""
-    return secrets.token_urlsafe(32)
 
 
 @router.post("/telegram")
@@ -139,18 +205,8 @@ async def telegram_web_auth(
         )
         await db.commit()
 
-    # Create session
-    session_token = generate_session_token()
-    expires_at = datetime.now() + timedelta(days=30)
-
-    session_data = SessionData(
-        user_id=user.id,
-        session_token=session_token,
-        created_at=datetime.now(),
-        expires_at=expires_at
-    )
-
-    sessions[session_token] = session_data
+    # Create session (with cleanup & eviction)
+    session_token = _create_session(user.id)
 
     # Set httpOnly cookie
     response.set_cookie(
@@ -177,16 +233,16 @@ async def telegram_web_auth(
 
 
 @router.post("/logout")
-async def logout(response: Response, session_token: Optional[str] = None):
+async def logout(
+    response: Response,
+    token: Optional[str] = Depends(_resolve_session_token),
+):
     """
-    Logout user and invalidate session
-
-    Args:
-        response: FastAPI response object
-        session_token: Session token to invalidate
+    Logout user and invalidate session.
+    Reads token from Bearer header or httpOnly cookie.
     """
-    if session_token and session_token in sessions:
-        del sessions[session_token]
+    if token and token in sessions:
+        del sessions[token]
 
     response.delete_cookie("session_token")
 
@@ -195,36 +251,12 @@ async def logout(response: Response, session_token: Optional[str] = None):
 
 @router.get("/me")
 async def get_current_user(
-    session_token: Optional[str] = None,
-    db: AsyncSession = Depends(get_session)
+    user=Depends(get_authenticated_user),
 ):
     """
-    Get current authenticated user
-
-    Args:
-        session_token: Session token from cookie
-        db: Database session
-
-    Returns:
-        Current user data
+    Get current authenticated user.
+    Uses get_authenticated_user dependency (Bearer header or httpOnly cookie).
     """
-    if not session_token or session_token not in sessions:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    session_data = sessions[session_token]
-
-    # Check if session expired
-    if datetime.now() > session_data.expires_at:
-        del sessions[session_token]
-        raise HTTPException(status_code=401, detail="Session expired")
-
-    # Get user from database
-    user_repo = UserRepository(db)
-    user = await user_repo.get_by_id(session_data.user_id)
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     return {
         "id": user.id,
         "telegram_id": user.telegram_id,
@@ -340,16 +372,8 @@ async def authenticate_web_app(
                 detail="User not found. Please start the bot first with /start"
             )
 
-        # Create session
-        session_token = secrets.token_urlsafe(32)
-        session_data = SessionData(
-            user_id=user.id,
-            session_token=session_token,
-            created_at=datetime.utcnow(),
-            expires_at=datetime.utcnow() + timedelta(days=30)
-        )
-
-        sessions[session_token] = session_data
+        # Create session (with cleanup & eviction)
+        session_token = _create_session(user.id)
 
         return {
             "success": True,

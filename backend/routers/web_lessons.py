@@ -15,6 +15,7 @@ from backend.db.repositories import (
 from backend.services.honzik_personality import HonzikPersonality
 from backend.services.gamification import GamificationService
 from backend.services.openai_client import OpenAIClient
+from backend.routers.web_auth import get_authenticated_user
 
 router = APIRouter(prefix="/api/v1/web/lessons", tags=["web_lessons"])
 
@@ -54,32 +55,26 @@ class MessageHistoryResponse(BaseModel):
 @router.post("/text", response_model=TextMessageResponse)
 async def process_text_message(
     request: TextMessageRequest,
+    auth_user=Depends(get_authenticated_user),
     db: AsyncSession = Depends(get_session)
 ):
     """
-    Process text input (no audio) for web users
-
-    Args:
-        request: Text message request
-        db: Database session
-
-    Returns:
-        Honzík's response with corrections
+    Process text input (no audio) for web users.
+    Requires authentication (Bearer token or httpOnly cookie).
     """
+    # Use authenticated user, ignore request.user_id to prevent IDOR
+    user = auth_user
+    user_id = user.id
+
     # Get user settings
-    user_repo = UserRepository(db)
     settings_repo = UserSettingsRepository(db)
     message_repo = MessageRepository(db)
 
-    user = await user_repo.get_by_id(request.user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    settings = await settings_repo.get_by_user_id(request.user_id)
+    settings = await settings_repo.get_by_user_id(user_id)
 
     # Get conversation history (last 5 messages)
     recent_messages = await message_repo.get_recent_by_user(
-        user_id=request.user_id,
+        user_id=user_id,
         limit=5
     )
 
@@ -106,7 +101,7 @@ async def process_text_message(
 
     # Save user message
     await message_repo.create(
-        user_id=request.user_id,
+        user_id=user_id,
         role="user",
         text=request.text,
         transcript_raw=request.text,
@@ -118,13 +113,14 @@ async def process_text_message(
 
     # Save Honzík's response
     await message_repo.create(
-        user_id=request.user_id,
+        user_id=user_id,
         role="assistant",
         text=response["honzik_response"]
     )
 
     # Calculate stars and update gamification
     stats_repo = StatsRepository(db)
+    user_repo = UserRepository(db)
     gamification = GamificationService(stats_repo, user_repo)
 
     # Get user timezone from settings if available
@@ -132,19 +128,19 @@ async def process_text_message(
     user_date = gamification.get_user_date(user_timezone)
 
     # Calculate stars based on correctness
-    current_streak = (await stats_repo.get_user_summary(request.user_id)).get("current_streak", 0)
+    current_streak = (await stats_repo.get_user_summary(user_id)).get("current_streak", 0)
     stars = gamification.calculate_stars_for_message(
         correctness_score=int(response.get("correctness_score", 0)),
         current_streak=current_streak
     )
 
     # Award stars
-    await gamification.award_stars(db, request.user_id, stars)
+    await gamification.award_stars(db, user_id, stars)
 
     # Update daily stats
-    daily_stats = await stats_repo.get_or_create_daily(request.user_id, user_date)
+    daily_stats = await stats_repo.get_or_create_daily(user_id, user_date)
     await stats_repo.update_daily(
-        user_id=request.user_id,
+        user_id=user_id,
         date_value=user_date,
         messages_count=daily_stats.messages_count + 1,
         words_said=daily_stats.words_said + len(request.text.split()),
@@ -165,23 +161,16 @@ async def process_text_message(
 
 @router.get("/history", response_model=MessageHistoryResponse)
 async def get_lesson_history(
-    user_id: int,
     page: int = 1,
     limit: int = 20,
+    auth_user=Depends(get_authenticated_user),
     db: AsyncSession = Depends(get_session)
 ):
     """
-    Get paginated lesson history with audio URLs
-
-    Args:
-        user_id: User ID
-        page: Page number (1-indexed)
-        limit: Items per page
-        db: Database session
-
-    Returns:
-        Paginated message history
+    Get paginated lesson history.
+    Requires authentication (Bearer token or httpOnly cookie).
     """
+    user_id = auth_user.id
     message_repo = MessageRepository(db)
 
     offset = (page - 1) * limit
