@@ -137,6 +137,7 @@ TEXTS_RU = {
     "transcript_text": "📄 <b>Транскрипция:</b>\n\n{text}",
     # Текстовый ответ Хонзика
     "btn_show_text": "📝 Text",
+    "btn_show_opravy": "📝 Opravy",
     "btn_menu": "📱 Menu",
     "honzik_text_response": "📝 <b>Текст ответа Хонзика:</b>\n\n{text}",
     # Сохранение слов

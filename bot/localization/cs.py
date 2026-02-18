@@ -186,6 +186,7 @@ TEXTS_CS = {
 
     # Textová odpověď Honzíka
     "btn_show_text": "📝 Text",
+    "btn_show_opravy": "📝 Opravy",
     "btn_menu": "📱 Menu",
     "btn_restart": "🔄 Restart",
     "honzik_text_response": "📝 <b>Text odpovědi Honzíka:</b>\n\n{text}",
