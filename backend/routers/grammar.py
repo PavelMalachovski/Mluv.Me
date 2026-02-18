@@ -351,11 +351,81 @@ async def trigger_notifications(
         return {"status": "sent", "mode": "test", "telegram_id": test_telegram_id}
 
     else:
-        # Full broadcast via Celery task
-        from backend.tasks.notifications import send_evening_grammar_notifications
-        task = send_evening_grammar_notifications.apply_async()
+        # Full broadcast — runs directly (no Celery required)
+        import asyncio
+        from datetime import datetime, timedelta
+        from aiogram import Bot
+        from sqlalchemy import select as sa_select
+        from sqlalchemy import func
+        from backend.config import get_settings
+        from backend.db.database import AsyncSessionLocal
+        from backend.db.grammar_repository import GrammarRepository
+        from backend.db.repositories import UserRepository, StatsRepository
+        from backend.services.grammar_service import GrammarService
+        from backend.models.message import Message
+        from backend.models.user_settings import UserSettings
+        from backend.models.user import User
+
+        cfg = get_settings()
+        sent = 0
+        failed = 0
+        skipped = 0
+        errors = []
+
+        async with AsyncSessionLocal() as db:
+            two_weeks_ago = datetime.now() - timedelta(days=14)
+
+            query = (
+                sa_select(func.distinct(Message.user_id))
+                .join(UserSettings, Message.user_id == UserSettings.user_id)
+                .where(
+                    Message.created_at >= two_weeks_ago,
+                    UserSettings.notifications_enabled == True,  # noqa: E712
+                )
+            )
+            result = await db.execute(query)
+            active_user_ids = [row[0] for row in result.all()]
+
+            user_repo = UserRepository(db)
+            stats_repo = StatsRepository(db)
+            grammar_repo = GrammarRepository(db)
+            grammar_service = GrammarService(grammar_repo)
+
+            bot = Bot(token=cfg.telegram_bot_token)
+
+            for uid in active_user_ids:
+                try:
+                    user = await user_repo.get_by_id(uid)
+                    if not user:
+                        skipped += 1
+                        continue
+
+                    user_stats = await stats_repo.get_user_summary(uid)
+                    streak = user_stats.get("current_streak", 0)
+                    stars = user_stats.get("total_stars", 0)
+
+                    message = await grammar_service.get_notification_message(
+                        user_id=uid,
+                        streak=streak,
+                        stars=stars,
+                    )
+
+                    await bot.send_message(user.telegram_id, message, parse_mode="HTML")
+                    sent += 1
+                    await asyncio.sleep(0.05)  # ~20 msgs/sec, safe for Telegram
+
+                except Exception as e:
+                    failed += 1
+                    errors.append({"user_id": uid, "error": str(e)})
+
+            await bot.session.close()
+
         return {
-            "status": "scheduled",
-            "mode": "broadcast",
-            "task_id": task.id,
+            "status": "done",
+            "mode": "broadcast_direct",
+            "total_active": len(active_user_ids),
+            "sent": sent,
+            "failed": failed,
+            "skipped": skipped,
+            "errors": errors[:10],  # first 10 errors only
         }
