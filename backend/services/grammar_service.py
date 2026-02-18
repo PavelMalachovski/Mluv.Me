@@ -62,7 +62,7 @@ class GrammarService:
         self.stats_repo = stats_repo
         self.logger = logger.bind(service="grammar_service")
 
-    async def get_daily_rule(self, user_id: int) -> dict[str, Any] | None:
+    async def get_daily_rule(self, user_id: int, skip: int = 0) -> dict[str, Any] | None:
         """
         Выбрать правило дня для пользователя.
 
@@ -73,6 +73,7 @@ class GrammarService:
 
         Args:
             user_id: ID пользователя
+            skip: Сколько правил пропустить (для кнопки «Další pravidlo»)
 
         Returns:
             dict с данными правила или None
@@ -86,18 +87,21 @@ class GrammarService:
             if user:
                 cefr_levels = LEVEL_TO_CEFR.get(user.level, ["A1", "A2"])
 
-        # Priority 1: Unseen rules
-        for level in reversed(cefr_levels):  # Start from highest applicable level
+        # Priority 1: Unseen rules (with skip offset)
+        for level in reversed(cefr_levels):
             unseen = await self.grammar_repo.get_unseen_rules(
-                user_id, level=level, limit=1
+                user_id, level=level, limit=skip + 1
             )
-            if unseen:
-                return self._rule_to_dict(unseen[0])
+            if len(unseen) > skip:
+                return self._rule_to_dict(unseen[skip])
+            elif unseen:  # fewer than skip+1 available, take last one
+                return self._rule_to_dict(unseen[-1])
 
         # Priority 2: Weak rules (high error rate)
-        weak = await self.grammar_repo.get_weak_rules(user_id, limit=1)
+        weak = await self.grammar_repo.get_weak_rules(user_id, limit=skip + 1)
         if weak:
-            return self._rule_to_dict(weak[0]["rule"])
+            entry = weak[min(skip, len(weak) - 1)]
+            return self._rule_to_dict(entry["rule"])
 
         # Priority 3: Random rule matching user level
         random_level = random.choice(cefr_levels)

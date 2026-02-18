@@ -108,7 +108,7 @@ export function ProfileGrammar({
     refetch: refetchDaily,
   } = useQuery<DailyRuleResponse>({
     queryKey: ["grammar-daily-rule", telegramId, dailyRuleIndex],
-    queryFn: () => apiClient.get(`/api/v1/grammar/daily-rule/${telegramId}`),
+    queryFn: () => apiClient.get(`/api/v1/grammar/daily-rule/${telegramId}?skip=${dailyRuleIndex}`),
     enabled: tab === "daily",
     staleTime: 0,
     retry: 2,

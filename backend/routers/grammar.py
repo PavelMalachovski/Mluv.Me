@@ -170,11 +170,12 @@ async def get_rule(
 @router.get("/daily-rule/{user_id}", response_model=DailyRuleResponse)
 async def get_daily_rule(
     user_id: int,
+    skip: int = Query(0, ge=0, description="Skip N already-shown rules (for Next button)"),
     service: GrammarService = Depends(get_grammar_service),
 ) -> DailyRuleResponse:
     """Get today's grammar rule for a user (prioritizes unseen/weak rules)."""
     try:
-        rule_data = await service.get_daily_rule(user_id)
+        rule_data = await service.get_daily_rule(user_id, skip=skip)
         if not rule_data:
             return DailyRuleResponse(message="Žádná pravidla k zobrazení")
 
