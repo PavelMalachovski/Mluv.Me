@@ -75,8 +75,11 @@ export default function LoginPage() {
         throw new Error(result.error || "Authentication failed")
       }
 
-      // Store user data
+      // Store user data and token
       setUser(result.user)
+      if (result.token) {
+        useAuthStore.getState().setToken(result.token)
+      }
 
       console.log("User authenticated, redirecting to dashboard...")
 
@@ -102,8 +105,11 @@ export default function LoginPage() {
       // Step 2: Authenticate with backend
       const data = await authenticateWithBackend(telegramUser)
 
-      // Step 3: Store user data
+      // Step 3: Store user data and token
       setUser(data.user)
+      if (data.access_token) {
+        useAuthStore.getState().setToken(data.access_token)
+      }
 
       // Step 4: Redirect to dashboard
       router.push("/dashboard")

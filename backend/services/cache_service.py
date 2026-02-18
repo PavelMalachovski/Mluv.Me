@@ -58,6 +58,7 @@ class CacheService:
             "level": settings.get("czech_level"),
             "correction_level": settings.get("correction_level"),
             "conversation_style": settings.get("conversation_style"),
+            "native_language": settings.get("native_language"),
             "model": model,
         }
 
@@ -185,7 +186,7 @@ class CacheService:
         if not redis_client.is_enabled:
             return None
 
-        cache_key = self.create_openai_cache_key(user_text, settings, "gpt-4o")
+        cache_key = self.create_openai_cache_key(user_text, settings, "auto")
         cached = await redis_client.get(cache_key)
 
         if cached:
@@ -208,7 +209,7 @@ class CacheService:
         if not redis_client.is_enabled:
             return
 
-        cache_key = self.create_openai_cache_key(user_text, settings, "gpt-4o")
+        cache_key = self.create_openai_cache_key(user_text, settings, "auto")
         app_settings = get_settings()
 
         await redis_client.set(

@@ -46,6 +46,22 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/lessons", tags=["lessons"])
 
 
+# Default user settings when UserSettings is None (new user without settings row)
+_DEFAULT_SETTINGS = {
+    "conversation_style": "friendly",
+    "corrections_level": "balanced",
+    "timezone": "Europe/Prague",
+    "voice_speed": "normal",
+}
+
+
+def _s(user, attr: str):
+    """Safe access to user.settings attributes with defaults."""
+    if user.settings is not None:
+        return getattr(user.settings, attr, _DEFAULT_SETTINGS.get(attr))
+    return _DEFAULT_SETTINGS.get(attr)
+
+
 async def save_audio_file_async(audio_bytes: bytes, filepath: str) -> None:
     """
     Асинхронное сохранение аудио файла.
@@ -218,7 +234,7 @@ async def process_voice_message(
         cached_response = await cache_service.get_cached_common_phrase(
             transcript,
             user.level,
-            user.settings.conversation_style,
+            _s(user, "conversation_style"),
         )
 
         if cached_response:
@@ -235,8 +251,8 @@ async def process_voice_message(
             honzik_response = await honzik.generate_response(
                 user_text=transcript,
                 level=user.level,
-                style=user.settings.conversation_style,
-                corrections_level=user.settings.corrections_level,
+                style=_s(user, "conversation_style"),
+                corrections_level=_s(user, "corrections_level"),
                 native_language=user.native_language,
                 conversation_history=conversation_history,
             )
@@ -261,7 +277,7 @@ async def process_voice_message(
         log.info("starting_parallel_processing")
 
         voice_speed = openai_client.get_voice_speed_mapping(
-            user.settings.voice_speed
+            _s(user, "voice_speed")
         )
 
         # Определяем все задачи для параллельного выполнения
@@ -313,7 +329,7 @@ async def process_voice_message(
         async def update_stats_and_gamification():
             """Обновление статистики и геймификации"""
             stats_repo = StatsRepository(db)
-            user_date = gamification.get_user_date(user.settings.timezone)
+            user_date = gamification.get_user_date(_s(user, "timezone"))
 
             # Обновляем daily_stats
             daily_stats = await stats_repo.get_or_create_daily(user.id, user_date)
@@ -330,7 +346,7 @@ async def process_voice_message(
                 db=db,
                 user_id=user.id,
                 correctness_score=processed["correctness_score"],
-                timezone_str=user.settings.timezone,
+                timezone_str=_s(user, "timezone"),
             )
 
         # ========================================
@@ -352,7 +368,7 @@ async def process_voice_message(
             await cache_service.cache_common_phrase(
                 transcript,
                 user.level,
-                user.settings.conversation_style,
+                _s(user, "conversation_style"),
                 honzik_response,
             )
 
@@ -511,7 +527,7 @@ async def process_text_message(
         cached_response = await cache_service.get_cached_common_phrase(
             text,
             user.level,
-            user.settings.conversation_style,
+            _s(user, "conversation_style"),
         )
 
         if cached_response:
@@ -528,8 +544,8 @@ async def process_text_message(
             honzik_response = await honzik.generate_response(
                 user_text=text,
                 level=user.level,
-                style=user.settings.conversation_style,
-                corrections_level=user.settings.corrections_level,
+                style=_s(user, "conversation_style"),
+                corrections_level=_s(user, "corrections_level"),
                 native_language=user.native_language,
                 conversation_history=conversation_history,
             )
@@ -560,7 +576,7 @@ async def process_text_message(
                 return None
 
             voice_speed = openai_client.get_voice_speed_mapping(
-                user.settings.voice_speed
+                _s(user, "voice_speed")
             )
             text = processed["honzik_response"]
             voice = settings.tts_voice
@@ -608,7 +624,7 @@ async def process_text_message(
         async def update_stats_and_gamification():
             """Обновление статистики и геймификации"""
             stats_repo = StatsRepository(db)
-            user_date = gamification.get_user_date(user.settings.timezone)
+            user_date = gamification.get_user_date(_s(user, "timezone"))
 
             # Обновляем daily_stats
             daily_stats = await stats_repo.get_or_create_daily(user.id, user_date)
@@ -625,7 +641,7 @@ async def process_text_message(
                 db=db,
                 user_id=user.id,
                 correctness_score=processed["correctness_score"],
-                timezone_str=user.settings.timezone,
+                timezone_str=_s(user, "timezone"),
             )
 
         # Запускаем TTS в фоне
@@ -640,7 +656,7 @@ async def process_text_message(
             await cache_service.cache_common_phrase(
                 text,
                 user.level,
-                user.settings.conversation_style,
+                _s(user, "conversation_style"),
                 honzik_response,
             )
 

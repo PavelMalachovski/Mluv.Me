@@ -239,6 +239,7 @@ ODPOVĚZ JSON:
                 "czech_level": level,
                 "correction_level": corrections_level,
                 "conversation_style": style,
+                "native_language": native_language,
             }
             cached_response = await cache_service.get_cached_honzik_response(
                 user_text, settings_dict
