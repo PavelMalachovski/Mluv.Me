@@ -144,7 +144,10 @@ class GrammarService:
 
         # Build message
         parts = [
-            f"📖 Pravidlo dne: {rule_data['title_cs']}",
+            "👋 Čau! Tady Honzík.",
+            "Čas na trochu češtiny! 🇨🇿",
+            "",
+            f"📖 <b>Pravidlo dne:</b> {rule_data['title_cs']}",
             "",
             rule_data["rule_cs"],
         ]
