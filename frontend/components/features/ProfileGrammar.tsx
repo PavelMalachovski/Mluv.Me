@@ -4,8 +4,8 @@ import { useState, useCallback } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { motion, AnimatePresence } from "framer-motion"
 import {
-  BookOpen, ChevronRight, ChevronDown, Trophy,
-  Target, CheckCircle2, AlertTriangle, Sparkles,
+  BookOpen, ChevronRight, ChevronDown,
+  Sparkles,
   RotateCcw, RefreshCw, AlertCircle,
 } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
@@ -30,14 +30,6 @@ interface GrammarRule {
 interface CategoryInfo {
   category: string
   count: number
-}
-
-interface ProgressSummary {
-  total_rules: number
-  practiced_rules: number
-  mastered_rules: number
-  weak_rules: number
-  average_accuracy: number
 }
 
 interface DailyRuleResponse {
@@ -66,7 +58,7 @@ const CATEGORY_LABELS: Record<string, { label: string; emoji: string }> = {
   vyslovnost: { label: "Výslovnost", emoji: "🗣️" },
 }
 
-type TabState = "daily" | "categories" | "progress"
+type TabState = "daily" | "categories"
 
 // ===== Error / Empty inline components =====
 
@@ -106,6 +98,7 @@ export function ProfileGrammar({
   const [tab, setTab] = useState<TabState>("daily")
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
   const [expandedRule, setExpandedRule] = useState<number | null>(null)
+  const [dailyRuleIndex, setDailyRuleIndex] = useState(0)
 
   // --- React Query: Daily Rule ---
   const {
@@ -114,10 +107,10 @@ export function ProfileGrammar({
     isError: dailyError,
     refetch: refetchDaily,
   } = useQuery<DailyRuleResponse>({
-    queryKey: ["grammar-daily-rule", telegramId],
+    queryKey: ["grammar-daily-rule", telegramId, dailyRuleIndex],
     queryFn: () => apiClient.get(`/api/v1/grammar/daily-rule/${telegramId}`),
     enabled: tab === "daily",
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
     retry: 2,
   })
 
@@ -132,20 +125,6 @@ export function ProfileGrammar({
     queryFn: () => apiClient.get("/api/v1/grammar/categories"),
     enabled: tab === "categories",
     staleTime: 10 * 60 * 1000,
-    retry: 2,
-  })
-
-  // --- React Query: Progress ---
-  const {
-    data: progress,
-    isLoading: progressLoading,
-    isError: progressError,
-    refetch: refetchProgress,
-  } = useQuery<ProgressSummary>({
-    queryKey: ["grammar-progress", telegramId],
-    queryFn: () => apiClient.get(`/api/v1/grammar/progress/${telegramId}`),
-    enabled: tab === "progress",
-    staleTime: 2 * 60 * 1000,
     retry: 2,
   })
 
@@ -181,7 +160,6 @@ export function ProfileGrammar({
         {([
           { key: "daily", label: "Pravidlo dne", icon: "💡" },
           { key: "categories", label: "Přehled", icon: "📚" },
-          { key: "progress", label: "Pokrok", icon: "📊" },
         ] as { key: TabState; label: string; icon: string }[]).map((t) => (
           <button
             key={t.key}
@@ -242,12 +220,8 @@ export function ProfileGrammar({
                   </div>
                 )}
 
-                <p className="text-[10px] text-muted-foreground text-right">
-                  📖 {dailyRule.source_ref || "Internetová jazyková příručka ÚJČ"}
-                </p>
-
                 <button
-                  onClick={() => refetchDaily()}
+                  onClick={() => setDailyRuleIndex((i) => i + 1)}
                   className="w-full py-2 rounded-lg text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center justify-center gap-1"
                 >
                   <RotateCcw className="w-3 h-3" />
@@ -355,72 +329,7 @@ export function ProfileGrammar({
           </motion.div>
         )}
 
-        {/* === PROGRESS === */}
-        {tab === "progress" && (
-          <motion.div
-            key="progress"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            {progressLoading ? (
-              <InlineLoading message="Načítám pokrok..." />
-            ) : progressError ? (
-              <InlineError message="Nepodařilo se načíst pokrok" onRetry={() => refetchProgress()} />
-            ) : progress ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 text-center">
-                    <Target className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-                    <p className="text-lg font-bold text-foreground">{progress.practiced_rules}</p>
-                    <p className="text-[10px] text-muted-foreground">Procvičeno</p>
-                  </div>
-                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 text-center">
-                    <Trophy className="w-5 h-5 text-amber-500 mx-auto mb-1" />
-                    <p className="text-lg font-bold text-foreground">{progress.mastered_rules}</p>
-                    <p className="text-[10px] text-muted-foreground">Zvládnuto</p>
-                  </div>
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-center">
-                    <CheckCircle2 className="w-5 h-5 text-blue-500 mx-auto mb-1" />
-                    <p className="text-lg font-bold text-foreground">{progress.average_accuracy}%</p>
-                    <p className="text-[10px] text-muted-foreground">Přesnost</p>
-                  </div>
-                  <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 text-center">
-                    <AlertTriangle className="w-5 h-5 text-red-400 mx-auto mb-1" />
-                    <p className="text-lg font-bold text-foreground">{progress.weak_rules}</p>
-                    <p className="text-[10px] text-muted-foreground">K opakování</p>
-                  </div>
-                </div>
 
-                <div>
-                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                    <span>Celkový pokrok</span>
-                    <span>{progress.practiced_rules} / {progress.total_rules}</span>
-                  </div>
-                  <div className="h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{
-                        width: `${progress.total_rules > 0
-                          ? (progress.practiced_rules / progress.total_rules) * 100
-                          : 0}%`,
-                      }}
-                      transition={{ duration: 0.8 }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <Target className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Začni hrát hry a tvůj pokrok se tu zobrazí!
-                </p>
-              </div>
-            )}
-          </motion.div>
-        )}
       </AnimatePresence>
     </div>
   )
