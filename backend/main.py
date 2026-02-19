@@ -12,6 +12,7 @@ from fastapi import FastAPI, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse, HTMLResponse
 import httpx
+import sentry_sdk
 
 from backend.config import get_settings
 from backend.db.database import close_db
@@ -41,6 +42,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     Управляет startup и shutdown событиями.
     """
     settings = get_settings()
+
+    # Initialize Sentry
+    if settings.sentry_dsn:
+        sentry_sdk.init(
+            dsn=settings.sentry_dsn,
+            environment=settings.environment,
+            traces_sample_rate=0.2 if settings.is_production else 1.0,
+            profiles_sample_rate=0.1,
+            send_default_pii=False,
+        )
+        logger.info("sentry_initialized", environment=settings.environment)
 
     # Startup
     logger.info(

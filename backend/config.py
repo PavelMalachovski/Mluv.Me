@@ -77,6 +77,12 @@ class Settings(BaseSettings):
         description="Enable Redis caching"
     )
 
+    # Sentry Error Monitoring
+    sentry_dsn: str = Field(
+        default="",
+        description="Sentry DSN for error monitoring (leave empty to disable)"
+    )
+
     redis_cache_ttl_default: int = Field(
         default=3600,
         description="Default cache TTL in seconds (1 hour)"

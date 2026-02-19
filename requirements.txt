@@ -31,7 +31,7 @@ aiohttp==3.10.10
 aiofiles==24.1.0
 
 # Logging
-structlog==24.4.0
+structlog==24.4.0\n\n# Error Monitoring\nsentry-sdk[fastapi]==2.19.2
 
 # Utilities
 python-dateutil==2.9.0

@@ -218,10 +218,10 @@ async def get_progress_details(
     service: GrammarService = Depends(get_grammar_service),
 ) -> list[RuleProgressResponse]:
     """Get detailed per-rule progress for a user."""
-    progress_list = await service.grammar_repo.get_user_progress(user_id)
+    progress_list = await service.grammar_repo.get_user_progress_with_rules(user_id)
     results = []
     for p in progress_list:
-        rule = await service.grammar_repo.get_rule_by_id(p.grammar_rule_id)
+        rule = p.grammar_rule
         if rule:
             results.append(
                 RuleProgressResponse(

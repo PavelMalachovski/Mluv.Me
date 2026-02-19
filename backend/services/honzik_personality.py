@@ -10,6 +10,7 @@
 """
 
 import json
+from functools import lru_cache
 from typing import Literal
 
 import structlog
@@ -45,8 +46,9 @@ class HonzikPersonality:
         self.openai_client = openai_client
         self.logger = logger.bind(service="honzik_personality")
 
+    @staticmethod
+    @lru_cache(maxsize=64)
     def _get_base_prompt(
-        self,
         level: CzechLevel,
         corrections_level: CorrectionsLevel,
         native_language: NativeLanguage,
@@ -256,15 +258,19 @@ ODPOVĚZ JSON:
             style=style,
         )
 
-        # Добавляем историю в промпт
-        history_text = self._format_conversation_history(conversation_history)
-
-        user_prompt = f"""Přepis studenta: {user_text}
-
-Historie konverzace (poslední 5 zpráv):
-{history_text}
-
-Analyzuj text studenta a odpověz ve formátu JSON podle instrukcí výše."""
+        # Only include history block when there's actual conversation history
+        if conversation_history:
+            history_text = self._format_conversation_history(conversation_history)
+            user_prompt = (
+                f"Přepis studenta: {user_text}\n\n"
+                f"Historie konverzace (poslední 5 zpráv):\n{history_text}\n\n"
+                "Analyzuj text studenta a odpověz ve formátu JSON podle instrukcí výše."
+            )
+        else:
+            user_prompt = (
+                f"Přepis studenta: {user_text}\n\n"
+                "Analyzuj text studenta a odpověz ve formátu JSON podle instrukcí výše."
+            )
 
         messages = [
             {"role": "system", "content": system_prompt},

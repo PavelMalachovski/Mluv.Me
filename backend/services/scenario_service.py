@@ -16,6 +16,7 @@ from typing import Literal
 import structlog
 
 from backend.services.openai_client import OpenAIClient
+from backend.cache.redis_client import redis_client
 
 logger = structlog.get_logger(__name__)
 
@@ -346,19 +347,18 @@ class ScenarioService:
             user_message=None,
         )
 
-        # Сохраняем состояние сценария
-        self._cleanup_stale_scenarios()
-        self._active_scenarios[user_id] = {
+        # Сохраняем состояние сценария в Redis
+        state = {
             "scenario_id": scenario_id,
             "step": 1,
             "started_at": datetime.now(timezone.utc).isoformat(),
-            "_ts": __import__("time").time(),
             "conversation_history": [
                 {"role": "assistant", "text": initial_message["honzik_message"]}
             ],
             "total_score": 0,
             "completed": False,
         }
+        await self._set_state(user_id, state)
 
         return {
             "scenario_id": scenario_id,
@@ -391,10 +391,10 @@ class ScenarioService:
         Returns:
             dict: Ответ Хонзика и информация о прогрессе
         """
-        if user_id not in self._active_scenarios:
+        state = await self._get_state(user_id)
+        if not state:
             raise ValueError("No active scenario for this user")
 
-        state = self._active_scenarios[user_id]
         scenario = SCENARIOS[state["scenario_id"]]
 
         # Добавляем сообщение пользователя в историю
@@ -454,9 +454,12 @@ class ScenarioService:
                 final_score=state["total_score"],
             )
 
+        # Save updated state back to Redis
+        await self._set_state(user_id, state)
+
         return result
 
-    def get_active_scenario(self, user_id: int) -> dict | None:
+    async def get_active_scenario(self, user_id: int) -> dict | None:
         """
         Получить активный сценарий пользователя.
 
@@ -466,10 +469,11 @@ class ScenarioService:
         Returns:
             dict | None: Информация об активном сценарии или None
         """
-        if user_id not in self._active_scenarios:
+        state = await self._get_state(user_id)
+        if not state:
             return None
 
-        state = self._active_scenarios[user_id]
+        state = await self._get_state(user_id)
         scenario = SCENARIOS[state["scenario_id"]]
 
         return {
@@ -481,7 +485,7 @@ class ScenarioService:
             "completed": state["completed"],
         }
 
-    def cancel_scenario(self, user_id: int) -> bool:
+    async def cancel_scenario(self, user_id: int) -> bool:
         """
         Отменить активный сценарий.
 
@@ -491,8 +495,9 @@ class ScenarioService:
         Returns:
             bool: True если сценарий был отменён
         """
-        if user_id in self._active_scenarios:
-            del self._active_scenarios[user_id]
+        state = await self._get_state(user_id)
+        if state:
+            await self._delete_state(user_id)
             self.logger.info("scenario_cancelled", user_id=user_id)
             return True
         return False

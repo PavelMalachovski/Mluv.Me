@@ -7,9 +7,12 @@ from typing import Any, Optional
 
 import aiohttp
 import structlog
-from aiohttp import FormData
+from aiohttp import FormData, ClientTimeout
 
 logger = structlog.get_logger()
+
+# Default timeout: 30s total, 10s connect
+_DEFAULT_TIMEOUT = ClientTimeout(total=30, connect=10)
 
 
 class APIClient:
@@ -27,7 +30,7 @@ class APIClient:
 
     async def __aenter__(self):
         """Создать сессию при входе в контекст."""
-        self.session = aiohttp.ClientSession()
+        self.session = aiohttp.ClientSession(timeout=_DEFAULT_TIMEOUT)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -38,7 +41,7 @@ class APIClient:
     async def _get_session(self) -> aiohttp.ClientSession:
         """Получить или создать сессию."""
         if not self.session:
-            self.session = aiohttp.ClientSession()
+            self.session = aiohttp.ClientSession(timeout=_DEFAULT_TIMEOUT)
         return self.session
 
     async def get_user(self, telegram_id: int) -> Optional[dict[str, Any]]:

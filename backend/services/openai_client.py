@@ -22,20 +22,6 @@ from backend.services.cache_service import cache_service
 
 logger = structlog.get_logger(__name__)
 
-# Model pricing per 1K tokens (as of Dec 2024)
-MODEL_PRICING = {
-    'gpt-4o': {'input': 0.005, 'output': 0.015},
-    'gpt-3.5-turbo': {'input': 0.0005, 'output': 0.0015},
-    'whisper-1': {'per_minute': 0.006},
-    'tts-1': {'per_1M_chars': 15.0},
-}
-
-# Token limits for context
-TOKEN_LIMITS = {
-    'gpt-4o': 128000,
-    'gpt-3.5-turbo': 16385,
-}
-
 
 class OpenAIClient:
     """
@@ -450,56 +436,6 @@ class OpenAIClient:
             "native": 1.2,      # Быстрее для продвинутых (было 1.1)
         }
         return speed_map.get(speed_setting, 1.0)
-
-    def get_optimal_model(
-        self,
-        czech_level: str,
-        task_type: str = "analysis",
-        fast_mode: bool = False,
-    ) -> str:
-        """
-        Выбрать оптимальную модель в зависимости от уровня пользователя.
-
-        Стратегия для ускорения в 2 раза:
-        - fast_mode=True: всегда GPT-4o-mini (2x быстрее)
-        - Для начинающих (beginner, intermediate): GPT-4o-mini
-        - Для продвинутых (advanced, native): GPT-4o
-
-        Args:
-            czech_level: Уровень чешского (beginner, intermediate, advanced, native)
-            task_type: Тип задачи (analysis, summarization)
-            fast_mode: Режим быстрого ответа (всегда использует mini)
-
-        Returns:
-            str: Название модели
-        """
-        if not self.settings.use_adaptive_model_selection:
-            return self.settings.openai_model
-
-        # Для суммаризации всегда используем дешевую модель
-        if task_type == "summarization":
-            return self.settings.openai_model_simple
-
-        # Fast mode - всегда GPT-4o-mini (2x быстрее!)
-        if fast_mode:
-            self.logger.info(
-                "using_fast_mode_model",
-                model=self.settings.openai_model_fast,
-                level=czech_level,
-            )
-            return self.settings.openai_model_fast
-
-        # Для начинающих и средних используем GPT-4o-mini (2x быстрее)
-        if czech_level in ["beginner", "intermediate"]:
-            self.logger.info(
-                "using_fast_model_for_level",
-                model=self.settings.openai_model_fast,
-                level=czech_level,
-            )
-            return self.settings.openai_model_fast
-
-        # Для продвинутых используем GPT-4o
-        return self.settings.openai_model
 
     def estimate_tokens(self, text: str) -> int:
         """

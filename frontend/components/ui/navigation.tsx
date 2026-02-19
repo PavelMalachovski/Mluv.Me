@@ -47,12 +47,13 @@ export function Navigation({ className }: NavigationProps) {
 
   return (
     <nav
+      aria-label="Hlavní navigace"
       className={cn(
         "fixed bottom-0 left-0 right-0 z-50 border-t bg-white dark:bg-gray-900 dark:border-gray-800 shadow-lg md:left-auto md:top-0 md:h-screen md:w-20 md:border-r md:border-t-0",
         className
       )}
     >
-      <div className="flex h-16 items-center justify-around md:h-full md:flex-col md:py-8">
+      <div className="flex h-16 items-center justify-around md:h-full md:flex-col md:py-8" role="list">
         {navigationItems.map((item) => {
           const isActive = pathname === item.href
           const Icon = item.icon
@@ -64,6 +65,9 @@ export function Navigation({ className }: NavigationProps) {
               prefetch={true}
               onMouseEnter={() => handleMouseEnter(item.href)}
               onTouchStart={() => handleMouseEnter(item.href)}
+              role="listitem"
+              aria-current={isActive ? "page" : undefined}
+              aria-label={item.label}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm transition-all hover:bg-purple-50 dark:hover:bg-purple-900/20 md:w-full md:gap-2 md:py-4",
                 "hover:scale-105 active:scale-95 transition-transform duration-150",

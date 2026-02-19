@@ -22,6 +22,8 @@ class RedisClient:
     def __init__(self) -> None:
         self.pool: ConnectionPool | None = None
         self.redis: Redis | None = None
+        self._binary_pool: ConnectionPool | None = None
+        self._binary_redis: Redis | None = None
 
     @property
     def is_enabled(self) -> bool:
@@ -51,6 +53,14 @@ class RedisClient:
         )
         self.redis = redis.Redis(connection_pool=self.pool)
 
+        # Binary pool for TTS audio (no decode_responses)
+        self._binary_pool = redis.ConnectionPool.from_url(
+            settings.redis_url,
+            max_connections=5,
+            decode_responses=False,
+        )
+        self._binary_redis = redis.Redis(connection_pool=self._binary_pool)
+
         try:
             await self.redis.ping()
             logger.info("redis_connected", url=settings.redis_url)
@@ -64,6 +74,12 @@ class RedisClient:
 
     async def disconnect(self) -> None:
         """Close Redis connections."""
+        if self._binary_redis:
+            await self._binary_redis.aclose()
+            self._binary_redis = None
+        if self._binary_pool:
+            await self._binary_pool.disconnect()
+            self._binary_pool = None
         if self.redis:
             await self.redis.aclose()
             self.redis = None
@@ -110,35 +126,24 @@ class RedisClient:
 
     async def get_bytes(self, key: str) -> bytes | None:
         """Get binary value from cache (for TTS audio)."""
-        if not self.is_enabled or not self.pool:
+        if not self.is_enabled or not self._binary_redis:
             return None
-        # Use separate connection without decode_responses for binary data
         try:
-            async with redis.Redis(connection_pool=redis.ConnectionPool.from_url(
-                get_settings().redis_url,
-                max_connections=2,
-                decode_responses=False,
-            )) as binary_redis:
-                value = await binary_redis.get(key)
-                return value if value else None
+            value = await self._binary_redis.get(key)
+            return value if value else None
         except Exception as e:
             logger.warning("redis_get_bytes_error", key=key, error=str(e))
             return None
 
     async def set_bytes(self, key: str, value: bytes, ttl: int | None = None) -> bool:
         """Set binary value in cache with TTL (for TTS audio)."""
-        if not self.is_enabled or not self.pool:
+        if not self.is_enabled or not self._binary_redis:
             return False
         settings = get_settings()
         ttl_value = ttl or settings.redis_cache_ttl_default
         try:
-            async with redis.Redis(connection_pool=redis.ConnectionPool.from_url(
-                settings.redis_url,
-                max_connections=2,
-                decode_responses=False,
-            )) as binary_redis:
-                result = await binary_redis.setex(key, ttl_value, value)
-                return bool(result)
+            result = await self._binary_redis.setex(key, ttl_value, value)
+            return bool(result)
         except Exception as e:
             logger.warning("redis_set_bytes_error", key=key, error=str(e))
             return False

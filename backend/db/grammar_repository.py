@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import select, update, func, and_, not_
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
@@ -214,6 +215,18 @@ class GrammarRepository:
         )
         return list(result.scalars().all())
 
+    async def get_user_progress_with_rules(
+        self,
+        user_id: int,
+    ) -> list[UserGrammarProgress]:
+        """Get progress with related rules eagerly loaded (avoids N+1)."""
+        result = await self.session.execute(
+            select(UserGrammarProgress)
+            .options(joinedload(UserGrammarProgress.grammar_rule))
+            .where(UserGrammarProgress.user_id == user_id)
+        )
+        return list(result.unique().scalars().all())
+
     async def get_or_create_progress(
         self,
         user_id: int,
@@ -332,6 +345,7 @@ class GrammarRepository:
         # Get progress records with errors
         query = (
             select(UserGrammarProgress)
+            .options(joinedload(UserGrammarProgress.grammar_rule))
             .where(
                 UserGrammarProgress.user_id == user_id,
                 (UserGrammarProgress.correct_count + UserGrammarProgress.incorrect_count) >= 2,
@@ -347,12 +361,12 @@ class GrammarRepository:
             .limit(limit)
         )
         result = await self.session.execute(query)
-        progress_list = list(result.scalars().all())
+        progress_list = list(result.unique().scalars().all())
 
-        # Load associated rules
+        # Rules are already eagerly loaded
         weak_rules = []
         for progress in progress_list:
-            rule = await self.get_rule_by_id(progress.grammar_rule_id)
+            rule = progress.grammar_rule
             if rule:
                 total = progress.correct_count + progress.incorrect_count
                 accuracy = progress.correct_count / total if total > 0 else 0

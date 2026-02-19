@@ -205,7 +205,7 @@ async def get_active_scenario(
 
     Returns None если нет активного сценария.
     """
-    return scenario_service.get_active_scenario(user_id)
+    return await scenario_service.get_active_scenario(user_id)
 
 
 @router.delete("/cancel/{user_id}")
@@ -218,7 +218,7 @@ async def cancel_scenario(
 
     Прогресс будет потерян.
     """
-    cancelled = scenario_service.cancel_scenario(user_id)
+    cancelled = await scenario_service.cancel_scenario(user_id)
     if not cancelled:
         raise HTTPException(status_code=404, detail="No active scenario to cancel")
 

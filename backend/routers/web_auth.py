@@ -6,13 +6,14 @@ from typing import Optional
 import hashlib
 import hmac
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from urllib.parse import parse_qsl
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.config import get_settings
 from backend.db.database import get_session
 from backend.db.repositories import UserRepository
+from backend.cache.redis_client import redis_client
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -45,45 +46,15 @@ class TelegramAuthData(BaseModel):
     hash: str
 
 
-class SessionData(BaseModel):
-    """Session data"""
-    user_id: int
-    session_token: str
-    created_at: datetime
-    expires_at: datetime
+# Session TTL = 30 days in seconds
+_SESSION_TTL = 30 * 24 * 60 * 60
 
 
-# Simple in-memory session storage (for MVP, replace with Redis in production)
-# Limit to prevent DoS via session flooding
-MAX_SESSIONS = 5000
-sessions: dict[str, SessionData] = {}
-
-
-def _cleanup_expired_sessions():
-    """Remove expired sessions to prevent memory leaks."""
-    now = datetime.now()
-    expired = [k for k, v in sessions.items() if now > v.expires_at]
-    for k in expired:
-        del sessions[k]
-
-
-def _create_session(user_id: int) -> str:
-    """Create a new session, cleaning up old ones if needed."""
-    _cleanup_expired_sessions()
-
-    # If still too many sessions, evict oldest ones
-    if len(sessions) >= MAX_SESSIONS:
-        sorted_sessions = sorted(sessions.items(), key=lambda x: x[1].created_at)
-        for key, _ in sorted_sessions[:len(sessions) - MAX_SESSIONS + 100]:
-            del sessions[key]
-
+async def _create_session(user_id: int) -> str:
+    """Create a session in Redis with TTL."""
     session_token = secrets.token_urlsafe(32)
-    sessions[session_token] = SessionData(
-        user_id=user_id,
-        session_token=session_token,
-        created_at=datetime.now(),
-        expires_at=datetime.now() + timedelta(days=30),
-    )
+    key = f"session:{session_token}"
+    await redis_client.set(key, {"user_id": user_id}, ttl=_SESSION_TTL)
     return session_token
 
 
@@ -107,22 +78,19 @@ async def get_authenticated_user(
 ):
     """
     FastAPI dependency: validate session and return the authenticated User ORM object.
-    Raises 401 if not authenticated.
-    Use this dependency in any router that needs an authenticated user.
+    Reads session from Redis. Raises 401 if not authenticated.
     """
-    if not token or token not in sessions:
+    if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    session_data = sessions[token]
-
-    if datetime.now() > session_data.expires_at:
-        del sessions[token]
-        raise HTTPException(status_code=401, detail="Session expired")
+    session_data = await redis_client.get(f"session:{token}")
+    if not session_data:
+        raise HTTPException(status_code=401, detail="Not authenticated")
 
     user_repo = UserRepository(db)
-    user = await user_repo.get_by_id(session_data.user_id)
+    user = await user_repo.get_by_id(session_data["user_id"])
     if not user:
-        del sessions[token]
+        await redis_client.delete(f"session:{token}")
         raise HTTPException(status_code=401, detail="User not found")
 
     return user
@@ -218,10 +186,8 @@ async def telegram_web_auth(
         )
         await db.commit()
 
-    # Create session (with cleanup & eviction)
-    session_token = _create_session(user.id)
-
-    # Set httpOnly cookie
+    # Create session in Redis
+    session_token = await _create_session(user.id)
     response.set_cookie(
         key="session_token",
         value=session_token,
@@ -246,8 +212,8 @@ async def logout(
     Logout user and invalidate session.
     Reads token from Bearer header or httpOnly cookie.
     """
-    if token and token in sessions:
-        del sessions[token]
+    if token:
+        await redis_client.delete(f"session:{token}")
 
     response.delete_cookie("session_token")
 
@@ -367,8 +333,8 @@ async def authenticate_web_app(
                 detail="User not found. Please start the bot first with /start"
             )
 
-        # Create session (with cleanup & eviction)
-        session_token = _create_session(user.id)
+        # Create session in Redis
+        session_token = await _create_session(user.id)
 
         return {
             "success": True,

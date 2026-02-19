@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="cs">
       <head>
         {/* PWA manifest */}
         <link rel="manifest" href="/manifest.json" />
@@ -26,9 +26,6 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Mluv.Me" />
         <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png" />
 
-        {/* Preload critical images for faster loading */}
-        <link rel="preload" href="/images/backgrounds/fantasy-landscape.png" as="image" />
-        <link rel="preload" href="/images/mascot/honzik-waving.png" as="image" />
         {/* Telegram Web App SDK */}
         <script src="https://telegram.org/js/telegram-web-app.js" async />
       </head>

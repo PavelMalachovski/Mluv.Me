@@ -13,11 +13,12 @@ import random
 import json
 from datetime import datetime, timezone
 from typing import Literal
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 import structlog
 
 from backend.services.grammar_service import GrammarService
+from backend.cache.redis_client import redis_client
 
 logger = structlog.get_logger(__name__)
 
@@ -96,34 +97,35 @@ class GameService:
     Grammar-based mini-games service.
 
     Pulls exercises from GrammarRule.exercise_data via GrammarService.
-    Manages active games, scoring, and leaderboard.
+    Manages active games (stored in Redis), scoring, and leaderboard.
     """
 
-    # Class-level shared state — persists across request-scoped instances
-    _active_games: dict[int, "ActiveGame"] = {}
-    _leaderboard: dict[str, list[dict]] = {
-        game_type: [] for game_type in GAMES
-    }
-    _MAX_ACTIVE_GAMES = 500
     _GAME_TTL_SECONDS = 1800  # 30 minutes
+    _GAME_KEY_PREFIX = "game:active:"
 
     @classmethod
-    def _cleanup_stale_games(cls):
-        """Remove games older than TTL and enforce max size."""
-        now = datetime.now(timezone.utc)
-        expired = [
-            uid for uid, g in cls._active_games.items()
-            if (now - g.started_at).total_seconds() > cls._GAME_TTL_SECONDS
-        ]
-        for uid in expired:
-            del cls._active_games[uid]
-        while len(cls._active_games) > cls._MAX_ACTIVE_GAMES:
-            oldest_uid = min(cls._active_games, key=lambda k: cls._active_games[k].started_at)
-            del cls._active_games[oldest_uid]
+    async def _get_active_game(cls, user_id: int) -> dict | None:
+        """Fetch active game from Redis."""
+        return await redis_client.get(f"{cls._GAME_KEY_PREFIX}{user_id}")
+
+    @classmethod
+    async def _set_active_game(cls, user_id: int, game_data: dict) -> None:
+        """Store active game in Redis with TTL."""
+        await redis_client.set(
+            f"{cls._GAME_KEY_PREFIX}{user_id}", game_data, ttl=cls._GAME_TTL_SECONDS
+        )
+
+    @classmethod
+    async def _delete_active_game(cls, user_id: int) -> None:
+        """Remove active game from Redis."""
+        await redis_client.delete(f"{cls._GAME_KEY_PREFIX}{user_id}")
 
     def __init__(self, grammar_service: GrammarService | None = None):
         self.grammar_service = grammar_service
         self.logger = logger.bind(service="game_service")
+        self._leaderboard: dict[str, list[dict]] = {
+            game_type: [] for game_type in GAMES
+        }
 
     def get_available_games(self) -> list[dict]:
         """Get list of available games."""
@@ -152,7 +154,7 @@ class GameService:
         if game_type not in GAMES:
             raise ValueError(f"Unknown game type: {game_type}")
 
-        self._cleanup_stale_games()
+        # Redis TTL handles cleanup automatically
         game_info = GAMES[game_type]
         game_id = f"{user_id}_{game_type}_{datetime.now(timezone.utc).timestamp()}"
 
@@ -161,17 +163,17 @@ class GameService:
             game_type, level
         )
 
-        active_game = ActiveGame(
-            game_id=game_id,
-            game_type=game_type,
-            user_id=user_id,
-            question=question,
-            correct_answer=correct_answer,
-            started_at=datetime.now(timezone.utc),
-            level=level,
-            rule_id=rule_id,
-        )
-        self._active_games[user_id] = active_game
+        game_data = {
+            "game_id": game_id,
+            "game_type": game_type,
+            "user_id": user_id,
+            "question": question,
+            "correct_answer": correct_answer,
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "level": level,
+            "rule_id": rule_id,
+        }
+        await self._set_active_game(user_id, game_data)
 
         self.logger.info(
             "game_started",
@@ -196,21 +198,22 @@ class GameService:
         answer: str,
     ) -> dict:
         """Submit an answer for the active game."""
-        if user_id not in self._active_games:
+        active_game = await self._get_active_game(user_id)
+        if not active_game:
             raise ValueError("No active game for this user")
 
-        active_game = self._active_games[user_id]
-        game_info = GAMES[active_game.game_type]
+        game_info = GAMES[active_game["game_type"]]
 
         # Check time
-        elapsed = (datetime.now(timezone.utc) - active_game.started_at).total_seconds()
+        started_at = datetime.fromisoformat(active_game["started_at"])
+        elapsed = (datetime.now(timezone.utc) - started_at).total_seconds()
         time_bonus = max(0, 1 - elapsed / game_info["time_limit_seconds"])
 
         # Check answer
         is_correct = self._check_answer(
             answer.strip(),
-            active_game.correct_answer,
-            active_game.game_type,
+            active_game["correct_answer"],
+            active_game["game_type"],
         )
 
         # Calculate reward
@@ -219,11 +222,11 @@ class GameService:
         total_stars = base_stars + bonus_stars
 
         # Record grammar progress if we have a grammar service
-        if self.grammar_service and active_game.rule_id:
+        if self.grammar_service and active_game["rule_id"]:
             try:
                 await self.grammar_service.record_practice(
                     user_id=user_id,
-                    rule_id=active_game.rule_id,
+                    rule_id=active_game["rule_id"],
                     correct=is_correct,
                 )
             except Exception as e:
@@ -232,19 +235,19 @@ class GameService:
         # Update leaderboard
         if is_correct:
             self._update_leaderboard(
-                active_game.game_type,
+                active_game["game_type"],
                 user_id,
                 total_stars,
                 elapsed,
             )
 
         # Remove active game
-        del self._active_games[user_id]
+        await self._delete_active_game(user_id)
 
         self.logger.info(
             "game_completed",
             user_id=user_id,
-            game_type=active_game.game_type,
+            game_type=active_game["game_type"],
             is_correct=is_correct,
             stars_earned=total_stars,
             time_seconds=elapsed,
@@ -252,7 +255,7 @@ class GameService:
 
         return {
             "is_correct": is_correct,
-            "correct_answer": active_game.correct_answer,
+            "correct_answer": active_game["correct_answer"],
             "user_answer": answer,
             "stars_earned": total_stars,
             "base_stars": base_stars,

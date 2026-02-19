@@ -2,14 +2,10 @@
 
 import { Navigation } from "@/components/ui/navigation"
 import { PrefetchLinks } from "@/components/ui/PrefetchLinks"
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary"
 
 /**
- * Dashboard Layout with Prefetching
- *
- * Features:
- * - Prefetches popular routes on mount
- * - Lazy loads Navigation to reduce initial bundle
- * - Provides consistent layout structure
+ * Dashboard Layout with Error Boundary and Prefetching
  */
 
 export default function DashboardLayout({
@@ -26,8 +22,8 @@ export default function DashboardLayout({
       <Navigation />
 
       {/* Main Content */}
-      <main className="flex-1 pb-20 md:ml-20 md:pb-0">
-        {children}
+      <main className="flex-1 pb-20 md:ml-20 md:pb-0" role="main" aria-label="Hlavní obsah">
+        <ErrorBoundary>{children}</ErrorBoundary>
       </main>
     </div>
   )

@@ -72,10 +72,9 @@ class ChallengeService:
         if not daily_challenges:
             return {"error": "No daily challenges available"}
 
-        # Детерминистический выбор на основе user_id и даты
-        seed = hash(f"{user_id}:{user_date}")
-        random.seed(seed)
-        challenge = random.choice(daily_challenges)
+        # Deterministic selection using local RNG (thread-safe)
+        rng = random.Random(hash(f"{user_id}:{user_date}"))
+        challenge = rng.choice(daily_challenges)
 
         # Получаем или создаём запись прогресса
         user_challenge = await self._get_or_create_user_challenge(
