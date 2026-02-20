@@ -96,7 +96,7 @@ function ResponsePageContent() {
     const [text, setText] = useState("")
     const [translateMode, setTranslateMode] = useState(true) // Включен по умолчанию
     const [translationState, setTranslationState] = useState<TranslationState | null>(null)
-    const [targetLang, setTargetLang] = useState(user?.native_language || "ru")
+    const [targetLang, setTargetLang] = useState<string>(user?.native_language || "ru")
     const [showLangPicker, setShowLangPicker] = useState(false)
 
     useEffect(() => {
