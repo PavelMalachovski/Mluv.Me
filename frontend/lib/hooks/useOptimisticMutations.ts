@@ -429,7 +429,7 @@ export function useReviewAnswerMutation({
 // ============================================================================
 
 interface UseTranslateWordOptions {
-  targetLanguage?: "ru" | "uk"
+  targetLanguage?: string
   onSuccess?: (data: WordTranslation) => void
   onError?: (error: Error) => void
 }

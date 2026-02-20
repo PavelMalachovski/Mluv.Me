@@ -2,8 +2,6 @@
 Pydantic схемы для перевода слов.
 """
 
-from typing import Literal
-
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -13,7 +11,7 @@ class WordTranslationRequest(BaseModel):
 
     Attributes:
         word: Слово для перевода (чешское)
-        target_language: Язык перевода (ru или uk)
+        target_language: ISO 639-1 код языка для перевода
     """
 
     model_config = ConfigDict(
@@ -23,8 +21,8 @@ class WordTranslationRequest(BaseModel):
     )
 
     word: str = Field(description="Слово для перевода (чешское)")
-    target_language: Literal["ru", "uk"] = Field(
-        default="ru", description="Язык перевода"
+    target_language: str = Field(
+        default="ru", description="ISO 639-1 код языка перевода"
     )
 
 
@@ -47,7 +45,7 @@ class WordTranslationResponse(BaseModel):
 
     word: str = Field(description="Исходное слово")
     translation: str = Field(description="Перевод слова")
-    target_language: Literal["ru", "uk"] = Field(description="Язык перевода")
+    target_language: str = Field(description="ISO 639-1 код языка перевода")
     phonetics: str | None = Field(
         default=None, description="Фонетическая транскрипция"
     )

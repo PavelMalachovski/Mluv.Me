@@ -14,11 +14,66 @@ logger = structlog.get_logger(__name__)
 class TranslationService:
     """Сервис для перевода слов."""
 
-    # Маппинг языков для deep-translator
+    # Маппинг языков для deep-translator (ISO 639-1 -> deep-translator name)
+    # deep-translator's GoogleTranslator accepts ISO 639-1 codes directly,
+    # but we keep explicit mapping for documentation and validation.
     LANGUAGE_MAP = {
-        "ru": "russian",
-        "uk": "ukrainian",
-        "cs": "czech",
+        "af": "af",  # Afrikaans
+        "sq": "sq",  # Albanian
+        "ar": "ar",  # Arabic
+        "hy": "hy",  # Armenian
+        "az": "az",  # Azerbaijani
+        "be": "be",  # Belarusian
+        "bn": "bn",  # Bengali
+        "bg": "bg",  # Bulgarian
+        "zh": "zh-CN",  # Chinese (Simplified)
+        "hr": "hr",  # Croatian
+        "cs": "cs",  # Czech
+        "da": "da",  # Danish
+        "nl": "nl",  # Dutch
+        "en": "en",  # English
+        "et": "et",  # Estonian
+        "fi": "fi",  # Finnish
+        "fr": "fr",  # French
+        "ka": "ka",  # Georgian
+        "de": "de",  # German
+        "el": "el",  # Greek
+        "he": "iw",  # Hebrew
+        "hi": "hi",  # Hindi
+        "hu": "hu",  # Hungarian
+        "id": "id",  # Indonesian
+        "ga": "ga",  # Irish
+        "it": "it",  # Italian
+        "ja": "ja",  # Japanese
+        "kk": "kk",  # Kazakh
+        "ko": "ko",  # Korean
+        "ky": "ky",  # Kyrgyz
+        "lo": "lo",  # Lao
+        "lv": "lv",  # Latvian
+        "lt": "lt",  # Lithuanian
+        "mn": "mn",  # Mongolian
+        "my": "my",  # Myanmar
+        "no": "no",  # Norwegian
+        "fa": "fa",  # Persian
+        "pl": "pl",  # Polish
+        "pt": "pt",  # Portuguese
+        "pa": "pa",  # Punjabi
+        "ro": "ro",  # Romanian
+        "ru": "ru",  # Russian
+        "sr": "sr",  # Serbian
+        "sk": "sk",  # Slovak
+        "sl": "sl",  # Slovenian
+        "es": "es",  # Spanish
+        "su": "su",  # Sundanese
+        "sw": "sw",  # Swahili
+        "sv": "sv",  # Swedish
+        "tl": "tl",  # Tagalog
+        "tg": "tg",  # Tajik
+        "th": "th",  # Thai
+        "tr": "tr",  # Turkish
+        "uk": "uk",  # Ukrainian
+        "uz": "uz",  # Uzbek
+        "vi": "vi",  # Vietnamese
     }
 
     # Cache TTL: 7 days
@@ -48,11 +103,10 @@ class TranslationService:
         Raises:
             ValueError: Если язык не поддерживается
         """
+        # If not in explicit map, try using the code directly
+        # (Google Translate accepts most ISO 639-1 codes)
         if target_language not in self.LANGUAGE_MAP:
-            raise ValueError(
-                f"Unsupported target language: {target_language}. "
-                f"Supported: {list(self.LANGUAGE_MAP.keys())}"
-            )
+            self.log.info("using_raw_language_code", target_language=target_language)
 
         # Check cache first
         cache_key = f"translation:{word.lower()}:{target_language}"
@@ -63,7 +117,7 @@ class TranslationService:
 
         try:
             # Создаем переводчик: чешский -> целевой язык
-            target_lang = self.LANGUAGE_MAP[target_language]
+            target_lang = self.LANGUAGE_MAP.get(target_language, target_language)
             translator = GoogleTranslator(source="cs", target=target_lang)
 
             # Переводим слово (deep-translator синхронный, запускаем в executor)

@@ -213,7 +213,7 @@ class APIClient {
   }
 
   // Translation endpoint
-  async translateWord(word: string, targetLanguage: "ru" | "uk" = "ru") {
+  async translateWord(word: string, targetLanguage: string = "ru") {
     const response = await this.client.post('/api/v1/words/translate', {
       word,
       target_language: targetLanguage,
