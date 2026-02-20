@@ -99,7 +99,7 @@ class APIClient {
     username?: string;
     first_name: string;
     last_name?: string;
-    native_language: 'ru' | 'uk';
+    native_language: string;
     level: 'beginner' | 'intermediate' | 'advanced' | 'native';
   }) {
     const response = await this.client.post('/api/v1/users', userData);
@@ -218,6 +218,16 @@ class APIClient {
       word,
       target_language: targetLanguage,
     });
+    return response.data;
+  }
+
+  // Re-translate all saved words to a new language
+  async retranslateWords(telegramId: number, targetLanguage: string) {
+    const response = await this.client.post(
+      `/api/v1/words/${telegramId}/retranslate`,
+      null,
+      { params: { target_language: targetLanguage } }
+    );
     return response.data;
   }
 

@@ -515,7 +515,17 @@ export default function SettingsPage() {
 
                 <NativeLanguagePicker
                   currentLanguage={user?.native_language || "ru"}
-                  onSelect={(code) => updateProfileMutation.mutate({ native_language: code })}
+                  onSelect={(code) => {
+                    updateProfileMutation.mutate({ native_language: code })
+                    // Re-translate all saved words to the new language
+                    if (user?.telegram_id) {
+                      apiClient.retranslateWords(user.telegram_id, code)
+                        .then(() => {
+                          queryClient.invalidateQueries({ queryKey: ["saved-words"] })
+                        })
+                        .catch((err) => console.error("Retranslate error:", err))
+                    }
+                  }}
                   disabled={updateProfileMutation.isPending}
                 />
               </div>

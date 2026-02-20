@@ -229,6 +229,65 @@ async def delete_word(
 
 
 @router.post(
+    "/{telegram_id}/retranslate",
+    summary="Re-translate all saved words",
+    description="Re-translate all saved words to a new target language",
+)
+async def retranslate_words(
+    telegram_id: int,
+    target_language: str,
+    session: AsyncSession = Depends(get_session),
+    translation_service: TranslationService = Depends(get_translation_service),
+):
+    """
+    Re-translate all saved words for a user to a new target language.
+    Called when user changes their native language in settings.
+    """
+    user_repo = UserRepository(session)
+    user = await user_repo.get_by_telegram_id(telegram_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with telegram_id {telegram_id} not found",
+        )
+
+    word_repo = SavedWordRepository(session)
+    words = await word_repo.get_by_user_id(user.id, limit=500)
+
+    if not words:
+        return {"status": "success", "updated": 0}
+
+    updated_count = 0
+    for word in words:
+        try:
+            result = await translation_service.translate_word(
+                word.word_czech, target_language
+            )
+            if result.get("translation"):
+                word.translation = result["translation"]
+                updated_count += 1
+        except Exception as e:
+            logger.warning(
+                "retranslate_word_failed",
+                word=word.word_czech,
+                error=str(e),
+            )
+
+    await session.commit()
+
+    logger.info(
+        "words_retranslated",
+        telegram_id=telegram_id,
+        target_language=target_language,
+        total=len(words),
+        updated=updated_count,
+    )
+
+    return {"status": "success", "updated": updated_count, "total": len(words)}
+
+
+@router.post(
     "/translate",
     response_model=WordTranslationResponse,
     summary="Перевести слово",

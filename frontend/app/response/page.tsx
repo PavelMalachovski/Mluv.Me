@@ -219,10 +219,12 @@ function ResponsePageContent() {
                 currentLang={targetLang}
                 onSelect={(code) => {
                     setTargetLang(code)
-                    // Also persist to user profile
+                    // Also persist to user profile and re-translate saved words
                     if (user) {
                         apiClient.patch(`/api/v1/users/${user.id}`, { native_language: code })
                             .then((updatedUser: any) => updateUser(updatedUser))
+                            .catch(() => {})
+                        apiClient.retranslateWords(user.telegram_id, code)
                             .catch(() => {})
                     }
                 }}

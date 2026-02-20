@@ -382,7 +382,7 @@ export default function PracticePage() {
                               className="flex items-center gap-2 text-xs bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
                             >
                               <FileText className="h-4 w-4" />
-                              {msg.showTranscript ? "Скрыть текст" : "Показать текст"}
+                              {msg.showTranscript ? "Skrýt text" : "Zobrazit text"}
                             </Button>
 
                             <Button
@@ -395,20 +395,20 @@ export default function PracticePage() {
                                 }`}
                             >
                               <Languages className="h-4 w-4" />
-                              {msg.translateMode ? "Выключить перевод" : "Translate by word"}
+                              {msg.translateMode ? "Vypnout překlad" : "Překlad po slovech"}
                             </Button>
                           </div>
 
                           {msg.showTranscript && msg.response.honzik_transcript && (
                             <div className="rounded-md bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 p-3 text-sm text-gray-800 dark:text-gray-200">
-                              <p className="font-semibold mb-2 text-xs text-gray-600 dark:text-gray-400">📝 Текст ответа:</p>
+                              <p className="font-semibold mb-2 text-xs text-gray-600 dark:text-gray-400">📝 Text odpovědi:</p>
                               <p className="whitespace-pre-wrap leading-relaxed">{msg.response.honzik_transcript}</p>
                             </div>
                           )}
 
                           {msg.translateMode && (
                             <div className="rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-2 text-xs text-yellow-800 dark:text-yellow-200">
-                              💡 Нажмите на любое слово, чтобы увидеть перевод
+                              💡 Klikněte na libovolné slovo pro zobrazení překladu
                             </div>
                           )}
                         </div>

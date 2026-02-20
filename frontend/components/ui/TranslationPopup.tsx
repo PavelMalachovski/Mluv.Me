@@ -111,7 +111,7 @@ export function TranslationPopup({
                 {isLoading ? (
                     <div className="flex items-center gap-2 text-gray-500">
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-500" />
-                        <span>Переводим...</span>
+                        <span>Překládám...</span>
                     </div>
                 ) : translation ? (
                     <div className="space-y-2">
@@ -120,7 +120,7 @@ export function TranslationPopup({
                         </p>
                     </div>
                 ) : (
-                    <p className="text-gray-500">Перевод не найден</p>
+                    <p className="text-gray-500">Překlad nenalezen</p>
                 )}
             </div>
 
@@ -134,7 +134,7 @@ export function TranslationPopup({
                         className="w-full flex items-center justify-center gap-2"
                     >
                         <Bookmark className="h-4 w-4" />
-                        Сохранить в словарь
+                        Uložit do slovníku
                     </Button>
                 </div>
             )}
