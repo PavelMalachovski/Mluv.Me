@@ -9,44 +9,124 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from bot.localization import get_text
 
 
-def get_native_language_keyboard() -> InlineKeyboardMarkup:
-    """
-    Клавиатура выбора родного языка (для объяснений ошибок).
+# Full list of supported native languages
+# Pinned first, then alphabetical by Czech name
+NATIVE_LANGUAGES = [
+    # --- Pinned ---
+    ("ru", "🇷🇺 Ruština"),
+    ("uk", "🇺🇦 Ukrajinština"),
+    ("pl", "🇵🇱 Polština"),
+    ("vi", "🇻🇳 Vietnamština"),
+    ("hi", "🇮🇳 Hindština"),
+    # --- Alphabetical ---
+    ("af", "🇿🇦 Afrikánština"),
+    ("sq", "🇦🇱 Albánština"),
+    ("en", "🇬🇧 Angličtina"),
+    ("ar", "🇸🇦 Arabština"),
+    ("hy", "🇦🇲 Arménština"),
+    ("az", "🇦🇿 Ázerbájdžánština"),
+    ("be", "🇧🇾 Běloruština"),
+    ("bn", "🇧🇩 Bengálština"),
+    ("bg", "🇧🇬 Bulharština"),
+    ("zh", "🇨🇳 Čínština"),
+    ("da", "🇩🇰 Dánština"),
+    ("et", "🇪🇪 Estonština"),
+    ("fi", "🇫🇮 Finština"),
+    ("fr", "🇫🇷 Francouzština"),
+    ("ka", "🇬🇪 Gruzínština"),
+    ("he", "🇮🇱 Hebrejština"),
+    ("nl", "🇳🇱 Holandština"),
+    ("hr", "🇭🇷 Chorvatština"),
+    ("id", "🇮🇩 Indonéština"),
+    ("ga", "🇮🇪 Irština"),
+    ("it", "🇮🇹 Italština"),
+    ("ja", "🇯🇵 Japonština"),
+    ("kk", "🇰🇿 Kazaština"),
+    ("ko", "🇰🇷 Korejština"),
+    ("ky", "🇰🇬 Kyrgyzština"),
+    ("lo", "🇱🇦 Laoština"),
+    ("lt", "🇱🇹 Litevština"),
+    ("lv", "🇱🇻 Lotyšština"),
+    ("hu", "🇭🇺 Maďarština"),
+    ("mn", "🇲🇳 Mongolština"),
+    ("my", "🇲🇲 Myanmarština"),
+    ("de", "🇩🇪 Němčina"),
+    ("no", "🇳🇴 Norština"),
+    ("pa", "🇮🇳 Paňdžábština"),
+    ("fa", "🇮🇷 Perština"),
+    ("pt", "🇵🇹 Portugalština"),
+    ("ro", "🇷🇴 Rumunština"),
+    ("el", "🇬🇷 Řečtina"),
+    ("sk", "🇸🇰 Slovenčina"),
+    ("sl", "🇸🇮 Slovinština"),
+    ("sr", "🇷🇸 Srbština"),
+    ("su", "🇮🇩 Sundánština"),
+    ("sw", "🇰🇪 Svahilština"),
+    ("es", "🇪🇸 Španělština"),
+    ("sv", "🇸🇪 Švédština"),
+    ("tg", "🇹🇯 Tádžičtina"),
+    ("tl", "🇵🇭 Tagalogština"),
+    ("th", "🇹🇭 Thajština"),
+    ("tr", "🇹🇷 Turečtina"),
+    ("uz", "🇺🇿 Uzbečtina"),
+]
 
-    Language Immersion: UI остается на чешском.
+
+def get_native_language_keyboard(page: int = 0, per_page: int = 8) -> InlineKeyboardMarkup:
+    """
+    Клавиатура выбора родного языка с пагинацией.
+
+    Page 0 shows pinned languages (first 5).
+    Subsequent pages show remaining languages in chunks.
 
     Returns:
         Inline клавиатура
     """
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=get_text("native_russian"),  # 🇷🇺 Ruština
-                    callback_data="native:ru",
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text=get_text("native_ukrainian"),  # 🇺🇦 Ukrajinština
-                    callback_data="native:uk",
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text=get_text("native_polish"),  # 🇵🇱 Polština
-                    callback_data="native:pl",
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text=get_text("native_slovak"),  # 🇸🇰 Slovenština
-                    callback_data="native:sk",
-                )
-            ],
+    pinned_count = 5
+
+    if page == 0:
+        # Show pinned languages
+        langs = NATIVE_LANGUAGES[:pinned_count]
+        has_more = len(NATIVE_LANGUAGES) > pinned_count
+    else:
+        start = pinned_count + (page - 1) * per_page
+        end = start + per_page
+        langs = NATIVE_LANGUAGES[start:end]
+        has_more = end < len(NATIVE_LANGUAGES)
+
+    # Build 2-column layout
+    rows: list[list[InlineKeyboardButton]] = []
+    for i in range(0, len(langs), 2):
+        row = [
+            InlineKeyboardButton(
+                text=langs[i][1],
+                callback_data=f"native:{langs[i][0]}",
+            )
         ]
-    )
-    return keyboard
+        if i + 1 < len(langs):
+            row.append(
+                InlineKeyboardButton(
+                    text=langs[i + 1][1],
+                    callback_data=f"native:{langs[i + 1][0]}",
+                )
+            )
+        rows.append(row)
+
+    # Navigation buttons
+    nav_row: list[InlineKeyboardButton] = []
+    if page > 0:
+        nav_row.append(
+            InlineKeyboardButton(text="◀️ Zpět", callback_data=f"native_page:{page - 1}")
+        )
+    if has_more:
+        label = "Další jazyky ▶️" if page == 0 else "Další ▶️"
+        nav_row.append(
+            InlineKeyboardButton(text=label, callback_data=f"native_page:{page + 1}")
+        )
+    if nav_row:
+        rows.append(nav_row)
+
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def get_language_keyboard() -> InlineKeyboardMarkup:

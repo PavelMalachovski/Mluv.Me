@@ -107,6 +107,25 @@ async def native_language_selected_handler(
     logger.info("native_language_selected", telegram_id=telegram_id, native_language=native_language)
 
 
+@router.callback_query(F.data.startswith("native_page:"))
+async def native_language_page_handler(
+    callback: CallbackQuery, api_client: APIClient
+) -> None:
+    """
+    Обработчик пагинации списка родных языков.
+
+    Args:
+        callback: Callback query от кнопки
+        api_client: API клиент
+    """
+    page = int(callback.data.split(":")[1])
+
+    await callback.message.edit_reply_markup(
+        reply_markup=get_native_language_keyboard(page=page),
+    )
+    await callback.answer()
+
+
 # Backward compatibility: обработка старого формата lang:
 @router.callback_query(F.data.startswith("lang:"))
 async def language_selected_handler_legacy(

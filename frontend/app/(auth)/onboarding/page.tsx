@@ -4,11 +4,11 @@
  * Improved Onboarding Flow
  *
  * Multi-step wizard with:
- * - Native language selection
  * - Czech level selection
  * - Conversation style selection
  * - Ready to start screen
  *
+ * Native language is now configured in Settings.
  * Uses CS_TEXTS for Czech localization.
  */
 
@@ -20,21 +20,14 @@ import CS_TEXTS from "@/lib/localization/cs";
 import { ChevronRight, ChevronLeft, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Step = "native" | "level" | "style" | "ready";
+type Step = "level" | "style" | "ready";
 
-const STEPS: Step[] = ["native", "level", "style", "ready"];
+const STEPS: Step[] = ["level", "style", "ready"];
 
 interface OnboardingProps {
     telegramId: number;
     firstName: string;
 }
-
-const NATIVE_LANGUAGES = [
-    { code: "ru", flag: "🇷🇺", name: "Ruština", native: "Русский" },
-    { code: "uk", flag: "🇺🇦", name: "Ukrajinština", native: "Українська" },
-    { code: "pl", flag: "🇵🇱", name: "Polština", native: "Polski" },
-    { code: "sk", flag: "🇸🇰", name: "Slovenština", native: "Slovenčina" },
-];
 
 const LEVELS = [
     { code: "beginner", emoji: "🌱", label: CS_TEXTS.settings.levelBeginner, desc: "Základní fráze a slovíčka" },
@@ -54,12 +47,12 @@ export default function OnboardingPage() {
     const user = useAuthStore((state) => state.user);
     const updateUser = useAuthStore((state) => state.updateUser);
 
-    const [currentStep, setCurrentStep] = useState<Step>("native");
+    const [currentStep, setCurrentStep] = useState<Step>("level");
     const [direction, setDirection] = useState<"forward" | "backward">("forward");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Form state
-    const [nativeLanguage, setNativeLanguage] = useState<string>("ru");
+    // Form state — native language is now set in Settings, default to "ru"
+    const nativeLanguage = user?.native_language || "ru";
     const [level, setLevel] = useState<string>("beginner");
     const [style, setStyle] = useState<string>("friendly");
 
@@ -136,28 +129,6 @@ export default function OnboardingPage() {
                         direction === "forward" ? "animate-slide-in-right" : "animate-slide-in-right"
                     )}
                 >
-                    {/* Native Language Step */}
-                    {currentStep === "native" && (
-                        <StepContainer
-                            title={CS_TEXTS.onboarding.nativeLanguage.title}
-                            subtitle={CS_TEXTS.onboarding.nativeLanguage.subtitle}
-                        >
-                            <div className="grid grid-cols-2 gap-3">
-                                {NATIVE_LANGUAGES.map((lang) => (
-                                    <OptionCard
-                                        key={lang.code}
-                                        selected={nativeLanguage === lang.code}
-                                        onClick={() => setNativeLanguage(lang.code)}
-                                    >
-                                        <span className="text-3xl mb-2">{lang.flag}</span>
-                                        <span className="font-medium">{lang.name}</span>
-                                        <span className="text-sm text-gray-500">{lang.native}</span>
-                                    </OptionCard>
-                                ))}
-                            </div>
-                        </StepContainer>
-                    )}
-
                     {/* Level Step */}
                     {currentStep === "level" && (
                         <StepContainer
@@ -222,13 +193,6 @@ export default function OnboardingPage() {
 
                                 {/* Summary */}
                                 <div className="bg-white/10 rounded-xl p-4 space-y-2 text-white">
-                                    <div className="flex justify-between">
-                                        <span className="opacity-70">{CS_TEXTS.settings.nativeLanguage}:</span>
-                                        <span className="font-medium">
-                                            {NATIVE_LANGUAGES.find((l) => l.code === nativeLanguage)?.flag}{" "}
-                                            {NATIVE_LANGUAGES.find((l) => l.code === nativeLanguage)?.name}
-                                        </span>
-                                    </div>
                                     <div className="flex justify-between">
                                         <span className="opacity-70">{CS_TEXTS.settings.levelSection}:</span>
                                         <span className="font-medium">

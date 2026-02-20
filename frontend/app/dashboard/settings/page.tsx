@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
@@ -22,7 +22,82 @@ import {
   Moon,
   Sun,
   Globe,
+  Search,
 } from "lucide-react"
+
+// ---------- Full language list ----------
+// Pinned languages come first, then the rest alphabetically by Czech name
+
+interface NativeLang {
+  code: string
+  flag: string
+  name: string      // Czech name
+  native: string    // Name in the language itself
+  pinned?: boolean
+}
+
+const PINNED_LANGUAGES: NativeLang[] = [
+  { code: "ru", flag: "🇷🇺", name: "Ruština",       native: "Русский",    pinned: true },
+  { code: "uk", flag: "🇺🇦", name: "Ukrajinština",  native: "Українська", pinned: true },
+  { code: "pl", flag: "🇵🇱", name: "Polština",      native: "Polski",     pinned: true },
+  { code: "vi", flag: "🇻🇳", name: "Vietnamština",  native: "Tiếng Việt", pinned: true },
+  { code: "hi", flag: "🇮🇳", name: "Hindština",     native: "हिन्दी",       pinned: true },
+]
+
+const OTHER_LANGUAGES: NativeLang[] = [
+  { code: "af", flag: "🇿🇦", name: "Afrikánština",     native: "Afrikaans" },
+  { code: "sq", flag: "🇦🇱", name: "Albánština",       native: "Shqip" },
+  { code: "en", flag: "🇬🇧", name: "Angličtina",       native: "English" },
+  { code: "ar", flag: "🇸🇦", name: "Arabština",        native: "العربية" },
+  { code: "hy", flag: "🇦🇲", name: "Arménština",       native: "Հայերեն" },
+  { code: "az", flag: "🇦🇿", name: "Ázerbájdžánština", native: "Azərbaycan" },
+  { code: "be", flag: "🇧🇾", name: "Běloruština",      native: "Беларуская" },
+  { code: "bn", flag: "🇧🇩", name: "Bengálština",      native: "বাংলা" },
+  { code: "bg", flag: "🇧🇬", name: "Bulharština",      native: "Български" },
+  { code: "zh", flag: "🇨🇳", name: "Čínština",         native: "中文" },
+  { code: "da", flag: "🇩🇰", name: "Dánština",         native: "Dansk" },
+  { code: "et", flag: "🇪🇪", name: "Estonština",       native: "Eesti" },
+  { code: "fi", flag: "🇫🇮", name: "Finština",         native: "Suomi" },
+  { code: "fr", flag: "🇫🇷", name: "Francouzština",    native: "Français" },
+  { code: "ka", flag: "🇬🇪", name: "Gruzínština",      native: "ქართული" },
+  { code: "he", flag: "🇮🇱", name: "Hebrejština",      native: "עברית" },
+  { code: "nl", flag: "🇳🇱", name: "Holandština",      native: "Nederlands" },
+  { code: "hr", flag: "🇭🇷", name: "Chorvatština",     native: "Hrvatski" },
+  { code: "id", flag: "🇮🇩", name: "Indonéština",      native: "Bahasa Indonesia" },
+  { code: "ga", flag: "🇮🇪", name: "Irština",          native: "Gaeilge" },
+  { code: "it", flag: "🇮🇹", name: "Italština",        native: "Italiano" },
+  { code: "ja", flag: "🇯🇵", name: "Japonština",       native: "日本語" },
+  { code: "kk", flag: "🇰🇿", name: "Kazaština",        native: "Қазақша" },
+  { code: "ko", flag: "🇰🇷", name: "Korejština",       native: "한국어" },
+  { code: "ky", flag: "🇰🇬", name: "Kyrgyzština",      native: "Кыргызча" },
+  { code: "lo", flag: "🇱🇦", name: "Laoština",         native: "ລາວ" },
+  { code: "lt", flag: "🇱🇹", name: "Litevština",       native: "Lietuvių" },
+  { code: "lv", flag: "🇱🇻", name: "Lotyšština",       native: "Latviešu" },
+  { code: "hu", flag: "🇭🇺", name: "Maďarština",       native: "Magyar" },
+  { code: "mn", flag: "🇲🇳", name: "Mongolština",      native: "Монгол" },
+  { code: "my", flag: "🇲🇲", name: "Myanmarština",     native: "မြန်မာ" },
+  { code: "de", flag: "🇩🇪", name: "Němčina",          native: "Deutsch" },
+  { code: "no", flag: "🇳🇴", name: "Norština",         native: "Norsk" },
+  { code: "pa", flag: "🇮🇳", name: "Paňdžábština",     native: "ਪੰਜਾਬੀ" },
+  { code: "fa", flag: "🇮🇷", name: "Perština",         native: "فارسی" },
+  { code: "pt", flag: "🇵🇹", name: "Portugalština",     native: "Português" },
+  { code: "ro", flag: "🇷🇴", name: "Rumunština",       native: "Română" },
+  { code: "el", flag: "🇬🇷", name: "Řečtina",          native: "Ελληνικά" },
+  { code: "sk", flag: "🇸🇰", name: "Slovenčina",       native: "Slovenčina" },
+  { code: "sl", flag: "🇸🇮", name: "Slovinština",      native: "Slovenščina" },
+  { code: "sr", flag: "🇷🇸", name: "Srbština",         native: "Српски" },
+  { code: "su", flag: "🇮🇩", name: "Sundánština",      native: "Basa Sunda" },
+  { code: "sw", flag: "🇰🇪", name: "Svahilština",      native: "Kiswahili" },
+  { code: "es", flag: "🇪🇸", name: "Španělština",      native: "Español" },
+  { code: "sv", flag: "🇸🇪", name: "Švédština",        native: "Svenska" },
+  { code: "tg", flag: "🇹🇯", name: "Tádžičtina",      native: "Тоҷикӣ" },
+  { code: "tl", flag: "🇵🇭", name: "Tagalogština",     native: "Tagalog" },
+  { code: "th", flag: "🇹🇭", name: "Thajština",        native: "ไทย" },
+  { code: "tr", flag: "🇹🇷", name: "Turečtina",        native: "Türkçe" },
+  { code: "uz", flag: "🇺🇿", name: "Uzbečtina",        native: "O'zbek" },
+]
+
+const ALL_NATIVE_LANGUAGES: NativeLang[] = [...PINNED_LANGUAGES, ...OTHER_LANGUAGES]
 
 interface UserSettings {
   conversation_style: string
@@ -438,47 +513,11 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <button
-                    onClick={() => updateProfileMutation.mutate({ native_language: "ru" })}
-                    disabled={updateProfileMutation.isPending}
-                    className={`rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${user?.native_language === "ru"
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
-                      }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">🇷🇺</span>
-                        <div>
-                          <div className="font-medium text-foreground">Ruština</div>
-                          <div className="text-sm text-muted-foreground">Русский</div>
-                        </div>
-                      </div>
-                      {user?.native_language === "ru" && <Check className="h-5 w-5 text-primary" />}
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => updateProfileMutation.mutate({ native_language: "uk" })}
-                    disabled={updateProfileMutation.isPending}
-                    className={`rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${user?.native_language === "uk"
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
-                      }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">🇺🇦</span>
-                        <div>
-                          <div className="font-medium text-foreground">Ukrajinština</div>
-                          <div className="text-sm text-muted-foreground">Українська</div>
-                        </div>
-                      </div>
-                      {user?.native_language === "uk" && <Check className="h-5 w-5 text-primary" />}
-                    </div>
-                  </button>
-                </div>
+                <NativeLanguagePicker
+                  currentLanguage={user?.native_language || "ru"}
+                  onSelect={(code) => updateProfileMutation.mutate({ native_language: code })}
+                  disabled={updateProfileMutation.isPending}
+                />
               </div>
             </TabsContent>
 
@@ -538,7 +577,7 @@ export default function SettingsPage() {
                     </label>
                     <input
                       type="text"
-                      value={user.native_language === "ru" ? "Ruština" : "Ukrajinština"}
+                      value={ALL_NATIVE_LANGUAGES.find(l => l.code === user.native_language)?.name || user.native_language}
                       disabled
                       className="w-full rounded-xl border border-border bg-cream-alt px-4 py-2 text-sm text-foreground"
                     />
@@ -570,5 +609,156 @@ export default function SettingsPage() {
         </div>
       </div>
     </>
+  )
+}
+
+// ---------- Native Language Picker Component ----------
+
+function NativeLanguagePicker({
+  currentLanguage,
+  onSelect,
+  disabled,
+}: {
+  currentLanguage: string
+  onSelect: (code: string) => void
+  disabled: boolean
+}) {
+  const [search, setSearch] = useState("")
+  const [showAll, setShowAll] = useState(false)
+
+  const lowerSearch = search.toLowerCase()
+
+  const filteredPinned = PINNED_LANGUAGES.filter(
+    (l) =>
+      !search ||
+      l.name.toLowerCase().includes(lowerSearch) ||
+      l.native.toLowerCase().includes(lowerSearch) ||
+      l.code.toLowerCase().includes(lowerSearch)
+  )
+
+  const filteredOther = OTHER_LANGUAGES.filter(
+    (l) =>
+      !search ||
+      l.name.toLowerCase().includes(lowerSearch) ||
+      l.native.toLowerCase().includes(lowerSearch) ||
+      l.code.toLowerCase().includes(lowerSearch)
+  )
+
+  // Current language info for collapsed view
+  const currentLang = ALL_NATIVE_LANGUAGES.find((l) => l.code === currentLanguage)
+
+  return (
+    <div className="space-y-3">
+      {/* Current selection / toggle button */}
+      <button
+        onClick={() => setShowAll(!showAll)}
+        className="w-full rounded-xl border-2 border-primary bg-primary/10 p-4 text-left transition-all"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{currentLang?.flag || "🌐"}</span>
+            <div>
+              <div className="font-medium text-foreground">{currentLang?.name || currentLanguage}</div>
+              <div className="text-sm text-muted-foreground">{currentLang?.native}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Check className="h-5 w-5 text-primary" />
+            <span className="text-xs text-muted-foreground">{showAll ? "▲" : "▼"}</span>
+          </div>
+        </div>
+      </button>
+
+      {showAll && (
+        <>
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Hledat jazyk..."
+              className="w-full rounded-xl border border-border bg-white dark:bg-gray-800 pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          {/* Pinned languages */}
+          {filteredPinned.length > 0 && (
+            <div className="grid grid-cols-2 gap-2">
+              {filteredPinned.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => {
+                    onSelect(lang.code)
+                    setShowAll(false)
+                    setSearch("")
+                  }}
+                  disabled={disabled}
+                  className={`rounded-xl border-2 p-3 text-left transition-all disabled:opacity-50 ${
+                    currentLanguage === lang.code
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{lang.flag}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-sm text-foreground truncate">{lang.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{lang.native}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Divider */}
+          {filteredPinned.length > 0 && filteredOther.length > 0 && (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs text-muted-foreground">Všechny jazyky</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+          )}
+
+          {/* All other languages */}
+          {filteredOther.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 max-h-[320px] overflow-y-auto pr-1">
+              {filteredOther.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => {
+                    onSelect(lang.code)
+                    setShowAll(false)
+                    setSearch("")
+                  }}
+                  disabled={disabled}
+                  className={`rounded-xl border-2 p-3 text-left transition-all disabled:opacity-50 ${
+                    currentLanguage === lang.code
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{lang.flag}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-sm text-foreground truncate">{lang.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{lang.native}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {filteredPinned.length === 0 && filteredOther.length === 0 && (
+            <p className="text-center text-sm text-muted-foreground py-4">
+              Jazyk nenalezen
+            </p>
+          )}
+        </>
+      )}
+    </div>
   )
 }

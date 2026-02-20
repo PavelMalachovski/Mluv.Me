@@ -428,6 +428,19 @@ async def native_language_changed(callback: CallbackQuery, api_client: APIClient
     logger.info("native_language_changed", telegram_id=telegram_id, native_language=native_language)
 
 
+@router.callback_query(F.data.startswith("native_page:"))
+async def native_language_page_changed(callback: CallbackQuery, api_client: APIClient) -> None:
+    """
+    Пагинация списка родных языков в настройках.
+    """
+    page = int(callback.data.split(":")[1])
+
+    await callback.message.edit_reply_markup(
+        reply_markup=get_native_language_keyboard(page=page),
+    )
+    await callback.answer()
+
+
 @router.message(Command("voice_speed"))
 async def command_voice_speed(message: Message, api_client: APIClient) -> None:
     """
