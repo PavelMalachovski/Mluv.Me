@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
@@ -334,14 +335,14 @@ export default function SettingsPage() {
                     {
                       value: "honzik",
                       label: "Honzík",
-                      emoji: "👨‍🎓",
+                      avatar: "/images/mascot/honzik-avatar.png",
                       description: "Veselý kamařád, tykání, široké zájmy",
                       detail: "Kultura, sport, jídlo, cestování po Česku"
                     },
                     {
                       value: "novakova",
                       label: "Paní Nováková",
-                      emoji: "👩‍💼",
+                      avatar: "/images/mascot/novakova-avatar.png",
                       description: "Profesionální úřednice, vykání, spisovná čeština",
                       detail: "Úřady, dokumenty, formální komunikace"
                     },
@@ -357,7 +358,13 @@ export default function SettingsPage() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <span className="text-2xl">{char.emoji}</span>
+                          <Image
+                            src={char.avatar}
+                            alt={char.label}
+                            width={48}
+                            height={48}
+                            className="rounded-full"
+                          />
                           <div>
                             <div className="font-medium text-foreground">{char.label}</div>
                             <div className="text-sm text-muted-foreground">{char.description}</div>
