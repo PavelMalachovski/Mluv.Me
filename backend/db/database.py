@@ -152,6 +152,17 @@ def get_session_maker() -> async_sessionmaker[AsyncSession]:
     return _async_session_maker
 
 
+def AsyncSessionLocal() -> AsyncSession:
+    """
+    Create a new async session (shortcut for Celery tasks).
+
+    Usage:
+        async with AsyncSessionLocal() as db:
+            ...
+    """
+    return get_session_maker()()
+
+
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency для получения database session в FastAPI.
