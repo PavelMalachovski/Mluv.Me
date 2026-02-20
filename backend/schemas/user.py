@@ -89,6 +89,7 @@ class UserSettingsUpdate(BaseModel):
     corrections_level: Literal["minimal", "balanced", "detailed"] | None = None
     timezone: str | None = None
     notifications_enabled: bool | None = None
+    character: Literal["honzik", "novakova"] | None = None
 
 
 class UserSettingsResponse(BaseModel):
@@ -108,6 +109,7 @@ class UserSettingsResponse(BaseModel):
     corrections_level: Literal["minimal", "balanced", "detailed"]
     timezone: str
     notifications_enabled: bool
+    character: Literal["honzik", "novakova"] = "honzik"
 
 
 

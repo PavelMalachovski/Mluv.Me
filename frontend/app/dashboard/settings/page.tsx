@@ -104,6 +104,7 @@ interface UserSettings {
   voice_speed: string
   corrections_level: string
   notifications_enabled: boolean
+  character: string
 }
 
 export default function SettingsPage() {
@@ -316,6 +317,62 @@ export default function SettingsPage() {
                 </div>
               </div>
 
+              {/* Character Selection */}
+              <div className="illustrated-card p-6">
+                <div className="mb-6 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30">
+                    <User className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">Postava</h3>
+                    <p className="text-sm text-muted-foreground">S kým chceš mluvit</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {[
+                    {
+                      value: "honzik",
+                      label: "Honzík",
+                      emoji: "👨‍🎓",
+                      description: "Veselý kamařád, tykání, široké zájmy",
+                      detail: "Kultura, sport, jídlo, cestování po Česku"
+                    },
+                    {
+                      value: "novakova",
+                      label: "Paní Nováková",
+                      emoji: "👩‍💼",
+                      description: "Profesionální úřednice, vykání, spisovná čeština",
+                      detail: "Úřady, dokumenty, formální komunikace"
+                    },
+                  ].map((char) => (
+                    <button
+                      key={char.value}
+                      onClick={() => updateSettingsMutation.mutate({ character: char.value })}
+                      disabled={updateSettingsMutation.isPending}
+                      className={`w-full rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${(settings?.character || "honzik") === char.value
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
+                        }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{char.emoji}</span>
+                          <div>
+                            <div className="font-medium text-foreground">{char.label}</div>
+                            <div className="text-sm text-muted-foreground">{char.description}</div>
+                            <div className="text-xs text-muted-foreground/70">{char.detail}</div>
+                          </div>
+                        </div>
+                        {(settings?.character || "honzik") === char.value && (
+                          <Check className="h-5 w-5 text-primary" />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Conversation Style */}
               <div className="illustrated-card p-6">
                 <div className="mb-6 flex items-center gap-3">
@@ -324,7 +381,7 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">Styl konverzace</h3>
-                    <p className="text-sm text-muted-foreground">Osobnost Honzíka</p>
+                    <p className="text-sm text-muted-foreground">Osobnost postavy</p>
                   </div>
                 </div>
 
@@ -370,7 +427,7 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">Rychlost hlasu</h3>
-                    <p className="text-sm text-muted-foreground">Rychlost řeči Honzíka</p>
+                    <p className="text-sm text-muted-foreground">Rychlost řeči postavy</p>
                   </div>
                 </div>
 

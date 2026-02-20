@@ -231,6 +231,14 @@ class UserSettings(Base):
         comment="Показывать в публичном лидерборде"
     )
 
+    character: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="honzik",
+        server_default="honzik",
+        comment="Vybraná postava pro konverzaci (honzik, novakova)"
+    )
+
     # Relationship
     user: Mapped["User"] = relationship("User", back_populates="settings")
 
@@ -245,6 +253,7 @@ class UserSettings(Base):
             "timezone": self.timezone,
             "notifications_enabled": self.notifications_enabled,
             "leaderboard_visible": self.leaderboard_visible,
+            "character": self.character,
         }
 
     def __repr__(self) -> str:

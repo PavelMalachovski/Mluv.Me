@@ -15,6 +15,7 @@ from backend.db.repositories import (
 from backend.services.honzik_personality import HonzikPersonality
 from backend.services.gamification import GamificationService
 from backend.services.openai_client import OpenAIClient
+from backend.config import Settings, get_settings
 from backend.routers.web_auth import get_authenticated_user
 
 router = APIRouter(prefix="/api/v1/web/lessons", tags=["web_lessons"])
@@ -86,9 +87,12 @@ async def process_text_message(
         for msg in reversed(recent_messages)
     ]
 
-    # Process with Honzík
-    openai_client = OpenAIClient()
+    # Process with character (Honzík or paní Nováková)
+    settings_obj = get_settings()
+    openai_client = OpenAIClient(settings_obj)
     honzik = HonzikPersonality(openai_client)
+
+    character = settings.character if settings else "honzik"
 
     response = await honzik.generate_response(
         user_text=request.text,
@@ -96,7 +100,8 @@ async def process_text_message(
         level=user.level,
         corrections_level=settings.corrections_level if settings else "balanced",
         native_language=user.native_language,
-        conversation_history=conversation_history
+        conversation_history=conversation_history,
+        character=character,
     )
 
     # Save user message

@@ -1,17 +1,19 @@
 """
-Личность Хонзика - веселого типичного чеха, помогающего учить чешский язык.
+Systém postav pro výuku češtiny.
 
-Реализует:
-- Базовый промпт с характером Хонзика
-- 3 стиля общения (Friendly, Tutor, Casual)
-- 3 уровня исправлений (Minimal, Balanced, Detailed)
-- Поддержка русского и украинского языков для объяснений
-- Контекст разговора (последние 5 сообщений)
+Postavy:
+- Honzík: veselý Čech, kamarádský, tykání, široké zájmy (kultura, sport, jídlo, cestování...)
+- Paní Nováková: profesionální úřednice, vykání, spisovná čeština, pomoc s dokumenty a úřady
+
+Optimalizace oproti předchozí verzi:
+- Kompaktnější prompty (~350 tokenů místo ~600) → rychlejší odpovědi
+- Podpora více postav přes parametr `character`
+- Rozšířené zájmy Honzíka (nejen pivo a klobásky)
+- Odstraněno zbytečné `optimize_conversation_history` (historie je už omezena na 5 zpráv)
 """
 
 import json
 from functools import lru_cache
-from typing import Literal
 
 import structlog
 
@@ -21,207 +23,141 @@ from backend.services.model_selector import model_selector
 
 logger = structlog.get_logger(__name__)
 
-# Типы для параметров
-ConversationStyle = Literal["friendly", "tutor", "casual"]
-CorrectionsLevel = Literal["minimal", "balanced", "detailed"]
-CzechLevel = Literal["beginner", "intermediate", "advanced", "native"]
-NativeLanguage = Literal["ru", "uk", "pl", "sk"]
+# --- TTS voice mapping per character ---
+CHARACTER_TTS_VOICE = {
+    "honzik": "alloy",      # male, friendly
+    "novakova": "nova",      # female, professional
+}
 
 
 class HonzikPersonality:
     """
-    Личность Хонзика - веселого чеха, который помогает учить чешский.
+    Systém postav – generuje odpovědi v roli vybrané postavy.
 
     Attributes:
-        openai_client: Клиент для работы с OpenAI API
+        openai_client: Klient pro práci s OpenAI API
     """
 
     def __init__(self, openai_client: OpenAIClient):
-        """
-        Инициализация личности Хонзика.
-
-        Args:
-            openai_client: Клиент OpenAI для генерации ответов
-        """
         self.openai_client = openai_client
         self.logger = logger.bind(service="honzik_personality")
 
+    # ------------------------------------------------------------------
+    # Prompt building (cached per unique param combo)
+    # ------------------------------------------------------------------
+
     @staticmethod
-    @lru_cache(maxsize=64)
+    @lru_cache(maxsize=128)
     def _get_base_prompt(
-        level: CzechLevel,
-        corrections_level: CorrectionsLevel,
-        native_language: NativeLanguage,
-        style: ConversationStyle,
+        character: str,
+        level: str,
+        corrections_level: str,
+        native_language: str,
+        style: str,
     ) -> str:
         """
-        Получить базовый промпт Хонзика с учётом параметров.
+        Sestavit systémový prompt pro vybranou postavu.
 
-        Новая концепция: полное погружение в чешский язык.
-        - Весь интерфейс на чешском
-        - Объяснения ошибок на простом чешском + перевод на родной язык
-
-        Args:
-            level: Уровень чешского языка студента
-            corrections_level: Уровень детализации исправлений
-            native_language: Родной язык пользователя (для объяснений)
-            style: Стиль общения Хонзика
-
-        Returns:
-            str: Системный промпт для GPT
+        Cachováno přes lru_cache — stejná kombinace parametrů → stejný prompt.
         """
-        # Описание уровней на чешском с указанием словарного запаса
+        # --- Level descriptions (shared) ---
         level_descriptions = {
-            "beginner": "Začátečník (A2-B1) - učí se základy. Používej jednoduchá slova a fráze z úrovně A2-B1. "
-                       "Vyhni se složitým výrazům a odborným termínům. Mluv jednoduše a jasně.",
-            "intermediate": "Středně pokročilý (B1-B2) - už rozumí základům. Používej slova z úrovně B1-B2. "
-                          "Můžeš použít běžné idiomy a složitější gramatické struktury.",
-            "advanced": "Pokročilý (B2-C1) - mluví dobře, potřebuje praxi. Používej pokročilou slovní zásobu z úrovně B2-C1. "
-                       "Můžeš používat složitější výrazy, idiomy a odborné termíny.",
-            "native": "Rodilý mluvčí (C2) - perfekcionismus. Používej nejpokročilejší slovní zásobu na úrovni C2. "
-                     "Můžeš používat všechny jazykové prostředky včetně složitých idiomů a odborných termínů.",
+            "beginner": "Začátečník (A2-B1). Používej jednoduchá slova a krátké věty.",
+            "intermediate": "Středně pokročilý (B1-B2). Běžné idiomy, složitější gramatika.",
+            "advanced": "Pokročilý (B2-C1). Pokročilá slovní zásoba, idiomy, odborné termíny.",
+            "native": "Rodilý mluvčí (C2). Všechny jazykové prostředky, složité idiomy.",
         }
 
-        # Описание стилей общения с напоминанием о постоянстве
-        style_descriptions = {
-            "friendly": "Buď přátelský a povzbuzující. Minimum technických vysvětlení, "
-                       "maximum pozitivity. Pokračuj v konverzaci přirozeně. "
-                       "DŮLEŽITÉ: Vždy dodržuj tento styl - NEMĚŇ ho během konverzace!",
-            "tutor": "Buď jako učitel - strukturované rady, vysvětlení gramatických pravidel, "
-                    "doporučení pro výslovnost. Více technických detailů. "
-                    "DŮLEŽITÉ: Vždy dodržuj tento styl - NEMĚŇ ho během konverzace!",
-            "casual": "Buď neformální jako kamarád v hospodě. Minimum oprav (jen kritické), "
-                     "maximum legrace a přirozené konverzace. Mluv o pivu a klobáskách! "
-                     "DŮLEŽITÉ: Vždy dodržuj tento styl - NEMĚŇ ho během konverzace!",
-        }
-
-        # Описание уровней исправлений
+        # --- Corrections descriptions (shared) ---
         corrections_descriptions = {
-            "minimal": "Opravuj POUZE kritické chyby, které VÝRAZNĚ brání porozumění. "
-                      "IGNORUJ: drobné gramatické chyby, chybějící čárky, volbu slov (pokud je význam jasný), "
-                      "malé chyby v koncovkách, pokud nebrání porozumění. "
-                      "Opravuj POUZE: zásadní gramatické chyby, které mění význam, "
-                      "chyby v základních slovech, které brání porozumění celé větě. "
-                      "Důležitá je plynulá konverzace, ne perfektní gramatika!",
-            "balanced": "Opravuj důležité chyby a občas vysvětli pravidlo. "
-                       "Balanc mezi učením a konverzací. Opravuj chyby, které ovlivňují význam nebo jsou časté.",
-            "detailed": "Opravuj VŠECHNY chyby s podrobnými vysvětleními gramatických pravidel. "
-                       "Pro pokročilé studenty hledající perfekcionismus. "
-                       "Věnuj pozornost i drobným chybám v interpunkci a stylu.",
+            "minimal": "Opravuj POUZE kritické chyby bránící porozumění. Ignoruj drobnosti.",
+            "balanced": "Opravuj důležité chyby a občas vysvětli pravidlo. Balancuj učení a konverzaci.",
+            "detailed": "Opravuj VŠECHNY chyby s podrobným vysvětlením. Věnuj pozornost i interpunkci a stylu.",
         }
 
-        # Название родного языка для объяснений
+        # --- Native language name (expanded for all supported languages) ---
         native_lang_names = {
-            "ru": "ruština",
-            "uk": "ukrajinština",
-            "pl": "polština",
-            "sk": "slovenština",
+            "ru": "ruština", "uk": "ukrajinština", "pl": "polština", "sk": "slovenčina",
+            "vi": "vietnamština", "hi": "hindština", "en": "angličtina", "de": "němčina",
+            "fr": "francouzština", "es": "španělština", "it": "italština", "pt": "portugalština",
+            "zh": "čínština", "ja": "japonština", "ko": "korejština", "tr": "turečtina",
+            "ar": "arabština", "bg": "bulharština", "hr": "chorvatština", "ro": "rumunština",
+            "hu": "maďarština", "nl": "holandština", "sv": "švédština", "da": "dánština",
+            "fi": "finština", "no": "norština", "el": "řečtina", "he": "hebrejština",
+            "th": "thajština", "id": "indonéština", "tl": "tagalogština", "mn": "mongolština",
+            "ka": "gruzínština", "az": "ázerbájdžánština", "kk": "kazaština",
+            "uz": "uzbečtina", "ky": "kyrgyzština", "tg": "tádžičtina",
+            "be": "běloruština", "sr": "srbština", "sl": "slovinština",
+            "lt": "litevština", "lv": "lotyšština", "et": "estonština",
+            "sq": "albánština", "hy": "arménština", "fa": "perština",
+            "bn": "bengálština", "pa": "paňdžábština", "my": "myanmarština",
+            "lo": "laoština", "sw": "svahilština",
         }
-        native_lang_name = native_lang_names.get(native_language, "ruština")
+        native_lang_name = native_lang_names.get(native_language, native_language)
 
-        # ==========================================
-        # COMPACT prompt for minimal/balanced (saves ~800 tokens → 1-2 sec faster)
-        # FULL prompt with grammar rules only for detailed corrections
-        # ==========================================
-        grammar_rules_block = ""
+        level_desc = level_descriptions.get(level, level_descriptions["beginner"])
+        corrections_desc = corrections_descriptions.get(corrections_level, corrections_descriptions["balanced"])
+
+        # --- Grammar rules block (only for detailed corrections) ---
+        grammar_block = ""
         if corrections_level == "detailed":
-            grammar_rules_block = """
-GRAMATICKÁ PRAVIDLA (Internetová jazyková příručka ÚJČ):
-Když student udělá chybu, odkazuj na konkrétní pravidla:
-- Vyjmenovaná slova (B, L, M, P, S, V, Z)
-- Pravopis: bě/bje, mě/mně, ú/ů, i/y po obojetných souhláskách
-- Interpunkce: čárky ve vedlejších větách, před a/ale
-- Velká písmena: vlastní jména, přídavná jména od nich odvozená
-- Tvarosloví: skloňování podstatných a přídavných jmen, časování sloves
-- Skladba: slovosled, shoda přísudku s podmětem, předložky s/z, v/na
-Když je to relevantní, zmíň mnemotechnickou pomůcku nebo příklad z příručky.
-"""
+            grammar_block = (
+                "\nGRAMATIKA: Odkazuj na konkrétní pravidla ÚJČ – "
+                "vyjmenovaná slova, bě/bje, mě/mně, i/y, čárky, velká písmena, "
+                "skloňování, časování, shoda přísudku s podmětem."
+            )
 
-        base_prompt = f"""Ty jsi Honzík - veselý Čech, který pomáhá učit se česky.
-Jsi přátelský, vtipný, miluješ pivo 🍺, knedlíky 🥟 a hokej 🏒. Používáš výrazy jako Ahoj!, Nazdar!, Výborně!
-
-STUDENT: {level_descriptions[level]}
-Styl: {style} | Opravy: {corrections_level} | Rodný jazyk: {native_lang_name}
-
-STYL: {style_descriptions[style]}
-
-OPRAVY: {corrections_descriptions[corrections_level]}
-Vysvětlení piš JEDNODUŠE česky na úrovni A2.
-{grammar_rules_block}
-ÚKOL: Analyzuj text, oprav chyby, ohodnoť 0-100, odpověz přirozeně jako Honzík. Buď pozitivní! Dodržuj styl a slovní zásobu studenta.
-
-ODPOVĚZ JSON:
-{{{{
-  "honzik_response": "odpověď Honzíka v češtině",
-  "corrected_text": "opravený text studenta",
-  "mistakes": [{{{{
-    "original": "špatný text",
-    "corrected": "správný text",
-    "explanation_cs": "vysvětlení česky max 15 slov"
-  }}}}],
-  "correctness_score": 85,
-  "suggestion": "krátký tip v jednoduché češtině"
-}}}}"""
-
-        return base_prompt
+        # --- CHARACTER-SPECIFIC PERSONALITY ---
+        if character == "novakova":
+            return _build_novakova_prompt(style, level_desc, corrections_desc, native_lang_name, grammar_block)
+        else:
+            return _build_honzik_prompt(style, level_desc, corrections_desc, native_lang_name, grammar_block)
 
     def _format_conversation_history(
         self, history: list[dict[str, str]]
     ) -> str:
-        """
-        Форматировать историю разговора для контекста.
-
-        Args:
-            history: Список сообщений {"role": "user/assistant", "text": "..."}
-
-        Returns:
-            str: Отформатированная история
-        """
         if not history:
-            return "Žádná předchozí historie."
+            return ""
 
         formatted = []
-        for msg in history[-5:]:  # Только последние 5 сообщений
-            role = "Student" if msg["role"] == "user" else "Honzík"
+        for msg in history[-5:]:
+            role = "Student" if msg["role"] == "user" else "Postava"
             formatted.append(f"{role}: {msg['text']}")
 
         return "\n".join(formatted)
 
+    # ------------------------------------------------------------------
+    # Main generation method
+    # ------------------------------------------------------------------
+
     async def generate_response(
         self,
         user_text: str,
-        level: CzechLevel,
-        style: ConversationStyle,
-        corrections_level: CorrectionsLevel,
-        native_language: NativeLanguage,
+        level: str,
+        style: str,
+        corrections_level: str,
+        native_language: str,
         conversation_history: list[dict[str, str]] | None = None,
+        character: str = "honzik",
     ) -> dict:
         """
-        Сгенерировать ответ Хонзика с исправлениями и оценкой.
+        Vygenerovat odpověď vybrané postavy s opravami a hodnocením.
 
         Args:
-            user_text: Текст пользователя на чешском
-            level: Уровень чешского языка
-            style: Стиль общения (friendly/tutor/casual)
-            corrections_level: Уровень исправлений (minimal/balanced/detailed)
-            native_language: Родной язык пользователя (ru/uk/pl/sk)
-            conversation_history: История разговора (последние 5 сообщений)
+            user_text: Text uživatele v češtině
+            level: Úroveň češtiny (beginner/intermediate/advanced/native)
+            style: Styl konverzace (friendly/tutor/casual)
+            corrections_level: Úroveň oprav (minimal/balanced/detailed)
+            native_language: Rodný jazyk uživatele (ISO 639-1)
+            conversation_history: Historie konverzace (posledních 5 zpráv)
+            character: Postava (honzik/novakova)
 
         Returns:
-            dict: {
-                "honzik_response": str,
-                "corrected_text": str,
-                "mistakes": list[dict],
-                "correctness_score": int,
-                "suggestion": str
-            }
-
-        Raises:
-            ValueError: При некорректном JSON ответе от GPT
-            APIError: При ошибке OpenAI API
+            dict: { "honzik_response", "corrected_text", "mistakes", "correctness_score", "suggestion" }
         """
         self.logger.info(
-            "generating_honzik_response",
+            "generating_response",
+            character=character,
             level=level,
             style=style,
             corrections_level=corrections_level,
@@ -232,8 +168,7 @@ ODPOVĚZ JSON:
         if conversation_history is None:
             conversation_history = []
 
-        # Cache ONLY the first greeting message (when there's no conversation history)
-        # This saves API calls for the same initial greeting
+        # Cache ONLY the first greeting (no conversation history)
         should_cache = len(conversation_history) == 0
 
         if should_cache:
@@ -242,34 +177,36 @@ ODPOVĚZ JSON:
                 "correction_level": corrections_level,
                 "conversation_style": style,
                 "native_language": native_language,
+                "character": character,
             }
             cached_response = await cache_service.get_cached_honzik_response(
                 user_text, settings_dict
             )
             if cached_response:
-                self.logger.info("using_cached_honzik_greeting")
+                self.logger.info("using_cached_greeting", character=character)
                 return cached_response
 
-        # Формируем промпт
+        # Build prompt
         system_prompt = self._get_base_prompt(
+            character=character,
             level=level,
             corrections_level=corrections_level,
             native_language=native_language,
             style=style,
         )
 
-        # Only include history block when there's actual conversation history
+        # Build user message (history included only when present)
         if conversation_history:
             history_text = self._format_conversation_history(conversation_history)
             user_prompt = (
                 f"Přepis studenta: {user_text}\n\n"
-                f"Historie konverzace (poslední 5 zpráv):\n{history_text}\n\n"
-                "Analyzuj text studenta a odpověz ve formátu JSON podle instrukcí výše."
+                f"Historie konverzace:\n{history_text}\n\n"
+                "Analyzuj text studenta a odpověz JSON."
             )
         else:
             user_prompt = (
                 f"Přepis studenta: {user_text}\n\n"
-                "Analyzuj text studenta a odpověz ve formátu JSON podle instrukcí výše."
+                "Analyzuj text studenta a odpověz JSON."
             )
 
         messages = [
@@ -277,25 +214,11 @@ ODPOVĚZ JSON:
             {"role": "user", "content": user_prompt},
         ]
 
-        # Оптимизируем историю для уменьшения токенов
-        optimized_messages = self.openai_client.optimize_conversation_history(
-            messages,
-            max_tokens=2000,  # Разумный лимит для контекста
-        )
+        # --- SPEED OPTIMIZATION: skip optimize_conversation_history ---
+        # History is already limited to 5 messages (~500 tokens max).
+        # Running tiktoken on every request wastes ~100-200ms for no benefit.
 
-        # Логируем экономию токенов
-        original_tokens = self.openai_client.estimate_messages_tokens(messages)
-        optimized_tokens = self.openai_client.estimate_messages_tokens(optimized_messages)
-
-        if original_tokens != optimized_tokens:
-            self.logger.info(
-                "tokens_optimized",
-                original=original_tokens,
-                optimized=optimized_tokens,
-                saved=original_tokens - optimized_tokens,
-            )
-
-        # Выбираем оптимальную модель на основе анализа текста
+        # Select optimal model
         selected_model, model_reason = model_selector.select_model(
             user_text=user_text,
             czech_level=level,
@@ -304,26 +227,25 @@ ODPOVĚZ JSON:
         )
 
         self.logger.info(
-            "model_selected_for_response",
+            "model_selected",
             model=selected_model,
             reason=model_reason,
+            character=character,
         )
 
         try:
-            # Генерируем ответ от GPT в JSON mode
-            # max_tokens=400 prevents GPT from generating overly long responses
-            # Typical Honzík response is 150-300 tokens; 400 gives margin
+            # Generate response (max_tokens=400 prevents overly long answers)
             response_text = await self.openai_client.generate_chat_completion(
-                messages=optimized_messages,
+                messages=messages,
                 json_mode=True,
                 model=selected_model,
                 max_tokens=400,
             )
 
-            # Парсим JSON
+            # Parse JSON
             response_data = json.loads(response_text)
 
-            # Валидация обязательных полей
+            # Validate required fields
             required_fields = [
                 "honzik_response",
                 "corrected_text",
@@ -334,75 +256,163 @@ ODPOVĚZ JSON:
 
             for field in required_fields:
                 if field not in response_data:
-                    self.logger.error(
-                        "missing_field_in_response",
-                        field=field,
-                        response=response_data,
-                    )
+                    self.logger.error("missing_field", field=field)
                     raise ValueError(f"Missing required field: {field}")
 
-            # Валидация score
+            # Validate score
             score = response_data["correctness_score"]
             if not isinstance(score, (int, float)) or not (0 <= score <= 100):
-                self.logger.warning(
-                    "invalid_score",
-                    score=score,
-                )
                 response_data["correctness_score"] = max(0, min(100, int(score)))
 
-            # Fallback for corrected_text if None or empty
+            # Fallback for empty corrected_text
             if not response_data.get("corrected_text"):
-                self.logger.warning(
-                    "corrected_text_missing_using_original",
-                    original_text=user_text[:50],
-                )
                 response_data["corrected_text"] = user_text
 
             self.logger.info(
-                "honzik_response_generated",
+                "response_generated",
+                character=character,
                 correctness_score=response_data["correctness_score"],
                 mistakes_count=len(response_data["mistakes"]),
             )
 
-            # Cache ONLY first greeting (no conversation history)
+            # Cache first greeting
             if should_cache:
                 await cache_service.cache_honzik_response(
                     user_text, settings_dict, response_data
                 )
-                self.logger.info("honzik_greeting_cached")
 
             return response_data
 
         except json.JSONDecodeError as e:
-            self.logger.error(
-                "json_decode_error",
-                error=str(e),
-                response_text=response_text[:200],
-            )
+            self.logger.error("json_decode_error", error=str(e), response_text=response_text[:200])
             raise ValueError(f"Invalid JSON response from GPT: {e}")
 
         except Exception as e:
-            self.logger.error(
-                "honzik_response_failed",
-                error=str(e),
-            )
+            self.logger.error("response_failed", error=str(e), character=character)
             raise
 
-    def get_welcome_message(self) -> str:
-        """
-        Получить приветственное сообщение от Хонзика.
+    # ------------------------------------------------------------------
+    # Welcome messages
+    # ------------------------------------------------------------------
 
-        Теперь всегда на чешском (Language Immersion).
-
-        Returns:
-            str: Приветственное сообщение на чешском
-        """
+    def get_welcome_message(self, character: str = "honzik") -> str:
+        """Uvítací zpráva vybrané postavy."""
+        if character == "novakova":
+            return (
+                "Dobrý den! 🇨🇿 Jsem paní Nováková.\n\n"
+                "Pomohu Vám s češtinou – zejména s formální komunikací, "
+                "úředními záležitostmi a spisovným jazykem.\n\n"
+                "📋 Dokumenty, formuláře, e-maily úřadům\n"
+                "🏛️ Cizinecká policie, povolení k pobytu\n"
+                "💼 Pracovní komunikace\n\n"
+                "Jak Vám mohu pomoci? ✉️"
+            )
         return (
-            "Ahoj! 🇨🇿 Jsem Honzík - tvůj veselý český kamarád!\n\n"
+            "Ahoj! 🇨🇿 Jsem Honzík – tvůj veselý český kamarád!\n\n"
             "Pomohu ti naučit se česky přes živou konverzaci. "
             "Mluv se mnou česky a já tě budu opravovat a podporovat!\n\n"
-            "Miluji pivo 🍺, knedlíky 🥟, hokej 🏒 a Prahu ❤️\n\n"
-            "Pojďme procvičovat! Pošli mi hlasovou zprávu v češtině! 🎤"
+            "🏙️ Praha, česká kultura, sport, jídlo, cestování...\n"
+            "Pojďme si popovídat! Napiš mi nebo pošli hlasovou zprávu 🎤"
         )
+
+    @staticmethod
+    def get_tts_voice(character: str = "honzik") -> str:
+        """Vrátit TTS hlas pro postavu."""
+        return CHARACTER_TTS_VOICE.get(character, "alloy")
+
+
+# ======================================================================
+# Character prompt builders (module-level for clarity)
+# ======================================================================
+
+def _build_honzik_prompt(
+    style: str,
+    level_desc: str,
+    corrections_desc: str,
+    native_lang_name: str,
+    grammar_block: str,
+) -> str:
+    """Sestavit prompt pro Honzíka – veselého Čecha se širokými zájmy."""
+
+    style_descriptions = {
+        "friendly": "Buď přátelský a povzbuzující. Minimum technických vysvětlení, maximum pozitivity.",
+        "tutor": "Buď jako učitel – strukturované rady, vysvětlení gramatiky, tipy na výslovnost.",
+        "casual": "Buď neformální jako kamarád. Minimum oprav (jen kritické), maximum legrace a přirozené konverzace.",
+    }
+
+    style_desc = style_descriptions.get(style, style_descriptions["friendly"])
+
+    return f"""Jsi Honzík – veselý a zvídavý Čech z Prahy. Tykáš studentovi.
+Jsi přátelský, vtipný, rád sdílíš zajímavosti o české kultuře a životě v Česku.
+
+TVOJE ZÁJMY (přizpůsob tématu konverzace):
+🏙️ Praha a české města, 🎭 kultura: kino, divadlo, hudba (Smetana, Dvořák, i moderní kapely)
+🍽️ Česká kuchyně: svíčková, vepřo-knedlo-zelo, trdelník, české pivo
+⚽ Sport: hokej, fotbal, tenis, 🌍 cestování: hrady, zámky, Krkonoše, Šumava
+📚 Studentský život, české zvyky, 🗓️ svátky: Vánoce, Velikonoce, Mikuláš
+💼 Práce, byrokracie, úřady, 🚇 MHD v Praze, vlaky, Lítačka
+🛒 Každodenní život: nakupování, bydlení, sousedé
+
+STUDENT: {level_desc}
+STYL: {style_desc}
+OPRAVY: {corrections_desc}
+Rodný jazyk studenta: {native_lang_name} – vysvětlení piš jednoduše česky na úrovni A2.
+{grammar_block}
+ÚKOL: Analyzuj text, oprav chyby, ohodnoť 0-100, odpověz jako Honzík. Buď pozitivní!
+
+ODPOVĚZ POUZE PLATNÝM JSON:
+{{{{
+  "honzik_response": "tvá odpověď v češtině",
+  "corrected_text": "opravený text studenta",
+  "mistakes": [{{{{"original":"chyba","corrected":"správně","explanation_cs":"vysvětlení max 15 slov"}}}}],
+  "correctness_score": 85,
+  "suggestion": "krátký tip česky"
+}}}}"""
+
+
+def _build_novakova_prompt(
+    style: str,
+    level_desc: str,
+    corrections_desc: str,
+    native_lang_name: str,
+    grammar_block: str,
+) -> str:
+    """Sestavit prompt pro paní Novákovou – formální, spisovná čeština, vykání."""
+
+    style_descriptions = {
+        "friendly": "Buďte profesionální, ale laskavá. Vysvětlujte trpělivě a srozumitelně.",
+        "tutor": "Buďte důkladná jako učitelka. Podrobně vysvětlujte gramatiku a formální obraty.",
+        "casual": "Buďte profesionální, ale uvolněná. Stále vykejte, ale komunikujte přívětivě.",
+    }
+
+    style_desc = style_descriptions.get(style, style_descriptions["friendly"])
+
+    return f"""Jste paní Nováková – profesionální a laskavá česká úřednice.
+Mluvíte VÝHRADNĚ spisovnou češtinou. VŽDY vykáte studentovi (Vy, Vás, Vám, Váš).
+
+VAŠE OBLASTI EXPERTISE:
+📋 Úřady: cizinecká policie, povolení k pobytu, zaměstnanecká karta, živnostenský list
+📝 Dokumenty: formuláře, žádosti, plné moci, výpisy z rejstříku trestů
+🏛️ ČSSZ, zdravotní pojištění, číslo pojištěnce, daňové přiznání
+💬 Formální komunikace: e-maily úřadům, dopisy zaměstnavateli, reklamace
+🏠 Bydlení: nájemní smlouva, katastr, změna trvalého bydliště
+💼 Práce: pracovní smlouva, výpověď, výplatní páska
+
+STUDENT: {level_desc}
+STYL: {style_desc}
+OPRAVY: {corrections_desc}
+Rodný jazyk studenta: {native_lang_name} – vysvětlení pište jednoduše česky.
+Opravujte zejména: hovorové tvary → spisovné, tykání → vykání, nespisovné výrazy.
+{grammar_block}
+ÚKOL: Analyzujte text, opravte chyby, ohodnoťte 0-100, odpovězte jako paní Nováková. Vykejte!
+
+ODPOVĚZTE POUZE PLATNÝM JSON:
+{{{{
+  "honzik_response": "Vaše odpověď ve spisovné češtině (vykání)",
+  "corrected_text": "opravený text studenta",
+  "mistakes": [{{{{"original":"chyba","corrected":"správně","explanation_cs":"vysvětlení max 15 slov"}}}}],
+  "correctness_score": 85,
+  "suggestion": "krátký tip ve spisovné češtině"
+}}}}"""
 
 

@@ -52,6 +52,7 @@ _DEFAULT_SETTINGS = {
     "corrections_level": "balanced",
     "timezone": "Europe/Prague",
     "voice_speed": "normal",
+    "character": "honzik",
 }
 
 
@@ -255,6 +256,7 @@ async def process_voice_message(
                 corrections_level=_s(user, "corrections_level"),
                 native_language=user.native_language,
                 conversation_history=conversation_history,
+                character=_s(user, "character"),
             )
 
         log.info(
@@ -284,7 +286,8 @@ async def process_voice_message(
         async def generate_tts():
             """Генерация TTS с кешированием (ускорение на 2-4 сек для повторных фраз)"""
             text = processed["honzik_response"]
-            voice = settings.tts_voice
+            # Use character-specific TTS voice (honzik=alloy, novakova=nova)
+            voice = HonzikPersonality.get_tts_voice(_s(user, "character"))
             speed = voice_speed
 
             # Проверяем кеш сначала
