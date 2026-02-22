@@ -62,9 +62,9 @@ def create_engine() -> AsyncEngine:
 
     Настройки оптимизированы для производительности:
     - pool_size=20: Увеличено с 5 до 20 для обработки большего числа конкурентных запросов
-    - max_overflow=10: Дополнительные соединения при пиковой нагрузке
+    - max_overflow=30: Дополнительные соединения при пиковой нагрузке (увеличено с 10)
     - pool_timeout=30: Время ожидания свободного соединения
-    - pool_recycle=3600: Переиспользование соединений каждый час
+    - pool_recycle=1800: Переиспользование соединений каждые 30 мин (Railway дропает idle)
     - pool_pre_ping=True: Проверка жизнеспособности соединения перед использованием
     - connect_args: Оптимизация PostgreSQL (отключение JIT для простых запросов)
 
@@ -95,9 +95,9 @@ def create_engine() -> AsyncEngine:
         # Connection pool settings (optimized for Railway.com and high concurrency)
         # poolclass is not specified - uses default AsyncAdaptedQueuePool for async
         pool_size=20,              # Up from default 5 - main connection pool
-        max_overflow=10,           # Additional connections during peak load
+        max_overflow=30,           # Additional connections during peak load (up from 10)
         pool_timeout=30,           # Wait up to 30s for a connection
-        pool_recycle=3600,         # Recycle connections after 1 hour
+        pool_recycle=1800,         # Recycle connections every 30 min (Railway drops idle)
         pool_pre_ping=True,        # Verify connection health before using
 
         # Query optimization via PostgreSQL settings

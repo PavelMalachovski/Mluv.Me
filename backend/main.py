@@ -17,6 +17,7 @@ import sentry_sdk
 from backend.config import get_settings
 from backend.db.database import close_db
 from backend.cache.redis_client import redis_client
+from backend.utils.rate_limiter import openai_limiter
 from backend.routers import users, lesson, stats, words, web_auth, web_lessons, gamification, messages, scenarios, games, grammar, subscription
 
 # Configure structlog for Railway.com
@@ -150,6 +151,7 @@ async def health_check() -> JSONResponse:
             "version": "1.0.0",
             "environment": settings.environment,
             "redis": redis_status,
+            "openai_limiter": openai_limiter.get_stats(),
         }
     )
 

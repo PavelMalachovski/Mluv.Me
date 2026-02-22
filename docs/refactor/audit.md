@@ -49,7 +49,8 @@
 | 🟢 Code quality / dead code | 15+ | ✅ Исправлено |
 | 🟢 Тестирование | 6 test files | ✅ ~30%+ coverage |
 | 🟢 Инфраструктура | CI/CD + Sentry | ✅ GitHub Actions + Sentry SDK |
-| 💰 Монетизация | **$0 revenue при готовой premium-функциональности** | ⬜ Не начато |
+| 💰 Монетизация | Subscription + Stars + лимиты | ✅ Реализовано |
+| 🚀 Масштабирование Этап 1 | uvicorn workers, pool tuning, OpenAI limiter, TTS cache | ✅ Реализовано |
 | 🟣 Персонажи | Honzík + paní Nováková, выбор в настройках | ✅ Реализовано |
 | 🟣 Скорость Honzíka | Компактные промпты, убран overhead | ✅ Оптимизировано |
 
@@ -248,7 +249,7 @@
 |---|---|---|
 | AI-1 | System prompt (~600-1000 токенов) пересоздаётся на каждое сообщение. Нужно кэшировать по `(level, corrections_level, native_language, style)` | ✅ `@lru_cache(maxsize=64)` на `_get_base_prompt` |
 | AI-2 | `honzik_personality.py:236` — история беседы отправляется **дважды**: как текст в user prompt И как отдельные messages. Двойной расход токенов | ✅ Пустая история → блок пропускается |
-| AI-3 | `MAX_TTS_CACHE_LENGTH = 200` символов → большинство TTS ответов не кэшируются (Honzik обычно отвечает 200-500 символов) | Увеличить до 500 → сэкономить на TTS |
+| AI-3 | `MAX_TTS_CACHE_LENGTH = 200` символов → увеличено до 500 | ✅ 500, +TTS cache 30 дней |
 | AI-4 | `MODEL_PRICING` dict и `TOKEN_LIMITS` dict в `openai_client.py` определены, но **никогда не используются** | ✅ Удалён dead code |
 | AI-5 | `OpenAIClient.get_optimal_model()` — dead code, `model_selector.py` делает то же самое | ✅ Удалён дубликат |
 | AI-6 | `web_lessons.py` создаёт новый `OpenAIClient()` на **каждый запрос** вместо singleton | ✅ Исправлено: `get_settings()` + singleton |
@@ -352,9 +353,14 @@ Railway.com (1 контейнер)
 
 ## 13. Монетизация
 
-### Текущий статус: **$0 revenue**
+### Текущий статус: **✅ Реализовано (22 февраля 2026)**
 
-**Весь premium-функционал раздаётся бесплатно:**
+**Реализовано:**
+- Free: 5 текстовых + 4 голосовых/день, Pro: безлимит (200 CZK/мес)
+- Telegram Stars: 150⭐=7d Pro, 500⭐=30d Pro (полный флоу: invoice → pre_checkout → activation)
+- Redis-based daily quotas, SubscriptionService, Subscription+Payment модели
+- Frontend: QuotaBanner, QuotaIndicator, 429 error handling
+- Stripe: стуб для будущей интеграции
 - GPT-4o разговоры (стоят $0.03/сообщение)
 - TTS озвучка ($0.015/сообщение)
 - Whisper STT ($0.006/сообщение)
@@ -366,11 +372,11 @@ Railway.com (1 контейнер)
 
 ### План монетизации (по приоритету)
 
-#### Фаза 1 — Неделя 1-2: Начать зарабатывать
+#### Фаза 1 — Неделя 1-2: Начать зарабатывать ✅ РЕАЛИЗОВАНО
 | Действие | Срок | Ожидание |
 |---|---|---|
-| **Лимит сообщений** (5/день бесплатно) | 1-2 дня | Создаёт конверсионное давление |
-| **Telegram Stars** оплата | 3-5 дней | $50-200/мес с первого месяца |
+| **Лимит сообщений** (5 текст + 4 голос/день бесплатно) | ✅ | Конверсионное давление |
+| **Telegram Stars** оплата | ✅ | 150⭐=7d Pro, 500⭐=30d Pro |
 | Пакеты: +10 голосовых (50⭐), тема сценария (100⭐), 7 дней безлимит (150⭐) | | |
 
 #### Фаза 2 — Неделя 3-6: Подписки
@@ -415,14 +421,14 @@ Railway.com (1 контейнер)
 6. ✅ Убрать hardcoded admin secret → в env var без fallback + перенесён в Header
 
 ### 🟡 Неделя 1-2
-7. ⬜ Добавить лимит сообщений (5/день)
-8. ⬜ Реализовать Telegram Stars payments
+7. ✅ Добавить лимит сообщений (5 текст + 4 голос/день) — SubscriptionService + Redis quotas
+8. ✅ Реализовать Telegram Stars payments — bot/handlers/payments.py
 9. ✅ Перевести sessions → Redis (полностью мигрировано: `session:{token}` TTL=30d)
 10. ✅ Добавить API authentication middleware (`get_authenticated_user` dependency)
 11. ✅ Фикс `random.seed()` → `random.Random(hash(...))` (thread-safe)
 
 ### 🟢 Неделя 3-6
-12. ⬜ Модель `Subscription` + Stripe integration
+12. ✅ Модель `Subscription` + Alembic миграция (Stripe — stub)
 13. ⬜ Gate premium features (сценарии, SR, pronunciation)
 14. ✅ CI/CD: GitHub Actions (`.github/workflows/ci.yml` — lint, test, frontend-lint)
 15. ⬜ Разделить контейнер на 3 сервиса
@@ -654,18 +660,18 @@ Telegram Stars — **самый быстрый** путь к первому до
 
 ---
 
-### 16.2 Этап 1 — Быстрые победы (100-300 пользователей)
+### 16.2 Этап 1 — Быстрые победы (100-300 пользователей) ✅ РЕАЛИЗОВАНО
 
-Без изменения архитектуры, за 1-2 дня:
+Без изменения архитектуры, реализовано 22 февраля 2026:
 
-#### 1. Uvicorn workers
+#### 1. Uvicorn workers ✅
 ```python
 # Procfile
 web: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 Вместо 1 worker → 4. Каждый worker обрабатывает ~50-100 req/s. **Итого: ~200-400 req/s.**
 
-#### 2. PostgreSQL connection pool
+#### 2. PostgreSQL connection pool ✅
 ```python
 # backend/db/database.py
 engine = create_async_engine(
@@ -678,7 +684,7 @@ engine = create_async_engine(
 )
 ```
 
-#### 3. Redis connection pooling
+#### 3. Redis connection pooling ✅
 ```python
 # backend/cache/redis_client.py
 pool = redis.ConnectionPool(
@@ -689,17 +695,21 @@ pool = redis.ConnectionPool(
 )
 ```
 
-#### 4. OpenAI запросы через очередь (Celery)
+#### 4. OpenAI защита от перегрузки ✅
+
+**Реализовано два механизма:**
+
+**a) `OpenAIConcurrencyLimiter`** (`backend/utils/rate_limiter.py`) — asyncio.Semaphore:
+- Chat запросы: max 10 одновременных
+- TTS запросы: max 8 одновременных
+- STT запросы: max 8 одновременных
+- Статистика в `/health` endpoint
+
+**b) Celery AI tasks** (`backend/tasks/ai_tasks.py`) — очередь для фоновых задач:
 ```python
-# Вместо прямого вызова OpenAI в endpoint:
-@celery_app.task(rate_limit="30/m", max_retries=3)
-def generate_ai_response(user_id, message, settings):
-    """AI-запросы через Celery с rate limiting"""
-    return openai_client.chat(...)
-```
 Rate limit `30/m` = защита от 429 ошибок OpenAI.
 
-#### 5. Кэширование ответов
+#### 5. Кэширование ответов ✅
 ```python
 # Кэшировать частые паттерны (приветствия, команды)
 COMMON_RESPONSES_TTL = 3600  # 1 час
@@ -873,8 +883,8 @@ celery_app.conf.task_routes = {
 
 | Пользователи | Действия | Приоритет |
 |---|---|---|
-| **50-100** | ✅ Redis для state, ✅ connection pool, uvicorn 4 workers | ⬜ |
-| **100-300** | AI через Celery queue, TTS cache расширить, webhook бота | ⬜ |
+| **50-100** | ✅ Redis для state, ✅ connection pool, ✅ uvicorn 4 workers | ✅ |
+| **100-300** | ✅ OpenAI concurrency limiter, ✅ TTS cache расширен, ✅ Celery AI tasks, webhook бота | ✅ |
 | **300-1,000** | Разделить на 3 сервиса, PgBouncer, Celery workers=4+, CDN | ⬜ |
 | **1,000-5,000** | Replicas backend (2-3), DB read replica, Redis cluster, приоритетные очереди | ⬜ |
 | **5,000-10,000** | Kubernetes / Railway Pro, auto-scaling, semantic AI cache, S3 для медиа | ⬜ |

@@ -223,7 +223,8 @@ class CacheService:
     TTS_CACHE_TTL = 2592000
 
     # Максимальная длина текста для кеширования TTS
-    MAX_TTS_CACHE_LENGTH = 200
+    # Увеличено с 200 до 500: Honzík обычно отвечает 200-500 символов
+    MAX_TTS_CACHE_LENGTH = 500
 
     def create_tts_cache_key(self, text: str, voice: str, speed: float) -> str:
         """
@@ -279,7 +280,7 @@ class CacheService:
         """
         Кешировать TTS аудио.
 
-        Кешируем только короткие фразы (< 200 символов) на 30 дней.
+        Кешируем фразы до 500 символов на 30 дней.
 
         Args:
             text: Текст для озвучивания

@@ -19,6 +19,7 @@ from openai import AsyncOpenAI, RateLimitError, APIError, APITimeoutError
 
 from backend.config import Settings
 from backend.services.cache_service import cache_service
+from backend.utils.rate_limiter import openai_limiter
 
 logger = structlog.get_logger(__name__)
 
@@ -169,7 +170,8 @@ class OpenAIClient:
             return transcript.text
 
         try:
-            text = await self._call_with_retry(_transcribe)
+            async with openai_limiter.acquire("stt"):
+                text = await self._call_with_retry(_transcribe)
             self.logger.info(
                 "transcription_success",
                 text_length=len(text),
@@ -246,7 +248,8 @@ class OpenAIClient:
             }
 
         try:
-            result = await self._call_with_retry(_transcribe)
+            async with openai_limiter.acquire("stt"):
+                result = await self._call_with_retry(_transcribe)
             self.logger.info(
                 "transcription_with_detection_success",
                 text_length=len(result["text"]),
@@ -334,7 +337,8 @@ class OpenAIClient:
                 return response.choices[0].message.content
 
         try:
-            content = await self._call_with_retry(_complete)
+            async with openai_limiter.acquire("chat"):
+                content = await self._call_with_retry(_complete)
             self.logger.info(
                 "completion_success",
                 response_length=len(content) if content else 0,
@@ -357,7 +361,7 @@ class OpenAIClient:
         """
         Сгенерировать речь из текста с помощью TTS API.
 
-        Поддерживает кеширование коротких фраз (< 200 символов) на 30 дней.
+        Поддерживает кеширование фраз (до 500 символов) на 30 дней.
 
         Args:
             text: Текст для озвучивания
@@ -399,7 +403,8 @@ class OpenAIClient:
             return response.content
 
         try:
-            audio_content = await self._call_with_retry(_generate)
+            async with openai_limiter.acquire("tts"):
+                audio_content = await self._call_with_retry(_generate)
             self.logger.info(
                 "speech_generation_success",
                 audio_size_bytes=len(audio_content),

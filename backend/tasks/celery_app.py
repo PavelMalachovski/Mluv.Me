@@ -49,11 +49,12 @@ celery_app.conf.update(
     broker_connection_retry=True,
     broker_connection_max_retries=10,
 
-    # Task routes (можно добавить позже для разных очередей)
+    # Task routes (разделение по очередям для приоритизации)
     task_routes={
         'backend.tasks.analytics.*': {'queue': 'analytics'},
         'backend.tasks.notifications.*': {'queue': 'notifications'},
         'backend.tasks.maintenance.*': {'queue': 'maintenance'},
+        'backend.tasks.ai_tasks.*': {'queue': 'ai'},
     },
 
     # Beat schedule (периодические задачи)
@@ -87,6 +88,7 @@ celery_app.autodiscover_tasks([
     'backend.tasks.notifications',
     'backend.tasks.gamification',
     'backend.tasks.maintenance',
+    'backend.tasks.ai_tasks',
 ])
 
 # Сигналы для мониторинга (будет использоваться в monitoring.py)

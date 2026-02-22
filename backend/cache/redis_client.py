@@ -50,14 +50,20 @@ class RedisClient:
             settings.redis_url,
             max_connections=settings.redis_max_connections,
             decode_responses=True,
+            socket_timeout=5,
+            socket_connect_timeout=5,
+            retry_on_timeout=True,
         )
         self.redis = redis.Redis(connection_pool=self.pool)
 
         # Binary pool for TTS audio (no decode_responses)
         self._binary_pool = redis.ConnectionPool.from_url(
             settings.redis_url,
-            max_connections=5,
+            max_connections=15,
             decode_responses=False,
+            socket_timeout=5,
+            socket_connect_timeout=5,
+            retry_on_timeout=True,
         )
         self._binary_redis = redis.Redis(connection_pool=self._binary_pool)
 
