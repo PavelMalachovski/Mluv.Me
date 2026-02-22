@@ -2,6 +2,7 @@
 API клиент для общения с backend.
 """
 
+import base64
 import io
 from typing import Any, Optional
 
@@ -157,7 +158,8 @@ class APIClient:
             return None
 
     async def process_voice(
-        self, user_id: int, audio_bytes: bytes, filename: str = "voice.ogg"
+        self, user_id: int, audio_bytes: bytes, filename: str = "voice.ogg",
+        include_audio: bool = True,
     ) -> Optional[dict[str, Any]]:
         """
         Обработать голосовое сообщение.
@@ -166,6 +168,7 @@ class APIClient:
             user_id: Telegram ID пользователя
             audio_bytes: Байты аудио файла
             filename: Имя файла
+            include_audio: Генерировать ли TTS аудио (False = только анализ)
 
         Returns:
             Результат обработки (transcript, corrections, audio_response, score)
@@ -175,6 +178,7 @@ class APIClient:
             # Создаем multipart form data
             data = FormData()
             data.add_field("user_id", str(user_id))
+            data.add_field("include_audio", str(include_audio).lower())
             data.add_field(
                 "audio",
                 io.BytesIO(audio_bytes),
@@ -196,6 +200,44 @@ class APIClient:
                     return None
         except Exception as e:
             logger.error("process_voice_error", user_id=user_id, error=str(e))
+            return None
+
+    async def generate_tts(
+        self, user_id: int, text: str
+    ) -> Optional[bytes]:
+        """
+        Сгенерировать TTS аудио для готового текста.
+
+        Args:
+            user_id: Telegram ID пользователя
+            text: Текст для озвучивания
+
+        Returns:
+            bytes аудио или None при ошибке
+        """
+        session = await self._get_session()
+        try:
+            data = FormData()
+            data.add_field("user_id", str(user_id))
+            data.add_field("text", text)
+
+            async with session.post(
+                f"{self.base_url}/api/v1/lessons/tts", data=data, timeout=30
+            ) as resp:
+                if resp.status == 200:
+                    result = await resp.json()
+                    audio_b64 = result.get("audio")
+                    if audio_b64:
+                        return base64.b64decode(audio_b64)
+                else:
+                    logger.error(
+                        "generate_tts_failed",
+                        user_id=user_id,
+                        status=resp.status,
+                    )
+                return None
+        except Exception as e:
+            logger.error("generate_tts_error", user_id=user_id, error=str(e))
             return None
 
     async def process_text(

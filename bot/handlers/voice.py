@@ -106,7 +106,9 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
         file = await message.bot.get_file(message.voice.file_id)
         audio_bytes = await message.bot.download_file(file.file_path)
 
-        # Отправляем в backend для обработки
+        # ========================================
+        # STEP 1: Анализ БЕЗ TTS (быстро: STT + GPT ≈ 3-6с)
+        # ========================================
         logger.info(
             "processing_voice",
             telegram_id=telegram_id,
@@ -117,6 +119,7 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
             user_id=telegram_id,
             audio_bytes=audio_bytes.read(),
             filename="voice.ogg",
+            include_audio=False,  # ⚡ Skip TTS — saves 2-4 seconds
         )
 
         if not response:
@@ -125,9 +128,6 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
             return
 
         # Получаем данные из ответа
-        audio_response = response.get("honzik_response_audio") or response.get(
-            "audio_response"
-        )
         honzik_text = response.get("honzik_response_text") or response.get(
             "honzik_response_transcript", ""
         )
@@ -153,10 +153,10 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
         mistakes = corrections.get("mistakes", [])
         suggestion = corrections.get("suggestion")
 
-        # ⚡ Stop the chat-action indicator — response is ready
+        # ⚡ Stop the "recording" indicator — analysis is ready
         action_stop.set()
 
-        # ⚡ Send správnost as an instant separate message (appears before voice)
+        # ⚡ INSTANT: Send správnost — user sees result immediately
         score_parts = [get_text('voice_correctness', score=correctness_score)]
         if stars_earned > 0:
             score_parts.append(get_text('voice_stars_earned', stars=stars_earned))
@@ -164,13 +164,23 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
             score_parts.append(get_text('no_corrections'))
         await message.answer("\n".join(score_parts), parse_mode="HTML")
 
-        # Then send Honzík's voice reply (správnost already shown above)
-        if audio_response is not None:
-            audio_bytes_response = None
-            if isinstance(audio_response, str):
-                audio_bytes_response = base64.b64decode(audio_response)
-            elif isinstance(audio_response, bytes):
-                audio_bytes_response = audio_response
+        # ========================================
+        # STEP 2: TTS в отдельном запросе (пока пользователь читает správnost)
+        # ========================================
+        if honzik_text:
+            # Show "recording voice" while TTS generates
+            action_stop2 = asyncio.Event()
+            action_task2 = asyncio.create_task(
+                _keep_chat_action(message.bot, message.chat.id, "record_voice", action_stop2)
+            )
+
+            try:
+                audio_bytes_response = await api_client.generate_tts(
+                    user_id=telegram_id,
+                    text=honzik_text,
+                )
+            finally:
+                action_stop2.set()
 
             if audio_bytes_response:
                 voice_file = BufferedInputFile(
@@ -181,15 +191,13 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                 buttons = []
 
                 # WebApp кнопка "Text" для открытия страницы с текстом ответа
-                if honzik_text:
-                    encoded_text = urllib.parse.quote(honzik_text, safe="")
-                    webui_url = f"{config.webui_url}/response?text={encoded_text}"
-
-                    text_button = InlineKeyboardButton(
-                        text=get_text("btn_show_text"),
-                        web_app=WebAppInfo(url=webui_url)
-                    )
-                    buttons.append(text_button)
+                encoded_text = urllib.parse.quote(honzik_text, safe="")
+                webui_url = f"{config.webui_url}/response?text={encoded_text}"
+                text_button = InlineKeyboardButton(
+                    text=get_text("btn_show_text"),
+                    web_app=WebAppInfo(url=webui_url)
+                )
+                buttons.append(text_button)
 
                 # Кнопка "Opravy" — corrections & tips sent on press
                 if mistakes or suggestion:
@@ -206,12 +214,7 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                     )
                     buttons.append(opravy_button)
 
-                # Создаём клавиатуру только если есть кнопки
-                keyboard = None
-                if buttons:
-                    keyboard = InlineKeyboardMarkup(
-                        inline_keyboard=[buttons]
-                    )
+                keyboard = InlineKeyboardMarkup(inline_keyboard=[buttons])
 
                 # Отправляем голосовое сообщение с кнопками
                 await message.answer_voice(

@@ -127,6 +127,7 @@ def get_gamification_service(
 async def process_voice_message(
     user_id: int = Form(..., description="Telegram ID пользователя"),
     audio: UploadFile = File(..., description="Аудио файл (ogg, mp3, wav)"),
+    include_audio: bool = Form(True, description="Генерировать ли голосовой ответ Хонзика"),
     db: AsyncSession = Depends(get_session),
     settings: Settings = Depends(get_settings),
     openai_client: OpenAIClient = Depends(get_openai_client),
@@ -375,8 +376,8 @@ async def process_voice_message(
         # ========================================
         log.info("starting_optimized_processing")
 
-        # 1. Запускаем TTS в фоне (не блокирует)
-        tts_task = asyncio.create_task(generate_tts())
+        # 1. Запускаем TTS в фоне (если нужно, не блокирует)
+        tts_task = asyncio.create_task(generate_tts()) if include_audio else None
 
         # 2. Пока TTS генерируется, выполняем DB операции последовательно
         await save_messages()
@@ -391,8 +392,8 @@ async def process_voice_message(
                 honzik_response,
             )
 
-        # 4. Ждём завершения TTS
-        audio_response = await tts_task
+        # 4. Ждём завершения TTS (если запускали)
+        audio_response = await tts_task if tts_task else None
 
         await db.commit()
 
@@ -401,14 +402,14 @@ async def process_voice_message(
 
         log.info(
             "optimized_processing_completed",
-            audio_size=len(audio_response),
+            audio_size=len(audio_response) if audio_response else 0,
             stars_earned=gamification_result["stars_earned"],
             streak=gamification_result["current_streak"],
         )
 
         # 11. Формируем ответ
         # Кодируем аудио в base64 для передачи через JSON
-        audio_base64 = base64.b64encode(audio_response).decode('utf-8')
+        audio_base64 = base64.b64encode(audio_response).decode('utf-8') if audio_response else ""
 
         return LessonProcessResponse(
             transcript=transcript,
@@ -469,6 +470,42 @@ async def process_voice_message(
             status_code=500,
             detail=detail,
         )
+
+
+@router.post("/tts")
+async def generate_tts_for_text(
+    user_id: int = Form(..., description="Telegram ID пользователя"),
+    text: str = Form(..., description="Текст для озвучивания"),
+    db: AsyncSession = Depends(get_session),
+    openai_client: OpenAIClient = Depends(get_openai_client),
+):
+    """
+    Отдельный TTS endpoint — генерирует аудио для готового текста.
+
+    Используется ботом во втором шаге: после получения анализа (без аудио)
+    запрашивается озвучка отдельно, чтобы správnost пришла мгновенно.
+    """
+    log = logger.bind(user_id=user_id, mode="tts")
+
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_telegram_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    voice = HonzikPersonality.get_tts_voice(_s(user, "character"))
+    speed = openai_client.get_voice_speed_mapping(_s(user, "voice_speed"))
+
+    # Check TTS cache first
+    cached_audio = await cache_service.get_cached_tts(text, voice, speed)
+    if cached_audio:
+        log.info("tts_cache_hit", text_preview=text[:30])
+        audio = cached_audio
+    else:
+        audio = await openai_client.generate_speech(text=text, voice=voice, speed=speed)
+        await cache_service.cache_tts(text, voice, speed, audio)
+
+    audio_base64 = base64.b64encode(audio).decode("utf-8")
+    return {"audio": audio_base64}
 
 
 @router.post("/process/text", response_model=LessonProcessResponse)
