@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
 import { Search, Trash2, Volume2, BookmarkCheck, RotateCcw, Eye, EyeOff, Check, X, Shuffle } from "lucide-react"
@@ -105,10 +105,14 @@ export function SavedWordsTab({ telegramId }: SavedWordsTabProps) {
     [reviewIndex, reviewQueue, reviewMutation]
   )
 
-  const filteredWords = savedWords?.filter(
-    (word) =>
-      word.word_czech.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      word.translation.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredWords = useMemo(
+    () =>
+      savedWords?.filter(
+        (word) =>
+          word.word_czech.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          word.translation.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    [savedWords, searchQuery]
   )
 
   // === Review Mode ===

@@ -68,11 +68,15 @@ class UserRepository:
             cached = await redis_client.get(cache_key)
             if cached:
                 logger.debug("user_cache_hit", telegram_id=telegram_id)
-                # Reconstruct User object from cached dict
-                user = User(**{k: v for k, v in cached.items() if k != "settings"})
-                if "settings" in cached and cached["settings"]:
-                    user.settings = UserSettings(**cached["settings"])
-                return user
+                # Query DB but use cache as validation that user exists
+                # Avoid constructing detached User objects from cache
+                # which cause lazy-load failures
+                result = await self.session.execute(
+                    select(User)
+                    .where(User.telegram_id == telegram_id)
+                    .options(selectinload(User.settings))
+                )
+                return result.scalar_one_or_none()
 
         # Database query
         result = await self.session.execute(
@@ -210,18 +214,17 @@ class UserRepository:
             if 'settings' in include:
                 query = query.options(joinedload(User.settings))
 
-            # Recent messages - используем selectinload и limit
+            # Recent messages - selectinload loads all, then we slice in Python
+            # Note: selectinload().limit() is NOT supported by SQLAlchemy
             if 'recent_messages' in include:
                 query = query.options(
                     selectinload(User.messages)
-                    .options(selectinload(Message.user))
-                    .limit(10)
                 )
 
-            # Daily stats - последние 30 дней
+            # Daily stats - load all, slice in application code
             if 'daily_stats' in include:
                 query = query.options(
-                    selectinload(User.daily_stats).limit(30)
+                    selectinload(User.daily_stats)
                 )
 
             # Saved words
@@ -754,7 +757,7 @@ class StatsRepository:
         lifetime: int | None = None,
     ) -> None:
         """
-        Обновить звезды пользователя (гибкая версия).
+        Обновить звезды пользователя (абсолютные значения).
 
         Args:
             user_id: ID пользователя
@@ -774,6 +777,52 @@ class StatsRepository:
             update(Stars).where(Stars.user_id == user_id).values(**values)
         )
         await self.session.flush()
+
+    async def increment_user_stars(
+        self,
+        user_id: int,
+        amount: int,
+    ) -> dict[str, int]:
+        """
+        Атомарно начислить звезды пользователю (race-condition safe).
+
+        Использует SQL SET total = total + N вместо read-then-write.
+
+        Args:
+            user_id: ID пользователя
+            amount: Количество звезд для начисления
+
+        Returns:
+            dict с новыми значениями total, available, lifetime
+        """
+        stmt = (
+            update(Stars)
+            .where(Stars.user_id == user_id)
+            .values(
+                total=Stars.total + amount,
+                available=Stars.available + amount,
+                lifetime=Stars.lifetime + amount,
+                updated_at=datetime.now(timezone.utc),
+            )
+            .returning(Stars.total, Stars.available, Stars.lifetime)
+        )
+        result = await self.session.execute(stmt)
+        row = result.one_or_none()
+
+        if row is None:
+            # Stars record doesn't exist yet — create it
+            new_stars = Stars(
+                user_id=user_id,
+                total=amount,
+                available=amount,
+                lifetime=amount,
+            )
+            self.session.add(new_stars)
+            await self.session.flush()
+            return {"total": amount, "available": amount, "lifetime": amount}
+
+        await self.session.flush()
+        return {"total": row[0], "available": row[1], "lifetime": row[2]}
 
     async def get_stats_range(
         self,

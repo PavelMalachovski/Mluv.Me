@@ -98,7 +98,9 @@ class GamificationService:
         stars_amount: int,
     ) -> dict:
         """
-        Начислить звезды пользователю.
+        Атомарно начислить звезды пользователю (race-condition safe).
+
+        Использует SQL SET total = total + N вместо read-then-write.
 
         Args:
             db: Сессия БД
@@ -112,43 +114,22 @@ class GamificationService:
                 "available_stars": int
             }
         """
-        # Получаем текущие звезды
-        stars_obj = await self.stats_repo.get_user_stars(user_id)
-
-        if stars_obj is None:
-            # Если нет записи, создаем с нулями
-            current_total = 0
-            current_available = 0
-            current_lifetime = 0
-        else:
-            current_total = stars_obj.total
-            current_available = stars_obj.available
-            current_lifetime = stars_obj.lifetime
-
-        # Начисляем
-        new_total = current_total + stars_amount
-        new_available = current_available + stars_amount
-        new_lifetime = current_lifetime + stars_amount
-
-        # Обновляем в БД
-        await self.stats_repo.update_user_stars(
+        result = await self.stats_repo.increment_user_stars(
             user_id=user_id,
-            total=new_total,
-            available=new_available,
-            lifetime=new_lifetime,
+            amount=stars_amount,
         )
 
         self.logger.info(
             "stars_awarded",
             user_id=user_id,
             stars_earned=stars_amount,
-            new_total=new_total,
+            new_total=result["total"],
         )
 
         return {
             "stars_earned": stars_amount,
-            "total_stars": new_total,
-            "available_stars": new_available,
+            "total_stars": result["total"],
+            "available_stars": result["available"],
         }
 
     def get_user_timezone(self, timezone_str: str | None) -> ZoneInfo:

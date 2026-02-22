@@ -72,12 +72,17 @@ NATIVE_LANGUAGES = [
 ]
 
 
-def get_native_language_keyboard(page: int = 0, per_page: int = 8) -> InlineKeyboardMarkup:
+def get_native_language_keyboard(page: int = 0, per_page: int = 8, prefix: str = "native") -> InlineKeyboardMarkup:
     """
     Клавиатура выбора родного языка с пагинацией.
 
     Page 0 shows pinned languages (first 5).
     Subsequent pages show remaining languages in chunks.
+
+    Args:
+        page: Page number (0-based)
+        per_page: Items per page  
+        prefix: Callback data prefix (e.g. "native" or "onb_native")
 
     Returns:
         Inline клавиатура
@@ -100,14 +105,14 @@ def get_native_language_keyboard(page: int = 0, per_page: int = 8) -> InlineKeyb
         row = [
             InlineKeyboardButton(
                 text=langs[i][1],
-                callback_data=f"native:{langs[i][0]}",
+                callback_data=f"{prefix}:{langs[i][0]}",
             )
         ]
         if i + 1 < len(langs):
             row.append(
                 InlineKeyboardButton(
                     text=langs[i + 1][1],
-                    callback_data=f"native:{langs[i + 1][0]}",
+                    callback_data=f"{prefix}:{langs[i + 1][0]}",
                 )
             )
         rows.append(row)
@@ -116,12 +121,12 @@ def get_native_language_keyboard(page: int = 0, per_page: int = 8) -> InlineKeyb
     nav_row: list[InlineKeyboardButton] = []
     if page > 0:
         nav_row.append(
-            InlineKeyboardButton(text="◀️ Zpět", callback_data=f"native_page:{page - 1}")
+            InlineKeyboardButton(text="◀️ Zpět", callback_data=f"{prefix}_page:{page - 1}")
         )
     if has_more:
         label = "Další jazyky ▶️" if page == 0 else "Další ▶️"
         nav_row.append(
-            InlineKeyboardButton(text=label, callback_data=f"native_page:{page + 1}")
+            InlineKeyboardButton(text=label, callback_data=f"{prefix}_page:{page + 1}")
         )
     if nav_row:
         rows.append(nav_row)
@@ -139,11 +144,14 @@ def get_language_keyboard() -> InlineKeyboardMarkup:
     return get_native_language_keyboard()
 
 
-def get_level_keyboard() -> InlineKeyboardMarkup:
+def get_level_keyboard(prefix: str = "level") -> InlineKeyboardMarkup:
     """
     Клавиатура выбора уровня чешского.
 
     Language Immersion: Все тексты на чешском.
+
+    Args:
+        prefix: Callback data prefix (e.g. "level" or "onb_level")
 
     Returns:
         Inline клавиатура
@@ -153,25 +161,25 @@ def get_level_keyboard() -> InlineKeyboardMarkup:
             [
                 InlineKeyboardButton(
                     text=get_text("level_beginner"),  # 🌱 Začátečník
-                    callback_data="level:beginner",
+                    callback_data=f"{prefix}:beginner",
                 )
             ],
             [
                 InlineKeyboardButton(
                     text=get_text("level_intermediate"),  # 📚 Středně pokročilý
-                    callback_data="level:intermediate",
+                    callback_data=f"{prefix}:intermediate",
                 )
             ],
             [
                 InlineKeyboardButton(
                     text=get_text("level_advanced"),  # 🎓 Pokročilý
-                    callback_data="level:advanced",
+                    callback_data=f"{prefix}:advanced",
                 )
             ],
             [
                 InlineKeyboardButton(
                     text=get_text("level_native"),  # 🏆 Rodilý mluvčí
-                    callback_data="level:native",
+                    callback_data=f"{prefix}:native",
                 )
             ],
         ]

@@ -48,12 +48,42 @@ interface TranslationState {
 export default function PracticePage() {
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
-  const [conversation, setConversation] = useState<ConversationMessage[]>([])
+
+  // Restore conversation from sessionStorage on mount
+  const [conversation, setConversation] = useState<ConversationMessage[]>(() => {
+    if (typeof window === "undefined") return []
+    try {
+      const saved = sessionStorage.getItem("practice_conversation")
+      return saved ? JSON.parse(saved) : []
+    } catch { return [] }
+  })
   const [translationState, setTranslationState] = useState<TranslationState | null>(null)
   const [inputMode, setInputMode] = useState<"text" | "voice">("text")
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
-  const [showTopicSelector, setShowTopicSelector] = useState(true)
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null
+    return sessionStorage.getItem("practice_topic") || null
+  })
+  const [showTopicSelector, setShowTopicSelector] = useState(() => {
+    if (typeof window === "undefined") return true
+    return !sessionStorage.getItem("practice_topic")
+  })
   const [quotaExceeded, setQuotaExceeded] = useState(false)
+
+  // Persist conversation to sessionStorage on change
+  useEffect(() => {
+    if (conversation.length > 0) {
+      // Only persist sent messages (skip "sending" status)
+      const persistable = conversation.filter(m => m.status === "sent")
+      sessionStorage.setItem("practice_conversation", JSON.stringify(persistable))
+    }
+  }, [conversation])
+
+  // Persist selected topic
+  useEffect(() => {
+    if (selectedTopic) {
+      sessionStorage.setItem("practice_topic", selectedTopic)
+    }
+  }, [selectedTopic])
 
   // Text message mutation with optimistic updates
   // Note: All hooks must be called before any early returns
@@ -313,6 +343,8 @@ export default function PracticePage() {
                   setSelectedTopic(null)
                   setShowTopicSelector(true)
                   setConversation([])
+                  sessionStorage.removeItem("practice_conversation")
+                  sessionStorage.removeItem("practice_topic")
                 }}
                 className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               >

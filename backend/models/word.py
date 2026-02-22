@@ -45,6 +45,7 @@ class SavedWord(Base):
     # Performance: Composite index for efficient word lookup by user
     __table_args__ = (
         Index('idx_saved_words_user_word', 'user_id', 'word_czech'),
+        Index('idx_saved_words_next_review', 'next_review_date'),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

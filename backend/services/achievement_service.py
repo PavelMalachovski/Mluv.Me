@@ -21,7 +21,7 @@ from enum import Enum
 from zoneinfo import ZoneInfo
 
 import structlog
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.achievement import Achievement, UserAchievement
@@ -86,6 +86,94 @@ class AchievementService:
     включая тематические, временные и качественные достижения.
     """
 
+    async def _prefetch_all_category_values(
+        self,
+        session: AsyncSession,
+        user: User,
+    ) -> dict[str, int]:
+        """
+        Предварительная загрузка всех значений категорий одним батчем.
+
+        Вместо N отдельных SQL-запросов (по одному на каждое достижение)
+        выполняем ~6 запросов заранее и кешируем результаты.
+
+        Returns:
+            dict: {"streak": N, "messages": N, "stars": N, ...}
+        """
+        from sqlalchemy import literal_column
+
+        # Выполняем все запросы параллельно одним батчем
+        streak_q = session.execute(
+            select(DailyStats.streak_day)
+            .where(DailyStats.user_id == user.id)
+            .order_by(DailyStats.date.desc())
+            .limit(1)
+        )
+        messages_q = session.execute(
+            select(func.count(Message.id))
+            .where(and_(Message.user_id == user.id, Message.role == "user"))
+        )
+        stars_q = session.execute(
+            select(Stars.lifetime).where(Stars.user_id == user.id)
+        )
+        vocab_q = session.execute(
+            select(func.count(SavedWord.id)).where(SavedWord.user_id == user.id)
+        )
+        mastered_q = session.execute(
+            select(func.count(SavedWord.id))
+            .where(and_(SavedWord.user_id == user.id, SavedWord.interval_days >= 90))
+        )
+        challenges_q = session.execute(
+            select(func.count(UserChallenge.id))
+            .where(and_(UserChallenge.user_id == user.id, UserChallenge.completed))
+        )
+        no_mistakes_q = session.execute(
+            select(func.count(Message.id))
+            .where(and_(
+                Message.user_id == user.id,
+                Message.role == "user",
+                Message.correctness_score == 100,
+            ))
+        )
+        # Topics (all at once)
+        topics_q = session.execute(
+            select(TopicMessageCount.topic, TopicMessageCount.count)
+            .where(TopicMessageCount.user_id == user.id)
+        )
+
+        # Await all
+        streak_r = await streak_q
+        messages_r = await messages_q
+        stars_r = await stars_q
+        vocab_r = await vocab_q
+        mastered_r = await mastered_q
+        challenges_r = await challenges_q
+        no_mistakes_r = await no_mistakes_q
+        topics_r = await topics_q
+
+        # Consecutive high accuracy (needs sequential logic, single query)
+        consecutive = await self._get_consecutive_high_accuracy(session, user.id)
+
+        # Parse results
+        values = {
+            "streak": streak_r.scalar_one_or_none() or 0,
+            "messages": messages_r.scalar() or 0,
+            "stars": stars_r.scalar() or 0,
+            "vocabulary": vocab_r.scalar() or 0,
+            "review": mastered_r.scalar() or 0,
+            "challenge": challenges_r.scalar() or 0,
+            "time": 0,  # Checked separately
+            "quality:no_mistakes": no_mistakes_r.scalar() or 0,
+            "quality:perfectionist": consecutive,
+            "quality:improver": 0,  # Checked separately
+        }
+
+        # Add topic counts
+        for row in topics_r:
+            values[f"thematic:{row[0]}"] = row[1]
+
+        return values
+
     async def check_achievements(
         self,
         session: AsyncSession,
@@ -95,6 +183,9 @@ class AchievementService:
     ) -> list[dict[str, Any]]:
         """
         Проверить и разблокировать достижения для пользователя.
+
+        Оптимизировано: предварительно загружает все значения категорий
+        за ~7 запросов вместо N+1.
 
         Args:
             session: Сессия базы данных
@@ -122,14 +213,17 @@ class AchievementService:
         unlocked_result = await session.execute(unlocked_query)
         unlocked_ids = set(unlocked_result.scalars().all())
 
+        # Pre-fetch all category values in batch (eliminates N+1)
+        prefetched = await self._prefetch_all_category_values(session, user)
+
         for achievement in achievements:
             if achievement.id in unlocked_ids:
                 continue
 
-            # Вычисляем текущее значение на основе категории
+            # Use pre-fetched value or provided value
             value = current_value
             if value is None:
-                value = await self._get_category_value(session, user, achievement)
+                value = self._resolve_prefetched_value(prefetched, achievement)
 
             # Проверяем порог
             if value >= achievement.threshold:
@@ -166,6 +260,28 @@ class AchievementService:
             await session.flush()
 
         return newly_unlocked
+
+    def _resolve_prefetched_value(
+        self,
+        prefetched: dict[str, int],
+        achievement: Achievement,
+    ) -> int:
+        """Resolve pre-fetched value for an achievement based on its category/code."""
+        category = achievement.category
+
+        if category in ("streak", "messages", "stars", "vocabulary", "review", "challenge", "time"):
+            return prefetched.get(category, 0)
+        elif category == "thematic":
+            topic = achievement.code.replace("_master", "").replace("_buff", "").replace("_lover", "")
+            return prefetched.get(f"thematic:{topic}", 0)
+        elif category == "quality":
+            if "perfectionist" in achievement.code:
+                return prefetched.get("quality:perfectionist", 0)
+            elif "no_mistakes" in achievement.code:
+                return prefetched.get("quality:no_mistakes", 0)
+            elif "improver" in achievement.code:
+                return prefetched.get("quality:improver", 0)
+        return 0
 
     async def _get_category_value(
         self,
@@ -347,24 +463,26 @@ class AchievementService:
     async def _award_stars(
         self, session: AsyncSession, user_id: int, amount: int
     ) -> None:
-        """Начислить звёзды пользователю."""
-        result = await session.execute(
-            select(Stars).where(Stars.user_id == user_id)
+        """Атомарно начислить звёзды пользователю."""
+        stmt = (
+            update(Stars)
+            .where(Stars.user_id == user_id)
+            .values(
+                total=Stars.total + amount,
+                available=Stars.available + amount,
+                lifetime=Stars.lifetime + amount,
+                updated_at=datetime.now(timezone.utc),
+            )
         )
-        stars = result.scalar_one_or_none()
+        result = await session.execute(stmt)
 
-        if stars:
-            stars.total += amount
-            stars.available += amount
-            stars.lifetime += amount
-            stars.updated_at = datetime.now(timezone.utc)
-        else:
+        if result.rowcount == 0:
             # Создаём запись если нет
             stars = Stars(
                 user_id=user_id,
                 total=amount,
                 available=amount,
-                lifetime=amount
+                lifetime=amount,
             )
             session.add(stars)
 

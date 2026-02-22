@@ -66,15 +66,16 @@ async def command_start_handler(message: Message, api_client: APIClient) -> None
     }
 
     # Приветствие на чешском + выбор родного языка
+    # Use onb_ prefix to avoid conflict with settings callbacks in commands.py
     await message.answer(
         get_text("welcome"),
-        reply_markup=get_native_language_keyboard(),
+        reply_markup=get_native_language_keyboard(prefix="onb_native"),
     )
 
     logger.info("onboarding_started", telegram_id=telegram_id)
 
 
-@router.callback_query(F.data.startswith("native:"))
+@router.callback_query(F.data.startswith("onb_native:"))
 async def native_language_selected_handler(
     callback: CallbackQuery, api_client: APIClient
 ) -> None:
@@ -99,7 +100,7 @@ async def native_language_selected_handler(
     # Обновляем сообщение - переходим к выбору уровня (на чешском)
     await callback.message.edit_text(
         get_text("language_selected"),  # Чешский текст
-        reply_markup=get_level_keyboard(),  # Уровни на чешском
+        reply_markup=get_level_keyboard(prefix="onb_level"),  # Уровни на чешском
     )
 
     await callback.answer()
@@ -107,7 +108,7 @@ async def native_language_selected_handler(
     logger.info("native_language_selected", telegram_id=telegram_id, native_language=native_language)
 
 
-@router.callback_query(F.data.startswith("native_page:"))
+@router.callback_query(F.data.startswith("onb_native_page:"))
 async def native_language_page_handler(
     callback: CallbackQuery, api_client: APIClient
 ) -> None:
@@ -121,7 +122,7 @@ async def native_language_page_handler(
     page = int(callback.data.split(":")[1])
 
     await callback.message.edit_reply_markup(
-        reply_markup=get_native_language_keyboard(page=page),
+        reply_markup=get_native_language_keyboard(page=page, prefix="onb_native"),
     )
     await callback.answer()
 
@@ -146,13 +147,13 @@ async def language_selected_handler_legacy(
 
     await callback.message.edit_text(
         get_text("language_selected"),
-        reply_markup=get_level_keyboard(),
+        reply_markup=get_level_keyboard(prefix="onb_level"),
     )
 
     await callback.answer()
 
 
-@router.callback_query(F.data.startswith("level:"))
+@router.callback_query(F.data.startswith("onb_level:"))
 async def level_selected_handler(
     callback: CallbackQuery, api_client: APIClient
 ) -> None:

@@ -240,37 +240,25 @@ async def get_user_settings(
     return UserSettingsResponse.model_validate(settings)
 
 
-@router.patch(
-    "/{user_id}/settings",
-    response_model=UserSettingsResponse,
-    summary="Обновить настройки пользователя",
-    description="Обновить настройки пользователя (стиль Хонзика, скорость голоса, и т.д.)",
-)
-async def update_user_settings(
+async def _do_update_settings(
     user_id: int,
     settings_data: UserSettingsUpdate,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession,
+    log_extra: dict | None = None,
 ) -> UserSettingsResponse:
     """
-    Обновить настройки пользователя.
+    Shared helper for updating user settings.
 
     Args:
-        user_id: User ID
-        settings_data: Обновляемые настройки
+        user_id: Internal user ID
+        settings_data: Settings to update
         session: Database session
-
-    Returns:
-        UserSettingsResponse: Обновленные настройки
-
-    Raises:
-        HTTPException: Если настройки не найдены
+        log_extra: Extra fields for logging
     """
     repo = UserSettingsRepository(session)
-
-    # Only update fields that are provided
     update_data = settings_data.model_dump(exclude_unset=True)
+
     if not update_data:
-        # No fields to update
         settings = await repo.get_by_user_id(user_id)
         if not settings:
             raise HTTPException(
@@ -291,10 +279,26 @@ async def update_user_settings(
     logger.info(
         "settings_updated",
         user_id=user_id,
-        updated_fields=list(update_data.keys())
+        updated_fields=list(update_data.keys()),
+        **(log_extra or {}),
     )
 
     return UserSettingsResponse.model_validate(settings)
+
+
+@router.patch(
+    "/{user_id}/settings",
+    response_model=UserSettingsResponse,
+    summary="Обновить настройки пользователя",
+    description="Обновить настройки пользователя (стиль Хонзика, скорость голоса, и т.д.)",
+)
+async def update_user_settings(
+    user_id: int,
+    settings_data: UserSettingsUpdate,
+    session: AsyncSession = Depends(get_session),
+) -> UserSettingsResponse:
+    """Обновить настройки пользователя по user_id."""
+    return await _do_update_settings(user_id, settings_data, session)
 
 
 @router.patch(
@@ -308,20 +312,7 @@ async def update_user_settings_by_telegram(
     settings_data: UserSettingsUpdate,
     session: AsyncSession = Depends(get_session),
 ) -> UserSettingsResponse:
-    """
-    Обновить настройки пользователя по Telegram ID.
-
-    Args:
-        telegram_id: Telegram ID
-        settings_data: Обновляемые настройки
-        session: Database session
-
-    Returns:
-        UserSettingsResponse: Обновленные настройки
-
-    Raises:
-        HTTPException: Если пользователь не найден
-    """
+    """Обновить настройки пользователя по Telegram ID."""
     user_repo = UserRepository(session)
     user = await user_repo.get_by_telegram_id(telegram_id)
 
@@ -332,37 +323,9 @@ async def update_user_settings_by_telegram(
             detail=f"User with telegram_id {telegram_id} not found"
         )
 
-    repo = UserSettingsRepository(session)
-
-    # Only update fields that are provided
-    update_data = settings_data.model_dump(exclude_unset=True)
-    if not update_data:
-        # No fields to update
-        settings = await repo.get_by_user_id(user.id)
-        if not settings:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Settings for user {user.id} not found"
-            )
-        return UserSettingsResponse.model_validate(settings)
-
-    settings = await repo.update(user.id, **update_data)
-
-    if not settings:
-        logger.warning("settings_not_found", user_id=user.id)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Settings for user {user.id} not found"
-        )
-
-    logger.info(
-        "settings_updated",
-        telegram_id=telegram_id,
-        user_id=user.id,
-        updated_fields=list(update_data.keys())
+    return await _do_update_settings(
+        user.id, settings_data, session, log_extra={"telegram_id": telegram_id}
     )
-
-    return UserSettingsResponse.model_validate(settings)
 
 
 

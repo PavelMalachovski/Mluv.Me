@@ -6,7 +6,7 @@ Stats models (DailyStats and Stars).
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -32,6 +32,9 @@ class DailyStats(Base):
     """
 
     __tablename__ = "daily_stats"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'date', name='uq_daily_stats_user_date'),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 

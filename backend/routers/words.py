@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func, case
 
 from backend.db.database import get_session
 from backend.db.repositories import UserRepository, SavedWordRepository
@@ -535,35 +535,78 @@ async def get_review_stats(
 
     today = date.today()
 
-    # Get all words for user
-    query = select(SavedWord).where(SavedWord.user_id == user.id)
-    result = await session.execute(query)
-    all_words = result.scalars().all()
+    # SQL-based stats — no Python-side loading of all words
+    # Total words count
+    total_q = select(func.count(SavedWord.id)).where(SavedWord.user_id == user.id)
 
-    # Calculate stats
-    total_words = len(all_words)
-    due_today = sum(1 for w in all_words if w.is_due_for_review)
+    # Due today: next_review_date <= today or IS NULL
+    due_q = select(func.count(SavedWord.id)).where(
+        SavedWord.user_id == user.id,
+        (SavedWord.next_review_date <= today) | (SavedWord.next_review_date.is_(None)),
+    )
+
+    # Mastery breakdown via CASE WHEN + GROUP BY equivalent
+    mastery_q = select(
+        func.sum(case((SavedWord.sr_review_count == 0, 1), else_=0)).label("new"),
+        func.sum(case(
+            (SavedWord.sr_review_count > 0, case((SavedWord.interval_days < 7, 1), else_=0)),
+            else_=0,
+        )).label("learning"),
+        func.sum(case(
+            (SavedWord.sr_review_count > 0, case(
+                ((SavedWord.interval_days >= 7) & (SavedWord.interval_days < 30), 1),
+                else_=0,
+            )),
+            else_=0,
+        )).label("familiar"),
+        func.sum(case(
+            (SavedWord.sr_review_count > 0, case(
+                ((SavedWord.interval_days >= 30) & (SavedWord.interval_days < 90), 1),
+                else_=0,
+            )),
+            else_=0,
+        )).label("known"),
+        func.sum(case(
+            (SavedWord.sr_review_count > 0, case((SavedWord.interval_days >= 90, 1), else_=0)),
+            else_=0,
+        )).label("mastered"),
+    ).where(SavedWord.user_id == user.id)
+
+    # Next review date (minimum future date)
+    next_review_q = select(
+        func.min(SavedWord.next_review_date)
+    ).where(
+        SavedWord.user_id == user.id,
+        SavedWord.next_review_date > today,
+    )
+
+    total_r = await session.execute(total_q)
+    due_r = await session.execute(due_q)
+    mastery_r = await session.execute(mastery_q)
+    next_r = await session.execute(next_review_q)
+
+    total_words = total_r.scalar() or 0
+    due_today = due_r.scalar() or 0
+    mastery_row = mastery_r.one()
+    next_review_date = next_r.scalar()
+
     mastery_breakdown = {
-        "new": 0,
-        "learning": 0,
-        "familiar": 0,
-        "known": 0,
-        "mastered": 0,
+        "new": mastery_row.new or 0,
+        "learning": mastery_row.learning or 0,
+        "familiar": mastery_row.familiar or 0,
+        "known": mastery_row.known or 0,
+        "mastered": mastery_row.mastered or 0,
     }
 
-    for word in all_words:
-        level = word.mastery_level
-        if level in mastery_breakdown:
-            mastery_breakdown[level] += 1
+    next_review_in_days = 0
+    if next_review_date:
+        next_review_in_days = (next_review_date - today).days
 
     return {
         "total_words": total_words,
         "due_today": due_today,
         "mastery_breakdown": mastery_breakdown,
-        "next_review_in_days": min(
-            [(w.next_review_date - today).days for w in all_words if w.next_review_date and w.next_review_date > today],
-            default=0
-        ),
+        "next_review_in_days": next_review_in_days,
     }
 
 

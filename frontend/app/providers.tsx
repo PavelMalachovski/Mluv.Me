@@ -11,7 +11,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
         gcTime: 30 * 60 * 1000, // 30 minutes (increased from 10)
         refetchOnWindowFocus: false,
         retry: 1,
-        refetchOnMount: "always",
+        // refetchOnMount defaults to true — respects staleTime
+        // (was "always" which bypassed staleTime, causing unnecessary refetches)
       },
       mutations: {
         retry: 1,

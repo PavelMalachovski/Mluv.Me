@@ -15,6 +15,7 @@ from backend.db.repositories import (
 from backend.services.honzik_personality import HonzikPersonality
 from backend.services.gamification import GamificationService
 from backend.services.openai_client import OpenAIClient
+from backend.services.lesson_processing import save_lesson_messages, update_lesson_gamification
 from backend.config import Settings, get_settings
 from backend.routers.web_auth import get_authenticated_user
 from backend.services.subscription_service import SubscriptionService
@@ -120,52 +121,24 @@ async def process_text_message(
         character=character,
     )
 
-    # Save user message
-    await message_repo.create(
+    # Save messages using shared service
+    correctness = response.get("correctness_score", 0)
+    await save_lesson_messages(
+        db=db,
         user_id=user_id,
-        role="user",
-        text=request.text,
-        transcript_raw=request.text,
-        transcript_normalized=request.text,
-        correctness_score=response.get("correctness_score", 0),
-        words_total=len(request.text.split()),
-        words_correct=int(len(request.text.split()) * response.get("correctness_score", 0) / 100)
+        user_text=request.text,
+        assistant_text=response["honzik_response"],
+        correctness_score=correctness,
     )
 
-    # Save Honzík's response
-    await message_repo.create(
-        user_id=user_id,
-        role="assistant",
-        text=response["honzik_response"]
-    )
-
-    # Calculate stars and update gamification
-    stats_repo = StatsRepository(db)
-    user_repo = UserRepository(db)
-    gamification = GamificationService(stats_repo, user_repo)
-
-    # Get user timezone from settings if available
+    # Update gamification using shared service
     user_timezone = settings.timezone if settings else None
-    user_date = gamification.get_user_date(user_timezone)
-
-    # Calculate stars based on correctness
-    current_streak = (await stats_repo.get_user_summary(user_id)).get("current_streak", 0)
-    stars = gamification.calculate_stars_for_message(
-        correctness_score=int(response.get("correctness_score", 0)),
-        current_streak=current_streak
-    )
-
-    # Award stars
-    await gamification.award_stars(db, user_id, stars)
-
-    # Update daily stats
-    daily_stats = await stats_repo.get_or_create_daily(user_id, user_date)
-    await stats_repo.update_daily(
+    stars_result = await update_lesson_gamification(
+        db=db,
         user_id=user_id,
-        date_value=user_date,
-        messages_count=daily_stats.messages_count + 1,
-        words_said=daily_stats.words_said + len(request.text.split()),
-        correct_percent=int(response.get("correctness_score", 0)),
+        correctness_score=correctness,
+        words_count=len(request.text.split()),
+        timezone_str=user_timezone,
     )
 
     await db.commit()
@@ -178,7 +151,7 @@ async def process_text_message(
         honzik_transcript=response["honzik_response"],  # Same as text response for now
         user_mistakes=response.get("mistakes", []),
         suggestions=[response.get("suggestion", "")],
-        stars_earned=stars,
+        stars_earned=stars_result["stars_earned"],
         correctness_score=response.get("correctness_score", 0)
     )
 

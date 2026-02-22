@@ -22,6 +22,23 @@ logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/gamification", tags=["gamification"])
 
 
+# ============ Dependencies ============
+
+async def get_user_by_telegram_id(
+    telegram_id: int = Query(..., description="Telegram user ID"),
+    db: AsyncSession = Depends(get_session),
+):
+    """
+    Reusable FastAPI dependency: resolve telegram_id → User ORM object.
+    Raises 404 if not found. Eliminates boilerplate in every endpoint.
+    """
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_telegram_id(telegram_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
 # ============ Pydantic Schemas ============
 
 class ChallengeResponse(BaseModel):
@@ -126,7 +143,7 @@ async def get_challenge_service() -> ChallengeService:
 
 @router.get("/challenges", response_model=AllChallengesResponse)
 async def get_all_challenges(
-    telegram_id: int = Query(..., description="Telegram user ID"),
+    user=Depends(get_user_by_telegram_id),
     db: AsyncSession = Depends(get_session),
     challenge_service: ChallengeService = Depends(get_challenge_service),
 ):
@@ -135,12 +152,6 @@ async def get_all_challenges(
 
     Get all challenges for a user (daily and weekly) with progress.
     """
-    user_repo = UserRepository(db)
-    user = await user_repo.get_by_telegram_id(telegram_id)
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     timezone_str = user.settings.timezone if user.settings else "Europe/Prague"
 
     result = await challenge_service.get_all_challenges(
@@ -154,7 +165,7 @@ async def get_all_challenges(
 
 @router.get("/challenges/daily")
 async def get_daily_challenge(
-    telegram_id: int = Query(..., description="Telegram user ID"),
+    user=Depends(get_user_by_telegram_id),
     db: AsyncSession = Depends(get_session),
     challenge_service: ChallengeService = Depends(get_challenge_service),
 ):
@@ -163,12 +174,6 @@ async def get_daily_challenge(
 
     Get the daily challenge for a user.
     """
-    user_repo = UserRepository(db)
-    user = await user_repo.get_by_telegram_id(telegram_id)
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     timezone_str = user.settings.timezone if user.settings else "Europe/Prague"
 
     try:
@@ -189,7 +194,7 @@ async def get_daily_challenge(
 
 @router.get("/challenges/weekly")
 async def get_weekly_challenges(
-    telegram_id: int = Query(..., description="Telegram user ID"),
+    user=Depends(get_user_by_telegram_id),
     db: AsyncSession = Depends(get_session),
     challenge_service: ChallengeService = Depends(get_challenge_service),
 ):
@@ -198,12 +203,6 @@ async def get_weekly_challenges(
 
     Get all weekly challenges for a user with progress.
     """
-    user_repo = UserRepository(db)
-    user = await user_repo.get_by_telegram_id(telegram_id)
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     timezone_str = user.settings.timezone if user.settings else "Europe/Prague"
 
     try:
@@ -225,7 +224,7 @@ async def get_weekly_challenges(
 @router.post("/challenges/claim", response_model=ClaimRewardResponse)
 async def claim_challenge_reward(
     request: ClaimRewardRequest,
-    telegram_id: int = Query(..., description="Telegram user ID"),
+    user=Depends(get_user_by_telegram_id),
     db: AsyncSession = Depends(get_session),
     challenge_service: ChallengeService = Depends(get_challenge_service),
 ):
@@ -234,12 +233,6 @@ async def claim_challenge_reward(
 
     Claim the reward for a completed challenge.
     """
-    user_repo = UserRepository(db)
-    user = await user_repo.get_by_telegram_id(telegram_id)
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     # Parse date
     try:
         challenge_date = date.fromisoformat(request.challenge_date)
@@ -270,7 +263,7 @@ async def claim_challenge_reward(
 
 @router.get("/achievements", response_model=list[AchievementResponse])
 async def get_user_achievements(
-    telegram_id: int = Query(..., description="Telegram user ID"),
+    user=Depends(get_user_by_telegram_id),
     db: AsyncSession = Depends(get_session),
     achievement_service: AchievementService = Depends(get_achievement_service),
 ):
@@ -279,12 +272,6 @@ async def get_user_achievements(
 
     Get all achievements for a user with unlock status and progress.
     """
-    user_repo = UserRepository(db)
-    user = await user_repo.get_by_telegram_id(telegram_id)
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     achievements = await achievement_service.get_user_achievements(
         session=db,
         user_id=user.id,
@@ -295,7 +282,7 @@ async def get_user_achievements(
 
 @router.get("/achievements/progress", response_model=AchievementProgressResponse)
 async def get_achievement_progress(
-    telegram_id: int = Query(..., description="Telegram user ID"),
+    user=Depends(get_user_by_telegram_id),
     db: AsyncSession = Depends(get_session),
     achievement_service: AchievementService = Depends(get_achievement_service),
 ):
@@ -304,12 +291,6 @@ async def get_achievement_progress(
 
     Get achievement progress summary by category.
     """
-    user_repo = UserRepository(db)
-    user = await user_repo.get_by_telegram_id(telegram_id)
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     progress = await achievement_service.get_achievement_progress(
         session=db,
         user=user,
@@ -321,7 +302,7 @@ async def get_achievement_progress(
 @router.get("/achievements/category/{category}")
 async def get_achievements_by_category(
     category: str,
-    telegram_id: int = Query(..., description="Telegram user ID"),
+    user=Depends(get_user_by_telegram_id),
     db: AsyncSession = Depends(get_session),
     achievement_service: AchievementService = Depends(get_achievement_service),
 ):
@@ -337,12 +318,6 @@ async def get_achievements_by_category(
             status_code=400,
             detail=f"Invalid category. Valid categories: {', '.join(valid_categories)}"
         )
-
-    user_repo = UserRepository(db)
-    user = await user_repo.get_by_telegram_id(telegram_id)
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
 
     all_achievements = await achievement_service.get_user_achievements(
         session=db,
@@ -444,7 +419,7 @@ async def get_weekly_leaderboard(
 
 @router.get("/leaderboard/friends")
 async def get_friends_leaderboard(
-    telegram_id: int = Query(..., description="Telegram user ID"),
+    user=Depends(get_user_by_telegram_id),
     metric: str = Query("stars", description="Metric: stars, streak, messages"),
     db: AsyncSession = Depends(get_session),
 ):
@@ -454,12 +429,6 @@ async def get_friends_leaderboard(
     Get leaderboard among friends (referrals).
     Note: This is a placeholder - referral system not yet implemented.
     """
-    user_repo = UserRepository(db)
-    user = await user_repo.get_by_telegram_id(telegram_id)
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     # Placeholder response - referral system to be implemented
     return {
         "metric": metric,
@@ -497,27 +466,45 @@ async def get_my_rank(
     mv_repo = MaterializedViewRepository(db)
 
     try:
-        # Get all users sorted by metric
-        all_data = await mv_repo.get_leaderboard(
-            metric=metric_map[metric],
-            limit=1000,  # Get enough to find user
-        )
+        from sqlalchemy import text
 
-        # Find user's rank
-        rank = None
-        score = None
-        for i, entry in enumerate(all_data, 1):
-            if entry.get("telegram_id") == telegram_id:
-                rank = i
-                score = entry.get("score", 0)
-                break
+        # Use SQL RANK() window function — O(1) for user lookup instead of O(N)
+        sql_metric = metric_map[metric]
+        rank_query = text(f"""
+            SELECT rank, score, total_users FROM (
+                SELECT
+                    telegram_id,
+                    {sql_metric} as score,
+                    RANK() OVER (ORDER BY {sql_metric} DESC) as rank,
+                    COUNT(*) OVER () as total_users
+                FROM user_stats_summary
+                WHERE {sql_metric} > 0
+            ) ranked
+            WHERE telegram_id = :telegram_id
+        """)
 
-        return {
-            "metric": metric,
-            "rank": rank,
-            "score": score,
-            "total_users": len(all_data),
-        }
+        result = await db.execute(rank_query, {"telegram_id": telegram_id})
+        row = result.one_or_none()
+
+        if row:
+            return {
+                "metric": metric,
+                "rank": row.rank,
+                "score": row.score,
+                "total_users": row.total_users,
+            }
+        else:
+            # User not found or has 0 score
+            count_result = await db.execute(
+                text(f"SELECT COUNT(*) FROM user_stats_summary WHERE {sql_metric} > 0")
+            )
+            total = count_result.scalar() or 0
+            return {
+                "metric": metric,
+                "rank": None,
+                "score": None,
+                "total_users": total,
+            }
 
     except Exception as e:
         logger.warning("my_rank_query_failed", error=str(e))
