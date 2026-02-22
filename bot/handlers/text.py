@@ -6,6 +6,7 @@ Language Immersion: Все сообщения бота на чешском.
 а не только голосовыми сообщениями.
 """
 
+import asyncio
 import base64
 import time
 import urllib.parse
@@ -21,7 +22,7 @@ from aiogram.types import (
 import structlog
 
 from bot.config import config
-from bot.handlers.voice import _corrections_cache, _cleanup_old_corrections
+from bot.handlers.voice import _corrections_cache, _cleanup_old_corrections, _keep_chat_action
 from bot.handlers.payments import get_subscription_keyboard, get_limit_reached_text
 from bot.localization import get_text
 from bot.services.api_client import APIClient
@@ -66,8 +67,11 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
         )
         return
 
-    # Показываем что Хонзик печатает
-    await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
+    # Keep "typing" indicator alive during the entire backend round-trip
+    action_stop = asyncio.Event()
+    action_task = asyncio.create_task(
+        _keep_chat_action(message.bot, message.chat.id, "typing", action_stop)
+    )
 
     try:
         # Отправляем текст в backend
@@ -84,6 +88,7 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
         )
 
         if not response:
+            action_stop.set()
             await message.answer(get_text("error_backend"))
             return
 
@@ -101,18 +106,22 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
         mistakes = corrections.get("mistakes", [])
         suggestion = corrections.get("suggestion")
 
-        # Отправляем ответ Хонзика
+        # ⚡ Stop the chat-action indicator — response is ready
+        action_stop.set()
+
+        # ⚡ Send správnost as an instant separate message (appears before voice)
+        score_parts = [get_text('voice_correctness', score=correctness_score)]
+        if stars_earned > 0:
+            score_parts.append(get_text('voice_stars_earned', stars=stars_earned))
+        if not mistakes:
+            score_parts.append(get_text('no_corrections'))
+        await message.answer("\n".join(score_parts), parse_mode="HTML")
+
+        # Then send Honzík's reply (správnost already shown above)
         if audio_response:
             # Если есть аудио - отправляем голосовое
             audio_bytes = base64.b64decode(audio_response)
             voice_file = BufferedInputFile(audio_bytes, filename="honzik.ogg")
-
-            # Caption: Správnost + stars + praise if perfect
-            caption = f"{get_text('voice_correctness', score=correctness_score)}"
-            if stars_earned > 0:
-                caption += f"\n{get_text('voice_stars_earned', stars=stars_earned)}"
-            if not mistakes:
-                caption += f"\n{get_text('no_corrections')}"
 
             # Создаём кнопки
             buttons = []
@@ -152,17 +161,11 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
 
             await message.answer_voice(
                 voice=voice_file,
-                caption=caption,
                 reply_markup=keyboard
             )
         else:
             # Если нет аудио - просто текст
-            response_text = f"🗣️ <b>Honzík:</b>\n{honzik_text}\n\n"
-            response_text += f"{get_text('voice_correctness', score=correctness_score)}"
-            if stars_earned > 0:
-                response_text += f"\n{get_text('voice_stars_earned', stars=stars_earned)}"
-            if not mistakes:
-                response_text += f"\n{get_text('no_corrections')}"
+            response_text = f"🗣️ <b>Honzík:</b>\n{honzik_text}"
 
             # Кнопка Opravy для текстового ответа
             keyboard = None
@@ -193,5 +196,6 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
         )
 
     except Exception as e:
+        action_stop.set()
         logger.error("text_processing_error", telegram_id=telegram_id, error=str(e))
         await message.answer(get_text("error_general"))
