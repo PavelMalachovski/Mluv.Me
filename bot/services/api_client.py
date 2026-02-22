@@ -421,4 +421,87 @@ class APIClient:
             await self.session.close()
             self.session = None
 
+    # ──────────── Subscription / Payments ────────────
+
+    async def activate_subscription(
+        self,
+        telegram_id: int,
+        product_id: str,
+        charge_id: str,
+    ) -> Optional[dict[str, Any]]:
+        """
+        Activate Pro subscription after successful Telegram Stars payment.
+
+        Args:
+            telegram_id: Telegram user ID
+            product_id: Product ID (pro_7d, pro_30d)
+            charge_id: Telegram payment charge ID
+
+        Returns:
+            Result dict with success flag and expiry date
+        """
+        session = await self._get_session()
+        try:
+            payload = {
+                "telegram_id": telegram_id,
+                "product_id": product_id,
+                "telegram_payment_charge_id": charge_id,
+            }
+            async with session.post(
+                f"{self.base_url}/api/v1/subscription/activate-stars",
+                json=payload,
+                timeout=15,
+            ) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    error_body = await resp.text()
+                    logger.error(
+                        "activate_subscription_failed",
+                        telegram_id=telegram_id,
+                        status=resp.status,
+                        body=error_body[:200],
+                    )
+                    return {"success": False, "error": error_body[:200]}
+        except Exception as e:
+            logger.error(
+                "activate_subscription_error",
+                telegram_id=telegram_id,
+                error=str(e),
+            )
+            return None
+
+    async def check_quota(
+        self,
+        telegram_id: int,
+        msg_type: str = "text",
+    ) -> Optional[dict[str, Any]]:
+        """
+        Check if user can send a message (quota check).
+
+        Args:
+            telegram_id: Telegram user ID
+            msg_type: 'text' or 'voice'
+
+        Returns:
+            Quota info dict {allowed, plan, used, limit, remaining}
+        """
+        session = await self._get_session()
+        try:
+            async with session.get(
+                f"{self.base_url}/api/v1/subscription/quota/{telegram_id}",
+                params={"msg_type": msg_type},
+                timeout=10,
+            ) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                return None
+        except Exception as e:
+            logger.error(
+                "check_quota_error",
+                telegram_id=telegram_id,
+                error=str(e),
+            )
+            return None
+
 

@@ -41,6 +41,7 @@ from backend.services.honzik_personality import HonzikPersonality
 from backend.services.correction_engine import CorrectionEngine
 from backend.services.gamification import GamificationService
 from backend.services.cache_service import cache_service
+from backend.services.subscription_service import SubscriptionService
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/lessons", tags=["lessons"])
@@ -170,6 +171,21 @@ async def process_voice_message(
     if not user:
         log.error("user_not_found")
         raise HTTPException(status_code=404, detail="User not found")
+
+    # 1b. Quota check (voice)
+    sub_svc = SubscriptionService(db)
+    quota = await sub_svc.check_quota(user.id, "voice")
+    if not quota["allowed"]:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "daily_limit_reached",
+                "message": "Denní limit hlasových zpráv vyčerpán",
+                "plan": quota["plan"],
+                "used": quota["used"],
+                "limit": quota["limit"],
+            },
+        )
 
     # 2. Валидация аудио
     if not audio.content_type or not any(
@@ -380,6 +396,9 @@ async def process_voice_message(
 
         await db.commit()
 
+        # Increment daily voice quota
+        await sub_svc.increment_usage(user.id, "voice")
+
         log.info(
             "optimized_processing_completed",
             audio_size=len(audio_response),
@@ -499,6 +518,21 @@ async def process_text_message(
     if not user:
         log.error("user_not_found")
         raise HTTPException(status_code=404, detail="User not found")
+
+    # 1b. Quota check (text)
+    sub_svc = SubscriptionService(db)
+    quota = await sub_svc.check_quota(user.id, "text")
+    if not quota["allowed"]:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "daily_limit_reached",
+                "message": "Denní limit textových zpráv vyčerpán",
+                "plan": quota["plan"],
+                "used": quota["used"],
+                "limit": quota["limit"],
+            },
+        )
 
     # 2. Валидация текста
     text = text.strip()
@@ -667,6 +701,9 @@ async def process_text_message(
         audio_response = await tts_task
 
         await db.commit()
+
+        # Increment daily text quota
+        await sub_svc.increment_usage(user.id, "text")
 
         # Кодируем аудио в base64 (если есть)
         audio_base64 = ""

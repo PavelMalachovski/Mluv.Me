@@ -70,6 +70,17 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
         await message.answer(get_text("error_voice_too_long"))
         return
 
+    # Quota check (voice)
+    from bot.handlers.payments import get_subscription_keyboard, get_limit_reached_text
+    quota = await api_client.check_quota(telegram_id, "voice")
+    if quota and not quota.get("allowed", True):
+        await message.answer(
+            get_limit_reached_text("voice"),
+            parse_mode="HTML",
+            reply_markup=get_subscription_keyboard(),
+        )
+        return
+
     # Показываем что Хонзик записывает голосовой ответ
     await message.bot.send_chat_action(chat_id=message.chat.id, action="record_voice")
 

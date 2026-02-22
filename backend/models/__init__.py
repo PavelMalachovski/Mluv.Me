@@ -9,6 +9,7 @@ from backend.models.stats import DailyStats, Stars
 from backend.models.achievement import Achievement, UserAchievement
 from backend.models.challenge import Challenge, UserChallenge, TopicMessageCount
 from backend.models.grammar import GrammarRule, UserGrammarProgress
+from backend.models.subscription import Subscription, Payment
 
 __all__ = [
     "User",
@@ -24,6 +25,8 @@ __all__ = [
     "TopicMessageCount",
     "GrammarRule",
     "UserGrammarProgress",
+    "Subscription",
+    "Payment",
 ]
 
 

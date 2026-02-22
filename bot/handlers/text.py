@@ -22,6 +22,7 @@ import structlog
 
 from bot.config import config
 from bot.handlers.voice import _corrections_cache, _cleanup_old_corrections
+from bot.handlers.payments import get_subscription_keyboard, get_limit_reached_text
 from bot.localization import get_text
 from bot.services.api_client import APIClient
 
@@ -53,6 +54,16 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
     # Проверка минимальной длины
     if len(text) < 2:
         await message.answer(get_text("error_text_too_short"))
+        return
+
+    # Quota check
+    quota = await api_client.check_quota(telegram_id, "text")
+    if quota and not quota.get("allowed", True):
+        await message.answer(
+            get_limit_reached_text("text"),
+            parse_mode="HTML",
+            reply_markup=get_subscription_keyboard(),
+        )
         return
 
     # Показываем что Хонзик печатает

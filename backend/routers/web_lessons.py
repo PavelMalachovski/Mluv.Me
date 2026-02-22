@@ -17,6 +17,7 @@ from backend.services.gamification import GamificationService
 from backend.services.openai_client import OpenAIClient
 from backend.config import Settings, get_settings
 from backend.routers.web_auth import get_authenticated_user
+from backend.services.subscription_service import SubscriptionService
 
 router = APIRouter(prefix="/api/v1/web/lessons", tags=["web_lessons"])
 
@@ -66,6 +67,21 @@ async def process_text_message(
     # Use authenticated user, ignore request.user_id to prevent IDOR
     user = auth_user
     user_id = user.id
+
+    # Quota check (text)
+    sub_svc = SubscriptionService(db)
+    quota = await sub_svc.check_quota(user_id, "text")
+    if not quota["allowed"]:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "daily_limit_reached",
+                "message": "Denní limit textových zpráv vyčerpán",
+                "plan": quota["plan"],
+                "used": quota["used"],
+                "limit": quota["limit"],
+            },
+        )
 
     # Get user settings
     settings_repo = UserSettingsRepository(db)
@@ -153,6 +169,9 @@ async def process_text_message(
     )
 
     await db.commit()
+
+    # Increment daily text quota
+    await sub_svc.increment_usage(user_id, "text")
 
     return TextMessageResponse(
         honzik_text=response["honzik_response"],

@@ -133,3 +133,26 @@ export interface AchievementProgress {
   category_progress: Record<string, number>
 }
 
+// Subscription & Monetization
+export interface QuotaInfo {
+  allowed: boolean
+  plan: string
+  used: number
+  limit: number
+  remaining: number
+}
+
+export interface SubscriptionInfo {
+  plan: "free" | "pro"
+  expires_at: string | null
+  text_quota: QuotaInfo
+  voice_quota: QuotaInfo
+  products: Record<string, {
+    label: string
+    description: string
+    stars: number
+    days: number
+    plan: string
+  }>
+}
+

@@ -356,6 +356,16 @@ class APIClient {
     });
     return response.data;
   }
+
+  // ─── Subscription / Monetization ───
+
+  /**
+   * Get current subscription info + quotas.
+   */
+  async getSubscription() {
+    const response = await this.client.get('/api/v1/subscription');
+    return response.data;
+  }
 }
 
 // Export singleton instance

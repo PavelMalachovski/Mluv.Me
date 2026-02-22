@@ -50,6 +50,8 @@ TEXTS_CS = {
     "📊 <b>Pokrok:</b>\n"
     "/stats - Statistiky učení\n"
     "/saved - Uložená slova\n\n"
+    "🌟 <b>Předplatné:</b>\n"
+    "/subscribe - Pro přístup (neomezené zprávy)\n\n"
     "🔄 <b>Ostatní:</b>\n"
     "/reset - Začít novou konverzaci\n"
     "/help - Zobrazit tuto nápovědu",

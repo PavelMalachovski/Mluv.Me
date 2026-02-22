@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from backend.models.achievement import UserAchievement
     from backend.models.challenge import UserChallenge, TopicMessageCount
     from backend.models.grammar import UserGrammarProgress
+    from backend.models.subscription import Subscription, Payment
 
 
 class User(Base):
@@ -144,6 +145,20 @@ class User(Base):
         "UserGrammarProgress",
         back_populates="user",
         cascade="all, delete-orphan"
+    )
+
+    subscriptions: Mapped[list["Subscription"]] = relationship(
+        "Subscription",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="Subscription.created_at.desc()",
+    )
+
+    payments: Mapped[list["Payment"]] = relationship(
+        "Payment",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="Payment.created_at.desc()",
     )
 
     def to_dict(self) -> dict[str, Any]:

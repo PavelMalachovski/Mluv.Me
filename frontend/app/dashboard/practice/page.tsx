@@ -15,6 +15,7 @@ import { LessonResponse, WordTranslation } from "@/lib/types"
 import { FileText, Languages, X, Loader2 } from "lucide-react"
 import { VoiceRecorderSkeleton } from "@/components/ui/skeletons"
 import { CorrectionList, SuggestionBox } from "@/components/ui/CorrectionExplanation"
+import { QuotaBanner, QuotaIndicator } from "@/components/features/QuotaBanner"
 
 // Dynamic import VoiceRecorder - heavy component with Web Workers
 const VoiceRecorder = dynamic(
@@ -52,6 +53,7 @@ export default function PracticePage() {
   const [inputMode, setInputMode] = useState<"text" | "voice">("text")
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
   const [showTopicSelector, setShowTopicSelector] = useState(true)
+  const [quotaExceeded, setQuotaExceeded] = useState(false)
 
   // Text message mutation with optimistic updates
   // Note: All hooks must be called before any early returns
@@ -91,7 +93,11 @@ export default function PracticePage() {
         },
       ])
     },
-    onError: () => {
+    onError: (err: any) => {
+      // Check for quota exceeded (429)
+      if (err?.response?.status === 429) {
+        setQuotaExceeded(true)
+      }
       // Remove the "sending" message on error
       setConversation((prev) => prev.filter(m => m.status !== "sending"))
     },
@@ -133,7 +139,10 @@ export default function PracticePage() {
         },
       ])
     },
-    onError: () => {
+    onError: (err: any) => {
+      if (err?.response?.status === 429) {
+        setQuotaExceeded(true)
+      }
       setConversation((prev) => prev.filter(m => m.status !== "sending"))
     },
   })
@@ -261,10 +270,16 @@ export default function PracticePage() {
         </div>
 
         <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
-          <h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-gray-100">Practice Czech with Honzík</h1>
-          <p className="mb-6 text-gray-600 dark:text-gray-400">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Practice Czech with Honzík</h1>
+            <QuotaIndicator />
+          </div>
+          <p className="mb-4 text-gray-600 dark:text-gray-400">
             Type in Czech and get instant feedback from your AI teacher
           </p>
+
+          {/* Quota / subscription banner */}
+          <QuotaBanner />
 
           {/* Topic Selector */}
           {showTopicSelector && conversation.length === 0 && (

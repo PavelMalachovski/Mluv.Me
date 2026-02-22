@@ -17,7 +17,7 @@ import sentry_sdk
 from backend.config import get_settings
 from backend.db.database import close_db
 from backend.cache.redis_client import redis_client
-from backend.routers import users, lesson, stats, words, web_auth, web_lessons, gamification, messages, scenarios, games, grammar
+from backend.routers import users, lesson, stats, words, web_auth, web_lessons, gamification, messages, scenarios, games, grammar, subscription
 
 # Configure structlog for Railway.com
 structlog.configure(
@@ -115,6 +115,7 @@ app.include_router(messages.router)
 app.include_router(scenarios.router)
 app.include_router(games.router)
 app.include_router(grammar.router)
+app.include_router(subscription.router)
 
 
 @app.get(
