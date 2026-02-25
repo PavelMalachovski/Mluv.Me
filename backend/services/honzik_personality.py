@@ -120,7 +120,8 @@ class HonzikPersonality:
             return ""
 
         formatted = []
-        for msg in history[-5:]:
+        # Show only the last 4 exchanges as context
+        for msg in history[-4:]:
             role = "Student" if msg["role"] == "user" else "Postava"
             formatted.append(f"{role}: {msg['text']}")
 
@@ -199,14 +200,14 @@ class HonzikPersonality:
         if conversation_history:
             history_text = self._format_conversation_history(conversation_history)
             user_prompt = (
-                f"Přepis studenta: {user_text}\n\n"
-                f"Historie konverzace:\n{history_text}\n\n"
-                "Analyzuj text studenta a odpověz JSON."
+                f"Historie konverzace (pro kontext):\n{history_text}\n\n"
+                f"NOVÁ ZPRÁVA STUDENTA (odpověz POUZE na tuto zprávu): {user_text}\n\n"
+                "Analyzuj NOVOU zprávu studenta a odpověz JSON."
             )
         else:
             user_prompt = (
-                f"Přepis studenta: {user_text}\n\n"
-                "Analyzuj text studenta a odpověz JSON."
+                f"Nová zpráva studenta: {user_text}\n\n"
+                "Analyzuj zprávu studenta a odpověz JSON."
             )
 
         messages = [
@@ -358,6 +359,15 @@ STYL: {style_desc}
 OPRAVY: {corrections_desc}
 Rodný jazyk studenta: {native_lang_name} – vysvětlení piš jednoduše česky na úrovni A2.
 {grammar_block}
+
+ŽIVÁ KONVERZACE – DŮLEŽITÉ:
+- Odpovídej VÝHRADNĚ na POSLEDNÍ zprávu studenta, ne na starší zprávy z historie.
+- Historie slouží JEN jako kontext, abys věděl, o čem jste mluvili.
+- VŽDY UKONČI svou odpověď OTÁZKOU – ptej se studenta na jeho názor, zkušenosti, plány.
+- Otázky formuluj přirozeně, propojuj je s tématem konverzace.
+- Příklady otázek: "A ty jsi už někdy byl v Praze?", "Co rád jíš?", "Jak se ti líbí v Česku?"
+- Cíl: student má chuť odpovědět a pokračovat v konverzaci.
+
 ÚKOL: Analyzuj text, oprav chyby, ohodnoť 0-100, odpověz jako Honzík. Buď pozitivní!
 
 SLOVÍČKA: V odpovědi použij 1-3 zajímavá/užitečná česká slova vhodná pro úroveň studenta. Zahrň je do pole new_words s překladem do {native_lang_name}.
@@ -407,6 +417,15 @@ OPRAVY: {corrections_desc}
 Rodný jazyk studenta: {native_lang_name} – vysvětlení pište jednoduše česky.
 Opravujte zejména: hovorové tvary → spisovné, tykání → vykání, nespisovné výrazy.
 {grammar_block}
+
+ŽIVÁ KONVERZACE – DŮLEŽITÉ:
+- Odpovídejte VÝHRADNĚ na POSLEDNÍ zprávu studenta, ne na starší zprávy z historie.
+- Historie slouží JEN jako kontext, abyste věděla, o čem jste mluvili.
+- VŽDY UKONČETE svou odpověď OTÁZKOU – ptejte se studenta na jeho situaci, potřeby, plány.
+- Otázky formulujte přirozeně a profesionálně, propojujte je s tématem.
+- Příklady: "Potřebujete s tím ještě pomoci?", "Máte již všechny potřebné dokumenty?", "Kdy plánujete návštěvu úřadu?"
+- Cíl: student má chuť odpovědět a pokračovat v konverzaci.
+
 ÚKOL: Analyzujte text, opravte chyby, ohodnoťte 0-100, odpovězte jako paní Nováková. Vykejte!
 
 SLOVÍČKA: V odpovědi použijte 1-3 zajímavá/užitečná česká slova vhodná pro úroveň studenta. Zahrňte je do pole new_words s překladem do {native_lang_name}.
