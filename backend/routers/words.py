@@ -40,7 +40,7 @@ def get_translation_service() -> TranslationService:
 )
 async def get_saved_words(
     telegram_id: int,
-    limit: int = 10,
+    limit: int = 500,
     session: AsyncSession = Depends(get_session),
 ):
     """

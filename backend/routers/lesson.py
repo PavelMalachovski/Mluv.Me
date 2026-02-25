@@ -29,7 +29,10 @@ from backend.db.repositories import (
     UserRepository,
     MessageRepository,
     StatsRepository,
+    SavedWordRepository,
 )
+from backend.models.word import SavedWord
+from sqlalchemy import select
 from backend.schemas.lesson import (
     LessonProcessResponse,
     CorrectionSchema,
@@ -61,7 +64,55 @@ def _s(user, attr: str):
     """Safe access to user.settings attributes with defaults."""
     if user.settings is not None:
         return getattr(user.settings, attr, _DEFAULT_SETTINGS.get(attr))
-    return _DEFAULT_SETTINGS.get(attr)
+async def _save_new_words(
+    db: AsyncSession,
+    user_id: int,
+    honzik_response: dict,
+    log,
+) -> int:
+    """
+    Extract and save new vocabulary words from the GPT response.
+
+    Deduplicates against existing saved words for this user.
+    Returns the number of words saved.
+    """
+    new_words = honzik_response.get("new_words")
+    if not new_words or not isinstance(new_words, list):
+        return 0
+
+    word_repo = SavedWordRepository(db)
+    saved_count = 0
+
+    for word_data in new_words[:3]:  # Max 3 per message
+        word_czech = (word_data.get("word_czech") or "").strip()
+        translation = (word_data.get("translation") or "").strip()
+        if not word_czech or not translation:
+            continue
+
+        # Check for duplicate
+        existing = await db.execute(
+            select(SavedWord).where(
+                SavedWord.user_id == user_id,
+                SavedWord.word_czech == word_czech,
+            )
+        )
+        if existing.scalar_one_or_none():
+            continue
+
+        try:
+            await word_repo.create(
+                user_id=user_id,
+                word_czech=word_czech,
+                translation=translation,
+                context_sentence=word_data.get("context_sentence"),
+            )
+            saved_count += 1
+        except Exception as e:
+            log.warning("save_new_word_failed", word=word_czech, error=str(e))
+
+    if saved_count:
+        log.info("new_words_saved", count=saved_count, user_id=user_id)
+    return saved_count
 
 
 async def save_audio_file_async(audio_bytes: bytes, filepath: str) -> None:
@@ -381,6 +432,7 @@ async def process_voice_message(
 
         # 2. Пока TTS генерируется, выполняем DB операции последовательно
         await save_messages()
+        await _save_new_words(db, user.id, honzik_response, log)
         gamification_result = await update_stats_and_gamification()
 
         # 3. Кешируем если типичная фраза (Redis, не DB)
@@ -723,6 +775,7 @@ async def process_text_message(
 
         # DB операции последовательно
         await save_messages()
+        await _save_new_words(db, user.id, honzik_response, log)
         gamification_result = await update_stats_and_gamification()
 
         # Кешируем если типичная фраза

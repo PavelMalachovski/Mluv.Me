@@ -190,7 +190,9 @@ class APIClient {
 
   // Words endpoints
   async getSavedWords(telegramId: number) {
-    const response = await this.client.get(`/api/v1/words/${telegramId}`);
+    const response = await this.client.get(`/api/v1/words/${telegramId}`, {
+      params: { limit: 500 },
+    });
     return response.data;
   }
 
