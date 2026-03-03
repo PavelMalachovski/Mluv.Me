@@ -1,5 +1,3 @@
 """
 Tests для backend services.
 """
-
-

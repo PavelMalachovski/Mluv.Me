@@ -42,44 +42,36 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     telegram_id: Mapped[int] = mapped_column(
-        BigInteger,
-        unique=True,
-        nullable=False,
-        index=True,
-        comment="Telegram user ID"
+        BigInteger, unique=True, nullable=False, index=True, comment="Telegram user ID"
     )
 
     username: Mapped[str | None] = mapped_column(
-        String(255),
-        nullable=True,
-        comment="Telegram username"
+        String(255), nullable=True, comment="Telegram username"
     )
 
     first_name: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
-        comment="Имя пользователя"
+        String(255), nullable=False, comment="Имя пользователя"
     )
 
     native_language: Mapped[str] = mapped_column(
         Enum("ru", "uk", "pl", "sk", name="native_language_enum"),
         nullable=False,
         default="ru",
-        comment="Родной язык пользователя (для объяснения ошибок)"
+        comment="Родной язык пользователя (для объяснения ошибок)",
     )
 
     level: Mapped[str] = mapped_column(
         Enum("beginner", "intermediate", "advanced", "native", name="level_enum"),
         nullable=False,
         default="beginner",
-        comment="Уровень чешского языка"
+        comment="Уровень чешского языка",
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
-        comment="Дата регистрации"
+        comment="Дата регистрации",
     )
 
     updated_at: Mapped[datetime] = mapped_column(
@@ -87,7 +79,7 @@ class User(Base):
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),
-        comment="Дата последнего обновления"
+        comment="Дата последнего обновления",
     )
 
     # Relationships
@@ -95,56 +87,39 @@ class User(Base):
         "UserSettings",
         back_populates="user",
         uselist=False,
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
 
     messages: Mapped[list["Message"]] = relationship(
-        "Message",
-        back_populates="user",
-        cascade="all, delete-orphan"
+        "Message", back_populates="user", cascade="all, delete-orphan"
     )
 
     saved_words: Mapped[list["SavedWord"]] = relationship(
-        "SavedWord",
-        back_populates="user",
-        cascade="all, delete-orphan"
+        "SavedWord", back_populates="user", cascade="all, delete-orphan"
     )
 
     daily_stats: Mapped[list["DailyStats"]] = relationship(
-        "DailyStats",
-        back_populates="user",
-        cascade="all, delete-orphan"
+        "DailyStats", back_populates="user", cascade="all, delete-orphan"
     )
 
     stars: Mapped["Stars"] = relationship(
-        "Stars",
-        back_populates="user",
-        uselist=False,
-        cascade="all, delete-orphan"
+        "Stars", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
 
     achievements: Mapped[list["UserAchievement"]] = relationship(
-        "UserAchievement",
-        back_populates="user",
-        cascade="all, delete-orphan"
+        "UserAchievement", back_populates="user", cascade="all, delete-orphan"
     )
 
     challenges: Mapped[list["UserChallenge"]] = relationship(
-        "UserChallenge",
-        back_populates="user",
-        cascade="all, delete-orphan"
+        "UserChallenge", back_populates="user", cascade="all, delete-orphan"
     )
 
     topic_counts: Mapped[list["TopicMessageCount"]] = relationship(
-        "TopicMessageCount",
-        back_populates="user",
-        cascade="all, delete-orphan"
+        "TopicMessageCount", back_populates="user", cascade="all, delete-orphan"
     )
 
     grammar_progress: Mapped[list["UserGrammarProgress"]] = relationship(
-        "UserGrammarProgress",
-        back_populates="user",
-        cascade="all, delete-orphan"
+        "UserGrammarProgress", back_populates="user", cascade="all, delete-orphan"
     )
 
     subscriptions: Mapped[list["Subscription"]] = relationship(
@@ -201,49 +176,46 @@ class UserSettings(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         unique=True,
-        comment="User ID"
+        comment="User ID",
     )
 
     conversation_style: Mapped[str] = mapped_column(
         Enum("friendly", "tutor", "casual", name="conversation_style_enum"),
         nullable=False,
         default="friendly",
-        comment="Стиль общения Хонзика"
+        comment="Стиль общения Хонзика",
     )
 
     voice_speed: Mapped[str] = mapped_column(
         Enum("very_slow", "slow", "normal", "native", name="voice_speed_enum"),
         nullable=False,
         default="normal",
-        comment="Скорость голоса Хонзика"
+        comment="Скорость голоса Хонзика",
     )
 
     corrections_level: Mapped[str] = mapped_column(
         Enum("minimal", "balanced", "detailed", name="corrections_level_enum"),
         nullable=False,
         default="balanced",
-        comment="Уровень исправлений"
+        comment="Уровень исправлений",
     )
 
     timezone: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         default="Europe/Prague",
-        comment="Timezone пользователя"
+        comment="Timezone пользователя",
     )
 
     notifications_enabled: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=True,
-        comment="Включены ли уведомления"
+        Boolean, nullable=False, default=True, comment="Включены ли уведомления"
     )
 
     leaderboard_visible: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
         default=True,
-        comment="Показывать в публичном лидерборде"
+        comment="Показывать в публичном лидерборде",
     )
 
     character: Mapped[str] = mapped_column(
@@ -251,7 +223,7 @@ class UserSettings(Base):
         nullable=False,
         default="honzik",
         server_default="honzik",
-        comment="Vybraná postava pro konverzaci (honzik, novakova)"
+        comment="Vybraná postava pro konverzaci (honzik, novakova)",
     )
 
     # Relationship
@@ -277,5 +249,3 @@ class UserSettings(Base):
             f"style={self.conversation_style}, "
             f"corrections={self.corrections_level})>"
         )
-
-

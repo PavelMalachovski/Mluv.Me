@@ -78,9 +78,7 @@ class TestUserRepository:
         await session.commit()
 
         updated_user = await repo.update(
-            created_user.id,
-            level="advanced",
-            native_language="uk"
+            created_user.id, level="advanced", native_language="uk"
         )
 
         assert updated_user is not None
@@ -134,7 +132,7 @@ class TestUserSettingsRepository:
             user.id,
             conversation_style="tutor",
             voice_speed="slow",
-            corrections_level="detailed"
+            corrections_level="detailed",
         )
 
         assert updated_settings is not None
@@ -162,7 +160,7 @@ class TestMessageRepository:
             transcript_raw="Ahoj, jak se máš?",
             correctness_score=85,
             words_total=4,
-            words_correct=3
+            words_correct=3,
         )
         await session.commit()
 
@@ -182,11 +180,7 @@ class TestMessageRepository:
 
         # Create multiple messages
         for i in range(5):
-            await message_repo.create(
-                user_id=user.id,
-                role="user",
-                text=f"Message {i}"
-            )
+            await message_repo.create(user_id=user.id, role="user", text=f"Message {i}")
         await session.commit()
 
         messages = await message_repo.get_recent_by_user(user.id, limit=3)
@@ -213,7 +207,7 @@ class TestSavedWordRepository:
             user_id=user.id,
             word_czech="pivo",
             translation="пиво",
-            context_sentence="Dáme si pivo?"
+            context_sentence="Dáme si pivo?",
         )
         await session.commit()
 
@@ -233,11 +227,7 @@ class TestSavedWordRepository:
         # Create multiple words
         words_to_create = ["pivo", "knedlík", "ahoj"]
         for word in words_to_create:
-            await word_repo.create(
-                user_id=user.id,
-                word_czech=word,
-                translation=word
-            )
+            await word_repo.create(user_id=user.id, word_czech=word, translation=word)
         await session.commit()
 
         words = await word_repo.get_by_user(user.id)
@@ -253,9 +243,7 @@ class TestSavedWordRepository:
         await session.commit()
 
         word = await word_repo.create(
-            user_id=user.id,
-            word_czech="test",
-            translation="тест"
+            user_id=user.id, word_czech="test", translation="тест"
         )
         await session.commit()
 
@@ -300,7 +288,7 @@ class TestStatsRepository:
             messages_count=5,
             words_said=50,
             correct_percent=85,
-            streak_day=3
+            streak_day=3,
         )
         await session.commit()
 
@@ -333,14 +321,10 @@ class TestStatsRepository:
         await session.commit()
 
         updated_stars = await stats_repo.update_stars(
-            user.id,
-            total=10,
-            available=5,
-            lifetime=10
+            user.id, total=10, available=5, lifetime=10
         )
 
         assert updated_stars is not None
         assert updated_stars.total == 10
         assert updated_stars.available == 5
         assert updated_stars.lifetime == 10
-

@@ -37,67 +37,44 @@ class Achievement(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     code: Mapped[str] = mapped_column(
-        String(50),
-        unique=True,
-        nullable=False,
-        comment="Unique achievement code"
+        String(50), unique=True, nullable=False, comment="Unique achievement code"
     )
 
     name: Mapped[str] = mapped_column(
-        String(100),
-        nullable=False,
-        comment="Display name"
+        String(100), nullable=False, comment="Display name"
     )
 
     description: Mapped[str] = mapped_column(
-        String(500),
-        nullable=False,
-        comment="Achievement description"
+        String(500), nullable=False, comment="Achievement description"
     )
 
-    icon: Mapped[str] = mapped_column(
-        String(10),
-        nullable=False,
-        comment="Emoji icon"
-    )
+    icon: Mapped[str] = mapped_column(String(10), nullable=False, comment="Emoji icon")
 
     category: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        comment="Category: streak, messages, vocabulary, accuracy, stars, review"
+        comment="Category: streak, messages, vocabulary, accuracy, stars, review",
     )
 
     threshold: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        comment="Value needed to unlock"
+        Integer, nullable=False, comment="Value needed to unlock"
     )
 
     stars_reward: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Stars awarded"
+        Integer, nullable=False, default=0, comment="Stars awarded"
     )
 
     is_hidden: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=False,
-        comment="Hidden until unlocked"
+        Boolean, nullable=False, default=False, comment="Hidden until unlocked"
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now()
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
     # Relationships
     user_achievements: Mapped[List["UserAchievement"]] = relationship(
-        "UserAchievement",
-        back_populates="achievement",
-        cascade="all, delete-orphan"
+        "UserAchievement", back_populates="achievement", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
@@ -119,40 +96,35 @@ class UserAchievement(Base):
     __tablename__ = "user_achievements"
 
     __table_args__ = (
-        UniqueConstraint('user_id', 'achievement_id', name='uq_user_achievement'),
+        UniqueConstraint("user_id", "achievement_id", name="uq_user_achievement"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     user_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     achievement_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey("achievements.id", ondelete="CASCADE"),
-        nullable=False
+        Integer, ForeignKey("achievements.id", ondelete="CASCADE"), nullable=False
     )
 
     unlocked_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now()
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
     progress: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
         default=0,
-        comment="Current progress towards achievement"
+        comment="Current progress towards achievement",
     )
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="achievements")
-    achievement: Mapped["Achievement"] = relationship("Achievement", back_populates="user_achievements")
+    achievement: Mapped["Achievement"] = relationship(
+        "Achievement", back_populates="user_achievements"
+    )
 
     def __repr__(self) -> str:
         return f"<UserAchievement(user_id={self.user_id}, achievement_id={self.achievement_id})>"

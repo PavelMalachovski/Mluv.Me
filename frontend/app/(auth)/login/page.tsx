@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import {
   isTelegramWebApp,
   getTelegramUser,
@@ -124,102 +125,43 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-sky-200 via-green-100 to-amber-50">
-      {/* Decorative background elements - nature theme */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Mountains in background */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-purple-300/30 to-transparent" />
-        {/* Trees silhouette */}
-        <div className="absolute bottom-0 left-10 h-24 w-24 rounded-t-full bg-green-600/20" />
-        <div className="absolute bottom-0 right-20 h-32 w-32 rounded-t-full bg-green-700/20" />
-        {/* Path */}
-        <div className="absolute bottom-0 left-1/2 h-16 w-64 -translate-x-1/2 rounded-t-full bg-amber-200/30" />
-      </div>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden" style={{ backgroundColor: '#90D0EB' }}>
+      {/* Soft gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/5" />
 
       <div className="relative z-10 w-full max-w-md space-y-6 px-4">
-        {/* Book Character Illustration Area */}
-        <div className="relative mx-auto mb-4 flex h-48 items-center justify-center">
-          {/* Book Character - SVG illustration */}
-          <div className="relative">
-            {/* Speech bubble */}
-            <div className="absolute -top-16 left-1/2 -translate-x-1/2 rounded-2xl rounded-bl-none bg-white px-4 py-3 shadow-lg">
-              <p className="text-center font-bold text-amber-800">
-                <span className="text-lg">Ahoj!</span>
-                <br />
-                <span className="text-sm">Český jazyk.</span>
-              </p>
-            </div>
+        {/* Character illustration area */}
+        <div className="relative mx-auto mb-2 flex flex-col items-center justify-center">
+          {/* Speech bubble */}
+          <div className="mb-4 rounded-2xl bg-white px-6 py-3 shadow-lg">
+            <p className="text-center text-2xl font-bold text-gray-800">
+              Ahoj 👋
+            </p>
+          </div>
 
-            {/* Book character */}
-            <div className="relative">
-              {/* Book body */}
-              <div className="relative h-32 w-24 rounded-lg bg-gradient-to-br from-amber-700 to-amber-900 shadow-xl">
-                {/* Book pages */}
-                <div className="absolute inset-x-0 top-0 h-28 rounded-t-lg bg-amber-50" />
-                {/* Book binding */}
-                <div className="absolute left-0 top-0 h-full w-2 rounded-l-lg bg-amber-950" />
-
-                {/* Glasses */}
-                <div className="absolute left-1/2 top-8 -translate-x-1/2">
-                  <div className="flex gap-2">
-                    <div className="h-8 w-8 rounded-full border-4 border-amber-950 bg-white" />
-                    <div className="h-8 w-8 rounded-full border-4 border-amber-950 bg-white" />
-                  </div>
-                  <div className="absolute left-1/2 top-1/2 h-0.5 w-3 -translate-x-1/2 bg-amber-950" />
-                </div>
-
-                {/* Eyes */}
-                <div className="absolute left-1/2 top-10 -translate-x-1/2">
-                  <div className="flex gap-2">
-                    <div className="h-3 w-3 rounded-full bg-blue-500" />
-                    <div className="h-3 w-3 rounded-full bg-blue-500" />
-                  </div>
-                </div>
-
-                {/* Smile */}
-                <div className="absolute left-1/2 top-16 -translate-x-1/2">
-                  <svg className="h-6 w-12" viewBox="0 0 48 24">
-                    <path
-                      d="M 4 12 Q 12 20 24 12 Q 36 4 44 12"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      fill="none"
-                      className="text-amber-950"
-                    />
-                  </svg>
-                </div>
-
-                {/* Cheeks */}
-                <div className="absolute left-2 top-14 h-3 w-3 rounded-full bg-pink-300" />
-                <div className="absolute right-2 top-14 h-3 w-3 rounded-full bg-pink-300" />
-
-                {/* Arms */}
-                <div className="absolute -left-4 top-12 h-6 w-4 rounded-full bg-amber-700" />
-                <div className="absolute -right-4 top-12 h-6 w-4 rounded-full bg-amber-700" />
-
-                {/* Legs */}
-                <div className="absolute -bottom-2 left-6 h-4 w-3 rounded-full bg-amber-800" />
-                <div className="absolute -bottom-2 right-6 h-4 w-3 rounded-full bg-amber-800" />
-
-                {/* Sandals */}
-                <div className="absolute -bottom-3 left-5 h-2 w-5 rounded-full bg-amber-950" />
-                <div className="absolute -bottom-3 right-5 h-2 w-5 rounded-full bg-amber-950" />
-              </div>
-            </div>
+          {/* Characters image */}
+          <div className="relative w-64 h-52">
+            <Image
+              src="/images/mascot/characters-login.png"
+              alt="Honzík & Nováková"
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
         </div>
 
         {/* Main content card */}
-        <div className="relative rounded-3xl bg-white/95 p-8 shadow-2xl backdrop-blur-sm">
+        <div className="relative rounded-3xl bg-white p-8 shadow-2xl">
           <div className="text-center">
-            <h1 className="text-5xl font-bold text-amber-800 drop-shadow-sm">
+            <h1 className="text-5xl font-bold text-[#7d3bed] drop-shadow-sm">
               Mluv.Me
             </h1>
-            <p className="mt-3 text-lg font-medium text-amber-700">
-              Learn Czech with AI-powered conversations
+            <p className="mt-3 text-lg font-medium text-gray-700">
+              Learn Languages with AI-powered conversations
             </p>
-            <div className="mt-2 text-sm text-amber-600">
-              Practice speaking Czech with Honzík 🇨🇿
+            <div className="mt-2 text-sm text-gray-500">
+              Practice speaking with Honzík & Nováková 🇨🇿
             </div>
           </div>
 
@@ -235,7 +177,7 @@ export default function LoginPage() {
               <button
                 onClick={handleWebAppLogin}
                 disabled={isLoading}
-                className="flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#7d3bed] px-6 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:bg-[#6b32cc] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
               >
                 {isLoading ? (
                   <>
@@ -256,8 +198,8 @@ export default function LoginPage() {
                 )}
               </button>
 
-              <div className="text-center text-sm font-medium text-amber-700">
-                One tap to start learning Czech! 🎉
+              <div className="text-center text-sm font-medium text-gray-500">
+                One tap to start learning! 🎉
               </div>
             </div>
           ) : (
@@ -266,7 +208,7 @@ export default function LoginPage() {
               <button
                 onClick={handleLogin}
                 disabled={isLoading}
-                className="flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+                className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#7d3bed] px-6 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:bg-[#6b32cc] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
               >
                 {isLoading ? (
                   <>
@@ -287,25 +229,25 @@ export default function LoginPage() {
                 )}
               </button>
 
-              <div className="text-center text-sm font-medium text-amber-700">
-                By logging in, you agree to practice Czech and have fun! 🎉
+              <div className="text-center text-sm font-medium text-gray-500">
+                By logging in, you agree to practice and have fun! 🎉
               </div>
             </div>
           )}
 
           {/* Features section - redesigned */}
-          <div className="mt-8 space-y-3 rounded-2xl bg-gradient-to-br from-green-50 to-amber-50 p-6 shadow-inner">
-            <h3 className="text-center text-xl font-bold text-green-800">
+          <div className="mt-8 space-y-3 rounded-2xl bg-[#f5f0ff] p-6">
+            <h3 className="text-center text-xl font-bold text-[#7d3bed]">
               Why Mluv.Me?
             </h3>
-            <ul className="space-y-2 text-sm text-green-700">
+            <ul className="space-y-2 text-sm text-gray-700">
               <li className="flex items-center gap-2">
                 <span className="text-lg">📚</span>
-                <span>Practice with AI-powered Honzík</span>
+                <span>Practice with AI-powered Characters</span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-lg">✨</span>
-                <span>Get instant feedback on your Czech</span>
+                <span>Get instant feedback on your language</span>
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-lg">⭐</span>

@@ -10,7 +10,6 @@ Provides:
 
 import json
 import random
-from datetime import datetime
 from typing import Any
 
 import structlog
@@ -62,7 +61,9 @@ class GrammarService:
         self.stats_repo = stats_repo
         self.logger = logger.bind(service="grammar_service")
 
-    async def get_daily_rule(self, user_id: int, skip: int = 0) -> dict[str, Any] | None:
+    async def get_daily_rule(
+        self, user_id: int, skip: int = 0
+    ) -> dict[str, Any] | None:
         """
         Выбрать правило дня для пользователя.
 
@@ -230,13 +231,15 @@ class GrammarService:
 
             for ex in rule_exercises:
                 if ex.get("type") == exercise_type:
-                    exercises.append({
-                        "rule_id": rule.id,
-                        "rule_code": rule.code,
-                        "category": rule.category,
-                        "level": rule.level,
-                        **ex,
-                    })
+                    exercises.append(
+                        {
+                            "rule_id": rule.id,
+                            "rule_code": rule.code,
+                            "category": rule.category,
+                            "level": rule.level,
+                            **ex,
+                        }
+                    )
 
         # Shuffle and limit
         random.shuffle(exercises)
@@ -357,7 +360,9 @@ class GrammarService:
             pass
 
         try:
-            common_mistakes = json.loads(rule.common_mistakes) if rule.common_mistakes else []
+            common_mistakes = (
+                json.loads(rule.common_mistakes) if rule.common_mistakes else []
+            )
         except (json.JSONDecodeError, TypeError):
             pass
 

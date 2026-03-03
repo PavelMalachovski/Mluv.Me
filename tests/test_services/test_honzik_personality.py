@@ -2,8 +2,6 @@
 Tests for HonzikPersonality - prompt caching and generation.
 """
 
-import pytest
-
 from backend.services.honzik_personality import HonzikPersonality
 
 
@@ -13,6 +11,7 @@ class TestHonzikPromptGeneration:
     def test_base_prompt_returns_string(self):
         """_get_base_prompt should return a non-empty string."""
         prompt = HonzikPersonality._get_base_prompt(
+            character="honzik",
             level="beginner",
             corrections_level="balanced",
             native_language="ru",
@@ -24,12 +23,14 @@ class TestHonzikPromptGeneration:
     def test_base_prompt_cached(self):
         """Same params should return same cached object (lru_cache)."""
         p1 = HonzikPersonality._get_base_prompt(
+            character="honzik",
             level="intermediate",
             corrections_level="minimal",
             native_language="uk",
             style="tutor",
         )
         p2 = HonzikPersonality._get_base_prompt(
+            character="honzik",
             level="intermediate",
             corrections_level="minimal",
             native_language="uk",
@@ -41,12 +42,14 @@ class TestHonzikPromptGeneration:
     def test_base_prompt_different_for_different_params(self):
         """Different params should produce different prompts."""
         p_beginner = HonzikPersonality._get_base_prompt(
+            character="honzik",
             level="beginner",
             corrections_level="balanced",
             native_language="ru",
             style="friendly",
         )
         p_advanced = HonzikPersonality._get_base_prompt(
+            character="honzik",
             level="advanced",
             corrections_level="detailed",
             native_language="ru",
@@ -57,6 +60,7 @@ class TestHonzikPromptGeneration:
     def test_base_prompt_contains_czech_context(self):
         """Prompt should mention Czech learning."""
         prompt = HonzikPersonality._get_base_prompt(
+            character="honzik",
             level="beginner",
             corrections_level="balanced",
             native_language="ru",
@@ -72,6 +76,7 @@ class TestHonzikPromptGeneration:
         """All 4 levels should produce valid prompts."""
         for level in ("beginner", "intermediate", "advanced", "native"):
             prompt = HonzikPersonality._get_base_prompt(
+                character="honzik",
                 level=level,
                 corrections_level="balanced",
                 native_language="ru",

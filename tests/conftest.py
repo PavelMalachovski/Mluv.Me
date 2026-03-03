@@ -134,4 +134,3 @@ def settings_update_data() -> dict[str, Any]:
         "voice_speed": "slow",
         "corrections_level": "detailed",
     }
-

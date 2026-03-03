@@ -17,10 +17,11 @@ logger = structlog.get_logger()
 
 class ResponseQuality(IntEnum):
     """Quality of user response."""
+
     AGAIN = 0  # Complete blackout, need to relearn
-    HARD = 1   # Incorrect but upon seeing the answer, remembered
-    GOOD = 2   # Correct with difficulty
-    EASY = 3   # Perfect response, very easy
+    HARD = 1  # Incorrect but upon seeing the answer, remembered
+    GOOD = 2  # Correct with difficulty
+    EASY = 3  # Perfect response, very easy
 
 
 # SM-2 quality mapping (our 0-3 -> SM-2 0-5)
@@ -52,7 +53,7 @@ class SpacedRepetitionService:
         quality: int,
         current_ease_factor: float,
         current_interval: int,
-        review_count: int
+        review_count: int,
     ) -> Tuple[float, int, date]:
         """
         Calculate next review parameters based on response quality.
@@ -120,7 +121,7 @@ class SpacedRepetitionService:
         again_count: int,
         hard_count: int,
         good_count: int,
-        easy_count: int
+        easy_count: int,
     ) -> Dict[str, Any]:
         """
         Generate review session summary.
@@ -180,7 +181,9 @@ class SpacedRepetitionService:
             "message": message,
         }
 
-    def estimate_review_time(self, word_count: int, avg_seconds_per_word: int = 8) -> int:
+    def estimate_review_time(
+        self, word_count: int, avg_seconds_per_word: int = 8
+    ) -> int:
         """
         Estimate review session duration in minutes.
 

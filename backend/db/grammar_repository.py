@@ -3,12 +3,10 @@ Repository for grammar rules and user grammar progress.
 Abstrahuje SQL dotazy pro gramatická pravidla.
 """
 
-import json
-import random
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import select, update, func, and_, not_
+from sqlalchemy import select, func, not_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
@@ -144,12 +142,9 @@ class GrammarRepository:
         Returns:
             list[GrammarRule]: Правила с непустым exercise_data
         """
-        query = (
-            select(GrammarRule)
-            .where(
-                GrammarRule.is_active.is_(True),
-                GrammarRule.exercise_data != "[]",
-            )
+        query = select(GrammarRule).where(
+            GrammarRule.is_active.is_(True),
+            GrammarRule.exercise_data != "[]",
         )
 
         if category:
@@ -172,7 +167,9 @@ class GrammarRepository:
         level: str | None = None,
     ) -> int:
         """Подсчитать количество активных правил."""
-        query = select(func.count(GrammarRule.id)).where(GrammarRule.is_active.is_(True))
+        query = select(func.count(GrammarRule.id)).where(
+            GrammarRule.is_active.is_(True)
+        )
 
         if category:
             query = query.where(GrammarRule.category == category)
@@ -209,9 +206,7 @@ class GrammarRepository:
             return result.scalar_one_or_none()
 
         result = await self.session.execute(
-            select(UserGrammarProgress).where(
-                UserGrammarProgress.user_id == user_id
-            )
+            select(UserGrammarProgress).where(UserGrammarProgress.user_id == user_id)
         )
         return list(result.scalars().all())
 
@@ -311,16 +306,15 @@ class GrammarRepository:
         Приоритет для уведомлений — показать новое.
         """
         # Get IDs of rules user has already seen
-        seen_query = (
-            select(UserGrammarProgress.grammar_rule_id)
-            .where(UserGrammarProgress.user_id == user_id)
+        seen_query = select(UserGrammarProgress.grammar_rule_id).where(
+            UserGrammarProgress.user_id == user_id
         )
         seen_result = await self.session.execute(seen_query)
         seen_ids = [row[0] for row in seen_result.all()]
 
         # Get unseen rules
         query = select(GrammarRule).where(GrammarRule.is_active.is_(True))
-        
+
         if seen_ids:
             query = query.where(not_(GrammarRule.id.in_(seen_ids)))
 
@@ -348,14 +342,22 @@ class GrammarRepository:
             .options(joinedload(UserGrammarProgress.grammar_rule))
             .where(
                 UserGrammarProgress.user_id == user_id,
-                (UserGrammarProgress.correct_count + UserGrammarProgress.incorrect_count) >= 2,
+                (
+                    UserGrammarProgress.correct_count
+                    + UserGrammarProgress.incorrect_count
+                )
+                >= 2,
                 UserGrammarProgress.mastery_level.notin_(["mastered"]),
             )
             .order_by(
                 # Sort by accuracy ascending (worst first)
                 (
-                    UserGrammarProgress.correct_count * 1.0
-                    / (UserGrammarProgress.correct_count + UserGrammarProgress.incorrect_count)
+                    UserGrammarProgress.correct_count
+                    * 1.0
+                    / (
+                        UserGrammarProgress.correct_count
+                        + UserGrammarProgress.incorrect_count
+                    )
                 ).asc()
             )
             .limit(limit)
@@ -370,12 +372,14 @@ class GrammarRepository:
             if rule:
                 total = progress.correct_count + progress.incorrect_count
                 accuracy = progress.correct_count / total if total > 0 else 0
-                weak_rules.append({
-                    "rule": rule,
-                    "accuracy": round(accuracy * 100, 1),
-                    "total": total,
-                    "progress": progress,
-                })
+                weak_rules.append(
+                    {
+                        "rule": rule,
+                        "accuracy": round(accuracy * 100, 1),
+                        "total": total,
+                        "progress": progress,
+                    }
+                )
 
         return weak_rules
 
@@ -404,13 +408,10 @@ class GrammarRepository:
         levels = {row.mastery_level: row.count for row in result.all()}
 
         # Calculate average accuracy
-        acc_query = (
-            select(
-                func.sum(UserGrammarProgress.correct_count).label("correct"),
-                func.sum(UserGrammarProgress.incorrect_count).label("incorrect"),
-            )
-            .where(UserGrammarProgress.user_id == user_id)
-        )
+        acc_query = select(
+            func.sum(UserGrammarProgress.correct_count).label("correct"),
+            func.sum(UserGrammarProgress.incorrect_count).label("incorrect"),
+        ).where(UserGrammarProgress.user_id == user_id)
         acc_result = await self.session.execute(acc_query)
         acc_row = acc_result.one()
         correct = acc_row.correct or 0
@@ -422,5 +423,7 @@ class GrammarRepository:
             "practiced_rules": sum(levels.values()),
             "mastered_rules": levels.get("mastered", 0) + levels.get("known", 0),
             "weak_rules": levels.get("seen", 0) + levels.get("practiced", 0),
-            "average_accuracy": round(correct / total_answers * 100, 1) if total_answers > 0 else 0,
+            "average_accuracy": round(correct / total_answers * 100, 1)
+            if total_answers > 0
+            else 0,
         }

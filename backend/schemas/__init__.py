@@ -54,5 +54,3 @@ __all__ = [
     "LeaderboardResponse",
     "MyRankResponse",
 ]
-
-

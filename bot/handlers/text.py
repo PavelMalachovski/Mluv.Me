@@ -7,7 +7,6 @@ Language Immersion: Все сообщения бота на чешском.
 """
 
 import asyncio
-import base64
 import time
 import urllib.parse
 
@@ -22,7 +21,11 @@ from aiogram.types import (
 import structlog
 
 from bot.config import config
-from bot.handlers.voice import _corrections_cache, _cleanup_old_corrections, _keep_chat_action
+from bot.handlers.voice import (
+    _corrections_cache,
+    _cleanup_old_corrections,
+    _keep_chat_action,
+)
 from bot.handlers.payments import get_subscription_keyboard, get_limit_reached_text
 from bot.localization import get_text
 from bot.services.api_client import APIClient
@@ -69,7 +72,7 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
 
     # Keep "typing" indicator alive during the entire backend round-trip
     action_stop = asyncio.Event()
-    action_task = asyncio.create_task(
+    _action_task = asyncio.create_task(  # noqa: F841 – prevent GC
         _keep_chat_action(message.bot, message.chat.id, "typing", action_stop)
     )
 
@@ -111,11 +114,11 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
         action_stop.set()
 
         # ⚡ INSTANT: Send správnost — user sees result immediately
-        score_parts = [get_text('voice_correctness', score=correctness_score)]
+        score_parts = [get_text("voice_correctness", score=correctness_score)]
         if stars_earned > 0:
-            score_parts.append(get_text('voice_stars_earned', stars=stars_earned))
+            score_parts.append(get_text("voice_stars_earned", stars=stars_earned))
         if not mistakes:
-            score_parts.append(get_text('no_corrections'))
+            score_parts.append(get_text("no_corrections"))
         await message.answer("\n".join(score_parts), parse_mode="HTML")
 
         # ========================================
@@ -124,8 +127,10 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
         if honzik_text:
             # Show "recording voice" while TTS generates
             action_stop2 = asyncio.Event()
-            action_task2 = asyncio.create_task(
-                _keep_chat_action(message.bot, message.chat.id, "record_voice", action_stop2)
+            _action_task2 = asyncio.create_task(  # noqa: F841 – prevent GC
+                _keep_chat_action(
+                    message.bot, message.chat.id, "record_voice", action_stop2
+                )
             )
 
             try:
@@ -137,7 +142,9 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
                 action_stop2.set()
 
             if audio_bytes_response:
-                voice_file = BufferedInputFile(audio_bytes_response, filename="honzik.ogg")
+                voice_file = BufferedInputFile(
+                    audio_bytes_response, filename="honzik.ogg"
+                )
 
                 # Создаём кнопки
                 buttons = []
@@ -146,8 +153,7 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
                 encoded_text = urllib.parse.quote(honzik_text, safe="")
                 webui_url = f"{config.webui_url}/response?text={encoded_text}"
                 text_button = InlineKeyboardButton(
-                    text=get_text("btn_show_text"),
-                    web_app=WebAppInfo(url=webui_url)
+                    text=get_text("btn_show_text"), web_app=WebAppInfo(url=webui_url)
                 )
                 buttons.append(text_button)
 
@@ -168,10 +174,7 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
 
                 keyboard = InlineKeyboardMarkup(inline_keyboard=[buttons])
 
-                await message.answer_voice(
-                    voice=voice_file,
-                    reply_markup=keyboard
-                )
+                await message.answer_voice(voice=voice_file, reply_markup=keyboard)
             else:
                 # TTS не удался — отправляем текстом
                 response_text = f"🗣️ <b>Honzík:</b>\n{honzik_text}"
@@ -189,11 +192,11 @@ async def handle_text(message: Message, api_client: APIClient) -> None:
                         text=get_text("btn_show_opravy"),
                         callback_data=f"opravy:{message.message_id}",
                     )
-                    keyboard = InlineKeyboardMarkup(
-                        inline_keyboard=[[opravy_button]]
-                    )
+                    keyboard = InlineKeyboardMarkup(inline_keyboard=[[opravy_button]])
 
-                await message.answer(response_text, parse_mode="HTML", reply_markup=keyboard)
+                await message.answer(
+                    response_text, parse_mode="HTML", reply_markup=keyboard
+                )
 
         logger.info(
             "text_processed",

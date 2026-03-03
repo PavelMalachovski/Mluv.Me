@@ -16,7 +16,6 @@ from typing import Literal
 import structlog
 
 from backend.services.openai_client import OpenAIClient
-from backend.cache.redis_client import redis_client
 
 logger = structlog.get_logger(__name__)
 
@@ -47,9 +46,19 @@ SCENARIOS = {
         "user_role": "Zákazník",
         "steps": 5,
         "vocabulary": [
-            "pivo", "plzeň", "ležák", "tmavé", "světlé",
-            "jídlo", "svíčková", "knedlíky", "guláš",
-            "platit", "účet", "hotově", "kartou",
+            "pivo",
+            "plzeň",
+            "ležák",
+            "tmavé",
+            "světlé",
+            "jídlo",
+            "svíčková",
+            "knedlíky",
+            "guláš",
+            "platit",
+            "účet",
+            "hotově",
+            "kartou",
         ],
         "hints": [
             "Zkus říct: 'Dobrý den, jedno pivo, prosím.'",
@@ -72,9 +81,17 @@ SCENARIOS = {
         "user_role": "Pacient",
         "steps": 6,
         "vocabulary": [
-            "bolest", "hlava", "teplota", "kašel", "rýma",
-            "lék", "recept", "neschopenka", "pojištění",
-            "vyšetření", "diagnóza",
+            "bolest",
+            "hlava",
+            "teplota",
+            "kašel",
+            "rýma",
+            "lék",
+            "recept",
+            "neschopenka",
+            "pojištění",
+            "vyšetření",
+            "diagnóza",
         ],
         "hints": [
             "Pozdrav a řekni, co tě trápí.",
@@ -98,9 +115,18 @@ SCENARIOS = {
         "user_role": "Žadatel o pobyt",
         "steps": 7,
         "vocabulary": [
-            "pobyt", "vízum", "doklady", "pas", "formulář",
-            "žádost", "potvrzení", "fotografie", "poplatek",
-            "přechodný", "trvalý", "prodloužení",
+            "pobyt",
+            "vízum",
+            "doklady",
+            "pas",
+            "formulář",
+            "žádost",
+            "potvrzení",
+            "fotografie",
+            "poplatek",
+            "přechodný",
+            "trvalý",
+            "prodloužení",
         ],
         "hints": [
             "Pozdrav a řekni, proč jsi přišel.",
@@ -125,9 +151,17 @@ SCENARIOS = {
         "user_role": "Uchazeč o práci",
         "steps": 6,
         "vocabulary": [
-            "zkušenosti", "vzdělání", "praxe", "dovednosti",
-            "plat", "benefity", "tým", "projekt",
-            "motivace", "kariéra", "nástroje",
+            "zkušenosti",
+            "vzdělání",
+            "praxe",
+            "dovednosti",
+            "plat",
+            "benefity",
+            "tým",
+            "projekt",
+            "motivace",
+            "kariéra",
+            "nástroje",
         ],
         "hints": [
             "Představ se a řekni něco o sobě.",
@@ -151,9 +185,17 @@ SCENARIOS = {
         "user_role": "Zájemce o pronájem",
         "steps": 5,
         "vocabulary": [
-            "byt", "pokoj", "kuchyň", "koupelna", "balkon",
-            "nájem", "kauce", "energie", "smlouva",
-            "vybavený", "dispozice",
+            "byt",
+            "pokoj",
+            "kuchyň",
+            "koupelna",
+            "balkon",
+            "nájem",
+            "kauce",
+            "energie",
+            "smlouva",
+            "vybavený",
+            "dispozice",
         ],
         "hints": [
             "Pozdrav a řekni, že máš zájem o byt.",
@@ -176,8 +218,14 @@ SCENARIOS = {
         "user_role": "Cestující",
         "steps": 4,
         "vocabulary": [
-            "lístek", "jízdenka", "zastávka", "přestup",
-            "směr", "linka", "validátor", "automat",
+            "lístek",
+            "jízdenka",
+            "zastávka",
+            "přestup",
+            "směr",
+            "linka",
+            "validátor",
+            "automat",
         ],
         "hints": [
             "Zeptej se, jak koupit lístek.",
@@ -199,9 +247,17 @@ SCENARIOS = {
         "user_role": "Zákazník",
         "steps": 4,
         "vocabulary": [
-            "koupit", "hledat", "kolik", "stojí",
-            "velikost", "barva", "slevu", "pokladna",
-            "platit", "vrátit", "taška",
+            "koupit",
+            "hledat",
+            "kolik",
+            "stojí",
+            "velikost",
+            "barva",
+            "slevu",
+            "pokladna",
+            "platit",
+            "vrátit",
+            "taška",
         ],
         "hints": [
             "Pozdrav a řekni, co hledáš.",
@@ -223,9 +279,16 @@ SCENARIOS = {
         "user_role": "Volající",
         "steps": 5,
         "vocabulary": [
-            "volat", "přepojit", "zavolat zpět", "linka",
-            "informace", "schůzka", "termín", "rezervace",
-            "vzkaz", "číslo",
+            "volat",
+            "přepojit",
+            "zavolat zpět",
+            "linka",
+            "informace",
+            "schůzka",
+            "termín",
+            "rezervace",
+            "vzkaz",
+            "číslo",
         ],
         "hints": [
             "Pozdrav a představ se.",
@@ -266,16 +329,49 @@ class ScenarioService:
     def _cleanup_stale_scenarios(self):
         """Remove scenarios older than TTL and enforce max size."""
         import time as _time
+
         now = _time.time()
         expired = [
-            uid for uid, s in self._active_scenarios.items()
+            uid
+            for uid, s in self._active_scenarios.items()
             if now - s.get("_ts", 0) > self._SCENARIO_TTL
         ]
         for uid in expired:
             del self._active_scenarios[uid]
         while len(self._active_scenarios) > self._MAX_ACTIVE_SCENARIOS:
-            oldest = min(self._active_scenarios, key=lambda k: self._active_scenarios[k].get("_ts", 0))
+            oldest = min(
+                self._active_scenarios,
+                key=lambda k: self._active_scenarios[k].get("_ts", 0),
+            )
             del self._active_scenarios[oldest]
+
+    async def _get_state(self, user_id: int) -> dict | None:
+        """Get scenario state from in-memory store (or Redis if available)."""
+        from backend.cache.redis_client import redis_client
+
+        # Try Redis first
+        state = await redis_client.get(f"scenario:{user_id}")
+        if state:
+            return state
+        # Fallback to in-memory
+        return self._active_scenarios.get(user_id)
+
+    async def _set_state(self, user_id: int, state: dict) -> None:
+        """Save scenario state to in-memory store and Redis."""
+        import time as _time
+        from backend.cache.redis_client import redis_client
+
+        state["_ts"] = _time.time()
+        self._active_scenarios[user_id] = state
+        self._cleanup_stale_scenarios()
+        await redis_client.set(f"scenario:{user_id}", state, ttl=self._SCENARIO_TTL)
+
+    async def _delete_state(self, user_id: int) -> None:
+        """Delete scenario state from in-memory store and Redis."""
+        from backend.cache.redis_client import redis_client
+
+        self._active_scenarios.pop(user_id, None)
+        await redis_client.delete(f"scenario:{user_id}")
 
     def get_available_scenarios(self, user_level: CzechLevel) -> list[dict]:
         """
@@ -294,16 +390,18 @@ class ScenarioService:
         for scenario_id, scenario in SCENARIOS.items():
             min_level_idx = level_order.index(scenario["min_level"])
 
-            available.append({
-                "id": scenario_id,
-                "name_cs": scenario["name_cs"],
-                "name_ru": scenario["name_ru"],
-                "level": scenario["level"],
-                "steps": scenario["steps"],
-                "reward_stars": scenario["reward_stars"],
-                "is_unlocked": user_level_idx >= min_level_idx,
-                "vocabulary_count": len(scenario["vocabulary"]),
-            })
+            available.append(
+                {
+                    "id": scenario_id,
+                    "name_cs": scenario["name_cs"],
+                    "name_ru": scenario["name_ru"],
+                    "level": scenario["level"],
+                    "steps": scenario["steps"],
+                    "reward_stars": scenario["reward_stars"],
+                    "is_unlocked": user_level_idx >= min_level_idx,
+                    "vocabulary_count": len(scenario["vocabulary"]),
+                }
+            )
 
         return available
 
@@ -398,10 +496,12 @@ class ScenarioService:
         scenario = SCENARIOS[state["scenario_id"]]
 
         # Добавляем сообщение пользователя в историю
-        state["conversation_history"].append({
-            "role": "user",
-            "text": user_text,
-        })
+        state["conversation_history"].append(
+            {
+                "role": "user",
+                "text": user_text,
+            }
+        )
 
         current_step = state["step"]
         is_last_step = current_step >= scenario["steps"]
@@ -418,10 +518,12 @@ class ScenarioService:
         )
 
         # Добавляем ответ в историю
-        state["conversation_history"].append({
-            "role": "assistant",
-            "text": response["honzik_message"],
-        })
+        state["conversation_history"].append(
+            {
+                "role": "assistant",
+                "text": response["honzik_message"],
+            }
+        )
 
         # Обновляем счёт
         state["total_score"] += response.get("step_score", 0)
@@ -436,7 +538,9 @@ class ScenarioService:
             "honzik_message": response["honzik_message"],
             "corrections": response.get("corrections", []),
             "step_score": response.get("step_score", 0),
-            "hint": scenario["hints"][min(state["step"] - 1, len(scenario["hints"]) - 1)],
+            "hint": scenario["hints"][
+                min(state["step"] - 1, len(scenario["hints"]) - 1)
+            ],
             "is_completed": is_last_step,
         }
 
@@ -586,7 +690,9 @@ Poznámka: Rodný jazyk studenta je {native_lang_name}.
         if user_message:
             user_prompt = f"Student řekl: {user_message}"
         else:
-            user_prompt = f"Scénář právě začíná. Zahaj konverzaci jako {scenario['honzik_role']}."
+            user_prompt = (
+                f"Scénář právě začíná. Zahaj konverzaci jako {scenario['honzik_role']}."
+            )
 
         messages = [
             {"role": "system", "content": system_prompt},

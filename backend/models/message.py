@@ -37,9 +37,7 @@ class Message(Base):
     __tablename__ = "messages"
 
     # Performance: Composite index for efficient message history queries
-    __table_args__ = (
-        Index('idx_messages_user_created', 'user_id', 'created_at'),
-    )
+    __table_args__ = (Index("idx_messages_user_created", "user_id", "created_at"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
@@ -48,57 +46,39 @@ class Message(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        comment="User ID"
+        comment="User ID",
     )
 
     role: Mapped[str] = mapped_column(
         Enum("user", "assistant", name="message_role_enum"),
         nullable=False,
-        comment="Роль отправителя (user или assistant/Honzík)"
+        comment="Роль отправителя (user или assistant/Honzík)",
     )
 
-    text: Mapped[str] = mapped_column(
-        Text,
-        nullable=False,
-        comment="Текст сообщения"
-    )
+    text: Mapped[str] = mapped_column(Text, nullable=False, comment="Текст сообщения")
 
     transcript_raw: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-        comment="Оригинальная транскрипция STT"
+        Text, nullable=True, comment="Оригинальная транскрипция STT"
     )
 
     transcript_normalized: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-        comment="Нормализованный/исправленный текст"
+        Text, nullable=True, comment="Нормализованный/исправленный текст"
     )
 
     audio_file_path: Mapped[str | None] = mapped_column(
-        String(500),
-        nullable=True,
-        comment="Путь к аудио файлу"
+        String(500), nullable=True, comment="Путь к аудио файлу"
     )
 
     correctness_score: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True,
-        comment="Оценка правильности (0-100)"
+        Integer, nullable=True, comment="Оценка правильности (0-100)"
     )
 
     words_total: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True,
-        default=0,
-        comment="Количество слов"
+        Integer, nullable=True, default=0, comment="Количество слов"
     )
 
     words_correct: Mapped[int | None] = mapped_column(
-        Integer,
-        nullable=True,
-        default=0,
-        comment="Правильных слов"
+        Integer, nullable=True, default=0, comment="Правильных слов"
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -106,7 +86,7 @@ class Message(Base):
         nullable=False,
         server_default=func.now(),
         index=True,
-        comment="Дата создания"
+        comment="Дата создания",
     )
 
     # Relationship
@@ -117,6 +97,3 @@ class Message(Base):
             f"<Message(id={self.id}, user_id={self.user_id}, "
             f"role={self.role}, score={self.correctness_score})>"
         )
-
-
-

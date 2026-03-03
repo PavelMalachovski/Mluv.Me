@@ -30,7 +30,9 @@ task_metrics: Dict[str, Dict[str, Any]] = {
 
 
 @task_prerun.connect
-def task_prerun_handler(sender=None, task_id=None, task=None, args=None, kwargs=None, **extra):
+def task_prerun_handler(
+    sender=None, task_id=None, task=None, args=None, kwargs=None, **extra
+):
     """
     Handler вызывается перед запуском задачи.
 
@@ -45,7 +47,14 @@ def task_prerun_handler(sender=None, task_id=None, task=None, args=None, kwargs=
 
 @task_postrun.connect
 def task_postrun_handler(
-    sender=None, task_id=None, task=None, args=None, kwargs=None, retval=None, state=None, **extra
+    sender=None,
+    task_id=None,
+    task=None,
+    args=None,
+    kwargs=None,
+    retval=None,
+    state=None,
+    **extra,
 ):
     """
     Handler вызывается после завершения задачи.
@@ -78,7 +87,14 @@ def task_postrun_handler(
 
 @task_failure.connect
 def task_failure_handler(
-    sender=None, task_id=None, exception=None, args=None, kwargs=None, traceback=None, einfo=None, **extra
+    sender=None,
+    task_id=None,
+    exception=None,
+    args=None,
+    kwargs=None,
+    traceback=None,
+    einfo=None,
+    **extra,
 ):
     """
     Handler вызывается при ошибке задачи.
@@ -105,6 +121,7 @@ def task_failure_handler(
     # Отправляем в Sentry (если настроен)
     try:
         import sentry_sdk
+
         sentry_sdk.capture_exception(exception)
     except ImportError:
         # Sentry не установлен
@@ -127,9 +144,7 @@ def task_success_handler(sender=None, result=None, **extra):
 
 
 @task_retry.connect
-def task_retry_handler(
-    sender=None, task_id=None, reason=None, einfo=None, **extra
-):
+def task_retry_handler(sender=None, task_id=None, reason=None, einfo=None, **extra):
     """
     Handler вызывается при повторной попытке выполнения задачи.
 

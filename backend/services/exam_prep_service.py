@@ -29,10 +29,20 @@ EXAMS = {
         "description_cs": "Základní komunikace pro život v Česku.",
         "description_ru": "Базовая коммуникация для жизни в Чехии.",
         "modules": [
-            {"id": "listening", "name_cs": "Poslech", "name_ru": "Аудирование", "questions": 10},
+            {
+                "id": "listening",
+                "name_cs": "Poslech",
+                "name_ru": "Аудирование",
+                "questions": 10,
+            },
             {"id": "reading", "name_cs": "Čtení", "name_ru": "Чтение", "questions": 10},
             {"id": "writing", "name_cs": "Psaní", "name_ru": "Письмо", "questions": 3},
-            {"id": "speaking", "name_cs": "Mluvení", "name_ru": "Говорение", "questions": 3},
+            {
+                "id": "speaking",
+                "name_cs": "Mluvení",
+                "name_ru": "Говорение",
+                "questions": 3,
+            },
         ],
         "passing_score": 60,
         "duration_minutes": 60,
@@ -46,10 +56,20 @@ EXAMS = {
         "description_cs": "Pokročilejší komunikace pro trvalý pobyt.",
         "description_ru": "Продвинутая коммуникация для постоянного проживания.",
         "modules": [
-            {"id": "listening", "name_cs": "Poslech", "name_ru": "Аудирование", "questions": 15},
+            {
+                "id": "listening",
+                "name_cs": "Poslech",
+                "name_ru": "Аудирование",
+                "questions": 15,
+            },
             {"id": "reading", "name_cs": "Čtení", "name_ru": "Чтение", "questions": 15},
             {"id": "writing", "name_cs": "Psaní", "name_ru": "Письмо", "questions": 5},
-            {"id": "speaking", "name_cs": "Mluvení", "name_ru": "Говорение", "questions": 4},
+            {
+                "id": "speaking",
+                "name_cs": "Mluvení",
+                "name_ru": "Говорение",
+                "questions": 4,
+            },
         ],
         "passing_score": 60,
         "duration_minutes": 90,
@@ -63,10 +83,20 @@ EXAMS = {
         "description_cs": "Pokročilá komunikace pro získání občanství.",
         "description_ru": "Продвинутая коммуникация для получения гражданства.",
         "modules": [
-            {"id": "listening", "name_cs": "Poslech", "name_ru": "Аудирование", "questions": 20},
+            {
+                "id": "listening",
+                "name_cs": "Poslech",
+                "name_ru": "Аудирование",
+                "questions": 20,
+            },
             {"id": "reading", "name_cs": "Čtení", "name_ru": "Чтение", "questions": 20},
             {"id": "writing", "name_cs": "Psaní", "name_ru": "Письмо", "questions": 5},
-            {"id": "speaking", "name_cs": "Mluvení", "name_ru": "Говорение", "questions": 5},
+            {
+                "id": "speaking",
+                "name_cs": "Mluvení",
+                "name_ru": "Говорение",
+                "questions": 5,
+            },
         ],
         "passing_score": 60,
         "duration_minutes": 120,
@@ -95,7 +125,12 @@ EXERCISE_BANK = {
             {
                 "audio_text": "Tramvaj číslo 22 jede na Malostranské náměstí.",
                 "question": "Kam jede tramvaj?",
-                "options": ["Na letiště", "Do centra", "Na Malostranské náměstí", "Na hlavní nádraží"],
+                "options": [
+                    "Na letiště",
+                    "Do centra",
+                    "Na Malostranské náměstí",
+                    "Na hlavní nádraží",
+                ],
                 "correct": 2,
             },
         ],
@@ -120,12 +155,19 @@ EXERCISE_BANK = {
         "a1": [
             {
                 "task": "Napište krátký email. Představte se - jméno, věk, odkud jste, co děláte.",
-                "hints": ["Začněte: Dobrý den,", "Napište 3-5 vět", "Zakončete: S pozdravem, ..."],
+                "hints": [
+                    "Začněte: Dobrý den,",
+                    "Napište 3-5 vět",
+                    "Zakončete: S pozdravem, ...",
+                ],
                 "word_count": 50,
             },
             {
                 "task": "Vyplňte formulář: jméno, příjmení, adresa, telefon.",
-                "hints": ["Použijte velká písmena pro jména", "Formát telefonu: +420..."],
+                "hints": [
+                    "Použijte velká písmena pro jména",
+                    "Formát telefonu: +420...",
+                ],
                 "word_count": 30,
             },
         ],
@@ -225,17 +267,19 @@ class ExamPrepService:
             # Распределяем модули по неделям
             focus_module = modules[(week - 1) % len(modules)]
 
-            weekly_plan.append({
-                "week": week,
-                "start_date": start_date.strftime("%Y-%m-%d"),
-                "focus_module": focus_module["name_cs"],
-                "tasks": [
-                    f"Procvičuj {focus_module['name_cs']} - 30 minut denně",
-                    "Naučte se 10 nových slovíček",
-                    "Poslechněte 1 podcast v češtině",
-                ],
-                "goal": f"Zvládnout základy modulu {focus_module['name_cs']}",
-            })
+            weekly_plan.append(
+                {
+                    "week": week,
+                    "start_date": start_date.strftime("%Y-%m-%d"),
+                    "focus_module": focus_module["name_cs"],
+                    "tasks": [
+                        f"Procvičuj {focus_module['name_cs']} - 30 minut denně",
+                        "Naučte se 10 nových slovíček",
+                        "Poslechněte 1 podcast v češtině",
+                    ],
+                    "goal": f"Zvládnout základy modulu {focus_module['name_cs']}",
+                }
+            )
 
         # Сохраняем прогресс
         self._user_progress[user_id] = {
@@ -277,7 +321,9 @@ class ExamPrepService:
         if module not in EXERCISE_BANK:
             raise ValueError(f"Unknown module: {module}")
 
-        exercises = EXERCISE_BANK[module].get(level, EXERCISE_BANK[module].get("a1", []))
+        exercises = EXERCISE_BANK[module].get(
+            level, EXERCISE_BANK[module].get("a1", [])
+        )
 
         if not exercises:
             return {"error": "No exercises available"}
@@ -322,7 +368,8 @@ class ExamPrepService:
         return {
             "is_correct": is_correct,
             "correct_answer": exercise.get("options", [])[exercise.get("correct", 0)]
-                if "options" in exercise else None,
+            if "options" in exercise
+            else None,
             "user_answer": answer,
             "explanation": "Správně!" if is_correct else "Zkus to znovu!",
         }
@@ -354,13 +401,17 @@ class ExamPrepService:
         for module in exam["modules"]:
             module_id = module["id"]
             if module_id in EXERCISE_BANK:
-                exercises = EXERCISE_BANK[module_id].get(level, EXERCISE_BANK[module_id].get("a1", []))
-                for ex in exercises[:module["questions"]]:
-                    test_questions.append({
-                        "module": module_id,
-                        "module_name": module["name_cs"],
-                        **ex,
-                    })
+                exercises = EXERCISE_BANK[module_id].get(
+                    level, EXERCISE_BANK[module_id].get("a1", [])
+                )
+                for ex in exercises[: module["questions"]]:
+                    test_questions.append(
+                        {
+                            "module": module_id,
+                            "module_name": module["name_cs"],
+                            **ex,
+                        }
+                    )
 
         return {
             "exam_id": exam_id,

@@ -48,7 +48,7 @@ async def delete_conversation_history(
         log.warning("user_not_found_for_history_deletion", telegram_id=telegram_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with telegram_id {telegram_id} not found"
+            detail=f"User with telegram_id {telegram_id} not found",
         )
 
     # Удаляем все сообщения пользователя
@@ -62,12 +62,12 @@ async def delete_conversation_history(
         "conversation_history_deleted",
         telegram_id=telegram_id,
         user_id=user.id,
-        deleted_messages=deleted_count
+        deleted_messages=deleted_count,
     )
 
     return {
         "status": "success",
         "message": "Conversation history deleted successfully",
         "deleted_messages": deleted_count,
-        "telegram_id": telegram_id
+        "telegram_id": telegram_id,
     }

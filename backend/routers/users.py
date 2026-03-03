@@ -51,13 +51,10 @@ async def create_user(
     # Check if user already exists
     existing_user = await repo.get_by_telegram_id(user_data.telegram_id)
     if existing_user:
-        logger.warning(
-            "user_already_exists",
-            telegram_id=user_data.telegram_id
-        )
+        logger.warning("user_already_exists", telegram_id=user_data.telegram_id)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"User with telegram_id {user_data.telegram_id} already exists"
+            detail=f"User with telegram_id {user_data.telegram_id} already exists",
         )
 
     # Create user
@@ -69,7 +66,7 @@ async def create_user(
         user_id=user.id,
         telegram_id=user.telegram_id,
         native_language=user.native_language,
-        level=user.level
+        level=user.level,
     )
 
     return UserResponse.model_validate(user)
@@ -105,7 +102,7 @@ async def get_user_by_telegram_id(
         logger.warning("user_not_found", telegram_id=telegram_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with telegram_id {telegram_id} not found"
+            detail=f"User with telegram_id {telegram_id} not found",
         )
 
     return UserResponse.model_validate(user)
@@ -141,7 +138,7 @@ async def get_user(
         logger.warning("user_not_found", user_id=user_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with id {user_id} not found"
+            detail=f"User with id {user_id} not found",
         )
 
     return UserResponse.model_validate(user)
@@ -182,7 +179,7 @@ async def update_user(
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"User with id {user_id} not found"
+                detail=f"User with id {user_id} not found",
             )
         return UserResponse.model_validate(user)
 
@@ -192,13 +189,11 @@ async def update_user(
         logger.warning("user_not_found", user_id=user_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with id {user_id} not found"
+            detail=f"User with id {user_id} not found",
         )
 
     logger.info(
-        "user_updated",
-        user_id=user_id,
-        updated_fields=list(update_data.keys())
+        "user_updated", user_id=user_id, updated_fields=list(update_data.keys())
     )
 
     return UserResponse.model_validate(user)
@@ -234,7 +229,7 @@ async def get_user_settings(
         logger.warning("settings_not_found", user_id=user_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Settings for user {user_id} not found"
+            detail=f"Settings for user {user_id} not found",
         )
 
     return UserSettingsResponse.model_validate(settings)
@@ -263,7 +258,7 @@ async def _do_update_settings(
         if not settings:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Settings for user {user_id} not found"
+                detail=f"Settings for user {user_id} not found",
             )
         return UserSettingsResponse.model_validate(settings)
 
@@ -273,7 +268,7 @@ async def _do_update_settings(
         logger.warning("settings_not_found", user_id=user_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Settings for user {user_id} not found"
+            detail=f"Settings for user {user_id} not found",
         )
 
     logger.info(
@@ -320,13 +315,12 @@ async def update_user_settings_by_telegram(
         logger.warning("user_not_found", telegram_id=telegram_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with telegram_id {telegram_id} not found"
+            detail=f"User with telegram_id {telegram_id} not found",
         )
 
     return await _do_update_settings(
         user.id, settings_data, session, log_extra={"telegram_id": telegram_id}
     )
-
 
 
 @router.delete(
@@ -350,7 +344,6 @@ async def full_reset_user(
         HTTPException: Если пользователь не найден
     """
     from sqlalchemy import delete
-    from backend.models.user import User
     from backend.models.word import SavedWord
     from backend.models.message import Message
     from backend.models.stats import DailyStats, Stars
@@ -364,7 +357,7 @@ async def full_reset_user(
         logger.warning("user_not_found", telegram_id=telegram_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with telegram_id {telegram_id} not found"
+            detail=f"User with telegram_id {telegram_id} not found",
         )
 
     # 1. Delete all related data
@@ -384,9 +377,13 @@ async def full_reset_user(
     await session.execute(delete(Stars).where(Stars.user_id == user.id))
 
     # Delete Achievements & Challenges
-    await session.execute(delete(UserAchievement).where(UserAchievement.user_id == user.id))
+    await session.execute(
+        delete(UserAchievement).where(UserAchievement.user_id == user.id)
+    )
     await session.execute(delete(UserChallenge).where(UserChallenge.user_id == user.id))
-    await session.execute(delete(TopicMessageCount).where(TopicMessageCount.user_id == user.id))
+    await session.execute(
+        delete(TopicMessageCount).where(TopicMessageCount.user_id == user.id)
+    )
 
     # 2. Reset User Fields
     user.level = "beginner"
@@ -398,10 +395,6 @@ async def full_reset_user(
 
     await session.commit()
 
-    logger.info(
-        "user_full_reset",
-        telegram_id=telegram_id,
-        user_id=user.id
-    )
+    logger.info("user_full_reset", telegram_id=telegram_id, user_id=user.id)
 
     return {"status": "success", "message": "User progress fully reset"}

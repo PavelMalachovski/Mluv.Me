@@ -4,6 +4,3 @@ Telegram Bot for Mluv.Me.
 """
 
 __version__ = "1.0.0"
-
-
-

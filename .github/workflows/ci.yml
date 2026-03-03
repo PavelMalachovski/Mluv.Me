@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: "pip"
-      - run: pip install ruff mypy
+      - run: pip install ruff==0.8.2 mypy
       - name: Ruff lint
         run: ruff check backend/ bot/ tests/
       - name: Ruff format check

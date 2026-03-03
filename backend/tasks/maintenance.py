@@ -26,7 +26,10 @@ class AsyncTask(Task):
     def __call__(self, *args, **kwargs):
         """Override to run async functions."""
         import asyncio
-        return asyncio.get_event_loop().run_until_complete(self.run_async(*args, **kwargs))
+
+        return asyncio.get_event_loop().run_until_complete(
+            self.run_async(*args, **kwargs)
+        )
 
     async def run_async(self, *args, **kwargs):
         """Override this method in subclasses."""
@@ -71,18 +74,12 @@ async def cleanup_old_data(self) -> Dict[str, Any]:
 
             await db.commit()
 
-            logger.info(
-                "cleanup_completed",
-                **stats
-            )
+            logger.info("cleanup_completed", **stats)
 
             return stats
 
     except Exception as exc:
-        logger.error(
-            "cleanup_failed",
-            error=str(exc)
-        )
+        logger.error("cleanup_failed", error=str(exc))
         raise
 
 
@@ -108,9 +105,9 @@ async def refresh_materialized_views(self) -> Dict[str, Any]:
         async with AsyncSessionLocal() as db:
             # Refresh user_stats_summary materialized view
             # CONCURRENTLY позволяет обновлять без блокировки чтений
-            await db.execute(text(
-                "REFRESH MATERIALIZED VIEW CONCURRENTLY user_stats_summary"
-            ))
+            await db.execute(
+                text("REFRESH MATERIALIZED VIEW CONCURRENTLY user_stats_summary")
+            )
             await db.commit()
 
             duration = (datetime.now() - start_time).total_seconds()
@@ -118,23 +115,20 @@ async def refresh_materialized_views(self) -> Dict[str, Any]:
             logger.info(
                 "materialized_views_refreshed",
                 duration_seconds=duration,
-                views=["user_stats_summary"]
+                views=["user_stats_summary"],
             )
 
             return {
                 "status": "completed",
                 "timestamp": datetime.now().isoformat(),
                 "duration_seconds": duration,
-                "views_refreshed": ["user_stats_summary"]
+                "views_refreshed": ["user_stats_summary"],
             }
 
     except Exception as exc:
-        logger.error(
-            "refresh_materialized_views_failed",
-            error=str(exc)
-        )
+        logger.error("refresh_materialized_views_failed", error=str(exc))
         # Retry on failure with exponential backoff
-        self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        self.retry(exc=exc, countdown=60 * (2**self.request.retries))
         raise
 
 
@@ -161,14 +155,11 @@ async def optimize_database(self) -> Dict[str, Any]:
             return {
                 "status": "completed",
                 "timestamp": datetime.now().isoformat(),
-                "operations": ["ANALYZE"]
+                "operations": ["ANALYZE"],
             }
 
     except Exception as exc:
-        logger.error(
-            "database_optimization_failed",
-            error=str(exc)
-        )
+        logger.error("database_optimization_failed", error=str(exc))
         raise
 
 
@@ -190,12 +181,9 @@ async def backup_statistics(self) -> Dict[str, Any]:
         return {
             "status": "placeholder",
             "timestamp": datetime.now().isoformat(),
-            "note": "Will be implemented when cloud storage is configured"
+            "note": "Will be implemented when cloud storage is configured",
         }
 
     except Exception as exc:
-        logger.error(
-            "statistics_backup_failed",
-            error=str(exc)
-        )
+        logger.error("statistics_backup_failed", error=str(exc))
         raise

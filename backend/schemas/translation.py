@@ -46,9 +46,7 @@ class WordTranslationResponse(BaseModel):
     word: str = Field(description="Исходное слово")
     translation: str = Field(description="Перевод слова")
     target_language: str = Field(description="ISO 639-1 код языка перевода")
-    phonetics: str | None = Field(
-        default=None, description="Фонетическая транскрипция"
-    )
+    phonetics: str | None = Field(default=None, description="Фонетическая транскрипция")
 
 
 class SaveWordRequest(BaseModel):
@@ -74,6 +72,4 @@ class SaveWordRequest(BaseModel):
     context_sentence: str | None = Field(
         default=None, description="Контекстное предложение"
     )
-    phonetics: str | None = Field(
-        default=None, description="Фонетическая транскрипция"
-    )
+    phonetics: str | None = Field(default=None, description="Фонетическая транскрипция")

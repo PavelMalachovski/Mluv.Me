@@ -35,17 +35,14 @@ class MistakeSchema(BaseModel):
     corrected: str = Field(description="Исправленный текст")
     # Новый формат с двуязычными объяснениями
     explanation_cs: str | None = Field(
-        default=None,
-        description="Объяснение на простом чешском (A2 уровень)"
+        default=None, description="Объяснение на простом чешском (A2 уровень)"
     )
     explanation_native: str | None = Field(
-        default=None,
-        description="Перевод объяснения на родной язык"
+        default=None, description="Перевод объяснения на родной язык"
     )
     # Fallback для обратной совместимости
     explanation: str | None = Field(
-        default=None,
-        description="Legacy: Объяснение ошибки"
+        default=None, description="Legacy: Объяснение ошибки"
     )
 
 
@@ -143,8 +140,8 @@ class LessonProcessResponse(BaseModel):
         str_strip_whitespace=True,
         use_enum_values=True,
         # Serialization
-        ser_json_timedelta='float',
-        ser_json_bytes='base64',
+        ser_json_timedelta="float",
+        ser_json_bytes="base64",
         # JSON schema example
         json_schema_extra={
             "example": {
@@ -182,12 +179,14 @@ class LessonProcessResponse(BaseModel):
                 "words_total": 7,
                 "words_correct": 6,
             }
-        }
+        },
     )
 
     transcript: str = Field(description="Транскрипция речи")
     honzik_response_text: str = Field(description="Текстовый ответ Хонзика")
-    honzik_response_transcript: str = Field(description="Транскрипция голосового ответа Хонзика")
+    honzik_response_transcript: str = Field(
+        description="Транскрипция голосового ответа Хонзика"
+    )
     honzik_response_audio: str = Field(
         description="Аудио ответ Хонзика (base64 encoded)"
     )
@@ -195,9 +194,7 @@ class LessonProcessResponse(BaseModel):
     formatted_mistakes: str = Field(
         description="Отформатированные ошибки для отображения"
     )
-    formatted_suggestion: str = Field(
-        description="Отформатированная подсказка"
-    )
+    formatted_suggestion: str = Field(description="Отформатированная подсказка")
 
     # Геймификация
     stars_earned: int = Field(description="Звезды за сообщение")
@@ -215,11 +212,11 @@ class LessonProcessResponse(BaseModel):
     # Определение языка (Неделя 2)
     detected_language: str = Field(
         default="cs",
-        description="Определённый язык речи пользователя (cs, ru, uk, en и т.д.)"
+        description="Определённый язык речи пользователя (cs, ru, uk, en и т.д.)",
     )
     language_notice: str | None = Field(
         default=None,
-        description="Сообщение о языке, если пользователь говорил не на чешском"
+        description="Сообщение о языке, если пользователь говорил не на чешском",
     )
 
 
@@ -238,10 +235,9 @@ class VoiceSettingsSchema(BaseModel):
         use_enum_values=True,
     )
 
-    voice: Literal["alloy", "echo", "fable", "onyx", "nova", "shimmer"] = (
-        Field(default="alloy", description="Голос для TTS")
+    voice: Literal["alloy", "echo", "fable", "onyx", "nova", "shimmer"] = Field(
+        default="alloy", description="Голос для TTS"
     )
     speed: Literal["very_slow", "slow", "normal", "native"] = Field(
         default="normal", description="Скорость речи"
     )
-

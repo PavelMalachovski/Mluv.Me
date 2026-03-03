@@ -64,6 +64,8 @@ def _s(user, attr: str):
     """Safe access to user.settings attributes with defaults."""
     if user.settings is not None:
         return getattr(user.settings, attr, _DEFAULT_SETTINGS.get(attr))
+
+
 async def _save_new_words(
     db: AsyncSession,
     user_id: int,
@@ -178,7 +180,9 @@ def get_gamification_service(
 async def process_voice_message(
     user_id: int = Form(..., description="Telegram ID пользователя"),
     audio: UploadFile = File(..., description="Аудио файл (ogg, mp3, wav)"),
-    include_audio: bool = Form(True, description="Генерировать ли голосовой ответ Хонзика"),
+    include_audio: bool = Form(
+        True, description="Генерировать ли голосовой ответ Хонзика"
+    ),
     db: AsyncSession = Depends(get_session),
     settings: Settings = Depends(get_settings),
     openai_client: OpenAIClient = Depends(get_openai_client),
@@ -253,9 +257,7 @@ async def process_voice_message(
     max_size = 5 * 1024 * 1024  # 5 MB
     if len(audio_bytes) > max_size:
         log.error("audio_too_large", size_bytes=len(audio_bytes))
-        raise HTTPException(
-            status_code=400, detail="Audio file too large (max 5MB)"
-        )
+        raise HTTPException(status_code=400, detail="Audio file too large (max 5MB)")
 
     log.info("audio_validated", size_bytes=len(audio_bytes))
 
@@ -346,9 +348,7 @@ async def process_voice_message(
 
         log.info("starting_parallel_processing")
 
-        voice_speed = openai_client.get_voice_speed_mapping(
-            _s(user, "voice_speed")
-        )
+        voice_speed = openai_client.get_voice_speed_mapping(_s(user, "voice_speed"))
 
         # Определяем все задачи для параллельного выполнения
         async def generate_tts():
@@ -461,18 +461,21 @@ async def process_voice_message(
 
         # 11. Формируем ответ
         # Кодируем аудио в base64 для передачи через JSON
-        audio_base64 = base64.b64encode(audio_response).decode('utf-8') if audio_response else ""
+        audio_base64 = (
+            base64.b64encode(audio_response).decode("utf-8") if audio_response else ""
+        )
 
         return LessonProcessResponse(
             transcript=transcript,
             honzik_response_text=processed["honzik_response"],
-            honzik_response_transcript=processed["honzik_response"],  # Same as text for now
+            honzik_response_transcript=processed[
+                "honzik_response"
+            ],  # Same as text for now
             honzik_response_audio=audio_base64,
             corrections=CorrectionSchema(
                 corrected_text=processed["corrected_text"],
                 mistakes=[
-                    MistakeSchema(**mistake)
-                    for mistake in honzik_response["mistakes"]
+                    MistakeSchema(**mistake) for mistake in honzik_response["mistakes"]
                 ],
                 correctness_score=processed["correctness_score"],
                 suggestion=honzik_response["suggestion"],
@@ -505,15 +508,13 @@ async def process_voice_message(
 
     except Exception as e:
         log.error(
-            "processing_error",
-            error=str(e),
-            error_type=type(e).__name__,
-            exc_info=True
+            "processing_error", error=str(e), error_type=type(e).__name__, exc_info=True
         )
         await db.rollback()
 
         # Return more detailed error in development
         import traceback
+
         detail = f"Failed to process voice message: {str(e)}"
         if settings.is_development:
             detail += f"\n\nTraceback:\n{traceback.format_exc()}"
@@ -701,9 +702,7 @@ async def process_text_message(
             if not include_audio:
                 return None
 
-            voice_speed = openai_client.get_voice_speed_mapping(
-                _s(user, "voice_speed")
-            )
+            voice_speed = openai_client.get_voice_speed_mapping(_s(user, "voice_speed"))
             text = processed["honzik_response"]
             voice = settings.tts_voice
             speed = voice_speed
@@ -798,7 +797,7 @@ async def process_text_message(
         # Кодируем аудио в base64 (если есть)
         audio_base64 = ""
         if audio_response:
-            audio_base64 = base64.b64encode(audio_response).decode('utf-8')
+            audio_base64 = base64.b64encode(audio_response).decode("utf-8")
             log.info("tts_generated", audio_size=len(audio_response))
         else:
             log.info("tts_skipped")
@@ -818,8 +817,7 @@ async def process_text_message(
             corrections=CorrectionSchema(
                 corrected_text=processed["corrected_text"],
                 mistakes=[
-                    MistakeSchema(**mistake)
-                    for mistake in honzik_response["mistakes"]
+                    MistakeSchema(**mistake) for mistake in honzik_response["mistakes"]
                 ],
                 correctness_score=processed["correctness_score"],
                 suggestion=honzik_response["suggestion"],
@@ -853,17 +851,17 @@ async def process_text_message(
             "text_processing_error",
             error=str(e),
             error_type=type(e).__name__,
-            exc_info=True
+            exc_info=True,
         )
         await db.rollback()
 
         detail = f"Failed to process text message: {str(e)}"
         if settings.is_development:
             import traceback
+
             detail += f"\n\nTraceback:\n{traceback.format_exc()}"
 
         raise HTTPException(
             status_code=500,
             detail=detail,
         )
-

@@ -15,21 +15,63 @@ from backend.config import get_settings
 logger = structlog.get_logger(__name__)
 
 # Типичные чешские фразы, которые кешируются для быстрого ответа
-COMMON_CZECH_PHRASES = frozenset([
-    "ahoj", "čau", "nazdar", "dobrý den", "dobré ráno", "dobrý večer",
-    "jak se máš", "jak se máte", "jak se daří", "co děláš", "co je nového",
-    "děkuji", "děkuju", "díky", "mockrát děkuji",
-    "prosím", "není zač", "rádo se stalo",
-    "na shledanou", "ahoj", "měj se", "pa pa", "sbohem",
-    "ano", "ne", "možná", "nevím", "rozumím", "nerozumím",
-    "promiň", "promiňte", "omlouvám se", "pardon",
-    "dobře", "skvěle", "výborně", "super", "fajn",
-    "pomoc", "pomozte", "potřebuji pomoct",
-    "kde je", "kolik stojí", "kolik to stojí",
-    "co to je", "jak se to řekne", "jak se řekne",
-    "mluvíte anglicky", "mluvíš anglicky",
-    "jsem z", "bydlím v", "jmenuji se", "jak se jmenuješ",
-])
+COMMON_CZECH_PHRASES = frozenset(
+    [
+        "ahoj",
+        "čau",
+        "nazdar",
+        "dobrý den",
+        "dobré ráno",
+        "dobrý večer",
+        "jak se máš",
+        "jak se máte",
+        "jak se daří",
+        "co děláš",
+        "co je nového",
+        "děkuji",
+        "děkuju",
+        "díky",
+        "mockrát děkuji",
+        "prosím",
+        "není zač",
+        "rádo se stalo",
+        "na shledanou",
+        "ahoj",
+        "měj se",
+        "pa pa",
+        "sbohem",
+        "ano",
+        "ne",
+        "možná",
+        "nevím",
+        "rozumím",
+        "nerozumím",
+        "promiň",
+        "promiňte",
+        "omlouvám se",
+        "pardon",
+        "dobře",
+        "skvěle",
+        "výborně",
+        "super",
+        "fajn",
+        "pomoc",
+        "pomozte",
+        "potřebuji pomoct",
+        "kde je",
+        "kolik stojí",
+        "kolik to stojí",
+        "co to je",
+        "jak se to řekne",
+        "jak se řekne",
+        "mluvíte anglicky",
+        "mluvíš anglicky",
+        "jsem z",
+        "bydlím v",
+        "jmenuji se",
+        "jak se jmenuješ",
+    ]
+)
 
 # Максимальная длина текста для кеширования common phrases
 MAX_COMMON_PHRASE_LENGTH = 50
@@ -241,9 +283,7 @@ class CacheService:
         text_hash = hashlib.md5(text.encode()).hexdigest()[:16]
         return f"tts:{text_hash}:{voice}:{speed}"
 
-    async def get_cached_tts(
-        self, text: str, voice: str, speed: float
-    ) -> bytes | None:
+    async def get_cached_tts(self, text: str, voice: str, speed: float) -> bytes | None:
         """
         Получить кешированное TTS аудио.
 

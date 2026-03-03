@@ -8,8 +8,14 @@ from datetime import datetime
 from typing import TYPE_CHECKING, List
 
 from sqlalchemy import (
-    DateTime, ForeignKey, Integer, String, Boolean, Text,
-    UniqueConstraint, Index,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Boolean,
+    Text,
+    UniqueConstraint,
+    Index,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -47,9 +53,7 @@ class GrammarRule(Base):
 
     __tablename__ = "grammar_rules"
 
-    __table_args__ = (
-        Index("ix_grammar_rules_category_level", "category", "level"),
-    )
+    __table_args__ = (Index("ix_grammar_rules_category_level", "category", "level"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
@@ -57,64 +61,54 @@ class GrammarRule(Base):
         String(50),
         unique=True,
         nullable=False,
-        comment="Unique rule slug, e.g. vyjmenovana_slova_b"
+        comment="Unique rule slug, e.g. vyjmenovana_slova_b",
     )
 
     category: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         comment="vyslovnost, pravopis_hlasky, pravopis_interpunkce, pravopis_velka_pismena, "
-                "morfematika, slovotvorba, tvaroslovi_podstatna, tvaroslovi_pridavna, "
-                "tvaroslovi_zajmena, tvaroslovi_slovesa, tvaroslovi_cislovky, skladba, stylistika"
+        "morfematika, slovotvorba, tvaroslovi_podstatna, tvaroslovi_pridavna, "
+        "tvaroslovi_zajmena, tvaroslovi_slovesa, tvaroslovi_cislovky, skladba, stylistika",
     )
 
     subcategory: Mapped[str | None] = mapped_column(
-        String(100),
-        nullable=True,
-        comment="Subcategory within the main category"
+        String(100), nullable=True, comment="Subcategory within the main category"
     )
 
     level: Mapped[str] = mapped_column(
-        String(5),
-        nullable=False,
-        comment="CEFR level: A1, A2, B1, B2"
+        String(5), nullable=False, comment="CEFR level: A1, A2, B1, B2"
     )
 
     title_cs: Mapped[str] = mapped_column(
-        String(300),
-        nullable=False,
-        comment="Rule title in Czech"
+        String(300), nullable=False, comment="Rule title in Czech"
     )
 
     rule_cs: Mapped[str] = mapped_column(
         Text,
         nullable=False,
-        comment="Rule explanation in Czech (simplified for learners)"
+        comment="Rule explanation in Czech (simplified for learners)",
     )
 
     explanation_cs: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-        comment="Detailed explanation in Czech"
+        Text, nullable=True, comment="Detailed explanation in Czech"
     )
 
     examples: Mapped[str] = mapped_column(
         Text,
         nullable=False,
         default="[]",
-        comment='JSON: [{"correct": "...", "incorrect": "...", "note_cs": "..."}]'
+        comment='JSON: [{"correct": "...", "incorrect": "...", "note_cs": "..."}]',
     )
 
     mnemonic: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-        comment="Mnemonic tip in Czech"
+        Text, nullable=True, comment="Mnemonic tip in Czech"
     )
 
     common_mistakes: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
-        comment='JSON: [{"wrong": "...", "right": "...", "why_cs": "..."}]'
+        comment='JSON: [{"wrong": "...", "right": "...", "why_cs": "..."}]',
     )
 
     exercise_data: Mapped[str] = mapped_column(
@@ -122,46 +116,36 @@ class GrammarRule(Base):
         nullable=False,
         default="[]",
         comment='JSON: [{"type": "fill_gap|choose|transform|order", '
-                '"question": "...", "answer": "...", "options": [...]}]'
+        '"question": "...", "answer": "...", "options": [...]}]',
     )
 
     source_ref: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
-        comment="Reference to original příručka article, e.g. prirucka.ujc.cas.cz/?id=100"
+        comment="Reference to original příručka article, e.g. prirucka.ujc.cas.cz/?id=100",
     )
 
     is_active: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        server_default="true",
-        comment="Is the rule active"
+        Boolean, nullable=False, server_default="true", comment="Is the rule active"
     )
 
     sort_order: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Sort order within category"
+        Integer, nullable=False, default=0, comment="Sort order within category"
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now()
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
     updated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-        onupdate=func.now()
+        DateTime(timezone=True), nullable=True, onupdate=func.now()
     )
 
     # Relationships
     user_progress: Mapped[List["UserGrammarProgress"]] = relationship(
         "UserGrammarProgress",
         back_populates="grammar_rule",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:
@@ -191,10 +175,7 @@ class UserGrammarProgress(Base):
     __tablename__ = "user_grammar_progress"
 
     __table_args__ = (
-        UniqueConstraint(
-            "user_id", "grammar_rule_id",
-            name="uq_user_grammar_rule"
-        ),
+        UniqueConstraint("user_id", "grammar_rule_id", name="uq_user_grammar_rule"),
         Index("ix_user_grammar_progress_user_rule", "user_id", "grammar_rule_id"),
     )
 
@@ -205,7 +186,7 @@ class UserGrammarProgress(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        comment="User ID"
+        comment="User ID",
     )
 
     grammar_rule_id: Mapped[int] = mapped_column(
@@ -213,59 +194,45 @@ class UserGrammarProgress(Base):
         ForeignKey("grammar_rules.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        comment="Grammar rule ID"
+        comment="Grammar rule ID",
     )
 
     times_shown: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Times shown in notifications"
+        Integer, nullable=False, default=0, comment="Times shown in notifications"
     )
 
     times_practiced: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Times practiced in games"
+        Integer, nullable=False, default=0, comment="Times practiced in games"
     )
 
     last_shown_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-        comment="Last notification show"
+        DateTime(timezone=True), nullable=True, comment="Last notification show"
     )
 
     last_practiced_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-        comment="Last game practice"
+        DateTime(timezone=True), nullable=True, comment="Last game practice"
     )
 
     mastery_level: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
         default="new",
-        comment="new, seen, practiced, known, mastered"
+        comment="new, seen, practiced, known, mastered",
     )
 
     correct_count: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Correct answers count"
+        Integer, nullable=False, default=0, comment="Correct answers count"
     )
 
     incorrect_count: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Incorrect answers count"
+        Integer, nullable=False, default=0, comment="Incorrect answers count"
     )
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="grammar_progress")
-    grammar_rule: Mapped["GrammarRule"] = relationship("GrammarRule", back_populates="user_progress")
+    grammar_rule: Mapped["GrammarRule"] = relationship(
+        "GrammarRule", back_populates="user_progress"
+    )
 
     def __repr__(self) -> str:
         return (

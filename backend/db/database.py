@@ -91,15 +91,13 @@ def create_engine() -> AsyncEngine:
         # Logging
         echo=settings.is_development,  # Log SQL in development
         echo_pool=False,  # Don't log pool operations (too verbose)
-
         # Connection pool settings (optimized for Railway.com and high concurrency)
         # poolclass is not specified - uses default AsyncAdaptedQueuePool for async
-        pool_size=20,              # Up from default 5 - main connection pool
-        max_overflow=30,           # Additional connections during peak load (up from 10)
-        pool_timeout=30,           # Wait up to 30s for a connection
-        pool_recycle=1800,         # Recycle connections every 30 min (Railway drops idle)
-        pool_pre_ping=True,        # Verify connection health before using
-
+        pool_size=20,  # Up from default 5 - main connection pool
+        max_overflow=30,  # Additional connections during peak load (up from 10)
+        pool_timeout=30,  # Wait up to 30s for a connection
+        pool_recycle=1800,  # Recycle connections every 30 min (Railway drops idle)
+        pool_pre_ping=True,  # Verify connection health before using
         # Query optimization via PostgreSQL settings
         # Note: asyncpg uses different connect_args than psycopg2
         connect_args={
@@ -209,6 +207,3 @@ async def close_db() -> None:
         await _engine.dispose()
         _engine = None
     _async_session_maker = None
-
-
-

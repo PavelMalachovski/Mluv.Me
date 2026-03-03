@@ -15,7 +15,6 @@ import {
   Settings as SettingsIcon,
   User,
   Volume2,
-  MessageSquare,
   Bell,
   LogOut,
   Check,
@@ -380,49 +379,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Conversation Style */}
-              <div className="illustrated-card p-6">
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                    <MessageSquare className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">Styl konverzace</h3>
-                    <p className="text-sm text-muted-foreground">Osobnost postavy</p>
-                  </div>
-                </div>
 
-                <div className="space-y-3">
-                  {[
-                    { value: "friendly", label: "Přátelský", emoji: "😊", description: "Přátelský a podporující" },
-                    { value: "tutor", label: "Učitel", emoji: "👨‍🏫", description: "Více oprav a tipů" },
-                    { value: "casual", label: "Kamarád", emoji: "🍺", description: "Jako s kamarádem" },
-                  ].map((style) => (
-                    <button
-                      key={style.value}
-                      onClick={() => updateSettingsMutation.mutate({ conversation_style: style.value })}
-                      disabled={updateSettingsMutation.isPending}
-                      className={`w-full rounded-xl border-2 p-4 text-left transition-all disabled:opacity-50 ${settings?.conversation_style === style.value
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/50 bg-white dark:bg-gray-800"
-                        }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{style.emoji}</span>
-                          <div>
-                            <div className="font-medium text-foreground">{style.label}</div>
-                            <div className="text-sm text-muted-foreground">{style.description}</div>
-                          </div>
-                        </div>
-                        {settings?.conversation_style === style.value && (
-                          <Check className="h-5 w-5 text-primary" />
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
             </TabsContent>
 
             {/* Voice Settings */}

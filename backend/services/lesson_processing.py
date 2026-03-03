@@ -8,7 +8,6 @@ Both endpoints (web text, mobile voice/text) share the same core:
  - Award stars via gamification
 """
 
-from datetime import date
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
@@ -48,8 +47,10 @@ async def save_lesson_messages(
     message_repo = MessageRepository(db)
 
     w_total = words_total if words_total is not None else len(user_text.split())
-    w_correct = words_correct if words_correct is not None else int(
-        w_total * correctness_score / 100
+    w_correct = (
+        words_correct
+        if words_correct is not None
+        else int(w_total * correctness_score / 100)
     )
 
     # Save user message

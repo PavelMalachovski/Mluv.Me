@@ -38,9 +38,7 @@ class GamificationService:
 
     HIGH_SCORE_THRESHOLD = 80  # Порог для бонуса за качество
 
-    def __init__(
-        self, stats_repo: StatsRepository, user_repo: UserRepository
-    ):
+    def __init__(self, stats_repo: StatsRepository, user_repo: UserRepository):
         """
         Инициализация сервиса геймификации.
 
@@ -370,4 +368,3 @@ class GamificationService:
             "max_streak": streak_info["max_streak"],
             "daily_challenge": challenge_info,
         }
-

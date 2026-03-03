@@ -61,7 +61,9 @@ class OpenAIConcurrencyLimiter:
         """
         semaphore = self._semaphores.get(request_type, self._chat_semaphore)
         self._waiting_count[request_type] = self._waiting_count.get(request_type, 0) + 1
-        self._total_requests[request_type] = self._total_requests.get(request_type, 0) + 1
+        self._total_requests[request_type] = (
+            self._total_requests.get(request_type, 0) + 1
+        )
 
         start = time.monotonic()
 

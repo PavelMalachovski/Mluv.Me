@@ -3,9 +3,8 @@ Tests for auth flow: session creation, token validation, logout.
 """
 
 import pytest
-import pytest_asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
-from httpx import AsyncClient, ASGITransport
+from unittest.mock import AsyncMock, patch
+from httpx import AsyncClient
 
 from backend.routers.web_auth import _create_session, get_authenticated_user
 from backend.cache.redis_client import redis_client
@@ -17,7 +16,9 @@ class TestSessionManagement:
 
     async def test_create_session_returns_token(self):
         """_create_session returns a non-empty string token."""
-        with patch.object(redis_client, "set", new_callable=AsyncMock, return_value=True):
+        with patch.object(
+            redis_client, "set", new_callable=AsyncMock, return_value=True
+        ):
             token = await _create_session(user_id=42)
             assert isinstance(token, str)
             assert len(token) > 20
@@ -47,7 +48,9 @@ class TestSessionManagement:
         """get_authenticated_user raises 401 for unknown token."""
         from fastapi import HTTPException
 
-        with patch.object(redis_client, "get", new_callable=AsyncMock, return_value=None):
+        with patch.object(
+            redis_client, "get", new_callable=AsyncMock, return_value=None
+        ):
             with pytest.raises(HTTPException) as exc_info:
                 await get_authenticated_user(token="invalid-token", db=AsyncMock())
             assert exc_info.value.status_code == 401

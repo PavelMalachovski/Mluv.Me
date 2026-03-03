@@ -3,9 +3,9 @@ Tests for GameService (Redis-backed active games).
 """
 
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 
-from backend.services.game_service import GameService, GAMES
+from backend.services.game_service import GameService
 
 
 @pytest.mark.asyncio
@@ -42,11 +42,15 @@ class TestGameService:
 
         mock_set = AsyncMock(return_value=True)
         mock_grammar = AsyncMock()
-        mock_grammar.get_exercises_for_game = AsyncMock(return_value=[{
-            "question": {"sentence": "Test?", "options": ["a", "b"]},
-            "correct_answer": "a",
-            "rule_id": 1,
-        }])
+        mock_grammar.get_exercises_for_game = AsyncMock(
+            return_value=[
+                {
+                    "question": {"sentence": "Test?", "options": ["a", "b"]},
+                    "correct_answer": "a",
+                    "rule_id": 1,
+                }
+            ]
+        )
 
         service = GameService(grammar_service=mock_grammar)
 
@@ -79,8 +83,14 @@ class TestGameService:
 
         service = GameService()
 
-        with patch.object(redis_client, "get", new_callable=AsyncMock, return_value=game_data), \
-             patch.object(redis_client, "delete", new_callable=AsyncMock, return_value=True):
+        with (
+            patch.object(
+                redis_client, "get", new_callable=AsyncMock, return_value=game_data
+            ),
+            patch.object(
+                redis_client, "delete", new_callable=AsyncMock, return_value=True
+            ),
+        ):
             result = await service.submit_answer(user_id=1, answer="správný")
 
         assert result["is_correct"] is True
@@ -91,6 +101,8 @@ class TestGameService:
         from backend.cache.redis_client import redis_client
 
         service = GameService()
-        with patch.object(redis_client, "get", new_callable=AsyncMock, return_value=None):
+        with patch.object(
+            redis_client, "get", new_callable=AsyncMock, return_value=None
+        ):
             with pytest.raises(ValueError, match="No active game"):
                 await service.submit_answer(user_id=999, answer="anything")

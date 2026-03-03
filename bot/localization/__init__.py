@@ -118,5 +118,3 @@ __all__ = [
     "LOCALIZATIONS",
     "TEXTS_CS",
 ]
-
-

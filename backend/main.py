@@ -18,7 +18,20 @@ from backend.config import get_settings
 from backend.db.database import close_db
 from backend.cache.redis_client import redis_client
 from backend.utils.rate_limiter import openai_limiter
-from backend.routers import users, lesson, stats, words, web_auth, web_lessons, gamification, messages, scenarios, games, grammar, subscription
+from backend.routers import (
+    users,
+    lesson,
+    stats,
+    words,
+    web_auth,
+    web_lessons,
+    gamification,
+    messages,
+    scenarios,
+    games,
+    grammar,
+    subscription,
+)
 
 # Configure structlog for Railway.com
 structlog.configure(
@@ -93,7 +106,8 @@ app = FastAPI(
 # CORS middleware - restrict origins in production
 _settings = get_settings()
 _allowed_origins = (
-    ["*"] if _settings.is_development
+    ["*"]
+    if _settings.is_development
     else ["https://mluv.me", "https://www.mluv.me", "https://t.me"]
 )
 app.add_middleware(
@@ -152,7 +166,7 @@ async def health_check() -> JSONResponse:
             "environment": settings.environment,
             "redis": redis_status,
             "openai_limiter": openai_limiter.get_stats(),
-        }
+        },
     )
 
 
@@ -176,7 +190,7 @@ async def api_root() -> JSONResponse:
             "message": "Nazdar! 🇨🇿 Jsem Honzík - tvůj průvodce češtinou!",
             "description": "Mluv.Me API - практика чешского языка с AI",
             "docs": "/docs",
-        }
+        },
     )
 
 
@@ -201,7 +215,7 @@ async def global_exception_handler(request, exc: Exception) -> JSONResponse:
     settings = get_settings()
     content = {
         "detail": "Internal server error",
-        "message": "Něco se pokazilo, ale už to opravuji! 🔧"
+        "message": "Něco se pokazilo, ale už to opravuji! 🔧",
     }
 
     if settings.is_development:
@@ -209,13 +223,14 @@ async def global_exception_handler(request, exc: Exception) -> JSONResponse:
         content["traceback"] = traceback.format_exc()
 
     return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=content
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=content
     )
 
 
 # Proxy all non-API requests to Next.js frontend (MUST BE LAST!)
-@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
+@app.api_route(
+    "/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
+)
 async def proxy_to_frontend(request: Request, path: str):
     """
     Proxy all non-API requests to Next.js frontend.
@@ -225,16 +240,16 @@ async def proxy_to_frontend(request: Request, path: str):
     # If we get here for an API path, it means no router matched, so return proper 404
     if path.startswith("api/"):
         return JSONResponse(
-            status_code=404,
-            content={"detail": f"API endpoint not found: /{path}"}
+            status_code=404, content={"detail": f"API endpoint not found: /{path}"}
         )
 
-    if path in ["docs", "redoc", "health", "openapi.json"] or path.startswith("docs") or path.startswith("redoc"):
+    if (
+        path in ["docs", "redoc", "health", "openapi.json"]
+        or path.startswith("docs")
+        or path.startswith("redoc")
+    ):
         # These are handled by FastAPI directly, but if we somehow get here, skip proxy
-        return JSONResponse(
-            status_code=404,
-            content={"detail": "Not found"}
-        )
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
 
     # Proxy to Next.js
     settings = get_settings()
@@ -252,32 +267,44 @@ async def proxy_to_frontend(request: Request, path: str):
             method=request.method,
             url=frontend_url,
             headers={
-                key: value for key, value in request.headers.items()
+                key: value
+                for key, value in request.headers.items()
                 if key.lower() not in ["host", "connection"]
             },
-            content=await request.body() if request.method in ["POST", "PUT", "PATCH"] else None,
+            content=await request.body()
+            if request.method in ["POST", "PUT", "PATCH"]
+            else None,
         )
 
         # Filter headers to avoid conflicts
         headers = {
-            key: value for key, value in response.headers.items()
-            if key.lower() not in ["content-encoding", "content-length", "transfer-encoding", "connection"]
+            key: value
+            for key, value in response.headers.items()
+            if key.lower()
+            not in [
+                "content-encoding",
+                "content-length",
+                "transfer-encoding",
+                "connection",
+            ]
         }
 
         # Return appropriate response based on content type
         content_type = response.headers.get("content-type", "")
 
-        if "text/html" in content_type or "text/css" in content_type or "application/javascript" in content_type:
+        if (
+            "text/html" in content_type
+            or "text/css" in content_type
+            or "application/javascript" in content_type
+        ):
             return HTMLResponse(
-                content=response.text,
-                status_code=response.status_code,
-                headers=headers
+                content=response.text, status_code=response.status_code, headers=headers
             )
         elif "application/json" in content_type:
             return JSONResponse(
                 content=response.json(),
                 status_code=response.status_code,
-                headers=headers
+                headers=headers,
             )
         else:
             # Stream binary content (images, fonts, etc.)
@@ -285,7 +312,7 @@ async def proxy_to_frontend(request: Request, path: str):
                 iter([response.content]),
                 status_code=response.status_code,
                 headers=headers,
-                media_type=content_type
+                media_type=content_type,
             )
 
     except httpx.RequestError as e:
@@ -342,7 +369,7 @@ async def proxy_to_frontend(request: Request, path: str):
             </body>
             </html>
             """,
-            status_code=503
+            status_code=503,
         )
 
 
@@ -359,4 +386,3 @@ if __name__ == "__main__":
         reload=settings.is_development,
         log_level=settings.log_level.lower(),
     )
-

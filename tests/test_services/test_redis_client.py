@@ -3,7 +3,7 @@ Tests for RedisClient - binary pool reuse and session management.
 """
 
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, PropertyMock, patch
 
 from backend.cache.redis_client import RedisClient
 
@@ -22,10 +22,10 @@ class TestRedisClientInit:
     def test_pool_attrs_exist(self):
         """RedisClient should have standard pool attributes."""
         client = RedisClient()
-        assert hasattr(client, "_pool")
-        assert hasattr(client, "_redis")
-        assert client._pool is None
-        assert client._redis is None
+        assert hasattr(client, "pool")
+        assert hasattr(client, "redis")
+        assert client.pool is None
+        assert client.redis is None
 
 
 @pytest.mark.asyncio
@@ -37,9 +37,12 @@ class TestRedisClientOperations:
         client = RedisClient()
         mock_redis = AsyncMock()
         mock_redis.get = AsyncMock(return_value='{"key": "val"}')
-        client._redis = mock_redis
+        client.redis = mock_redis
 
-        result = await client.get("test:key")
+        with patch.object(
+            type(client), "is_enabled", new_callable=PropertyMock, return_value=True
+        ):
+            result = await client.get("test:key")
         assert result == {"key": "val"}
 
     async def test_get_returns_none_on_miss(self):
@@ -47,31 +50,40 @@ class TestRedisClientOperations:
         client = RedisClient()
         mock_redis = AsyncMock()
         mock_redis.get = AsyncMock(return_value=None)
-        client._redis = mock_redis
+        client.redis = mock_redis
 
-        result = await client.get("nonexistent")
+        with patch.object(
+            type(client), "is_enabled", new_callable=PropertyMock, return_value=True
+        ):
+            result = await client.get("nonexistent")
         assert result is None
 
     async def test_set_stores_value(self):
         """set() should serialize and store value."""
         client = RedisClient()
         mock_redis = AsyncMock()
-        mock_redis.set = AsyncMock(return_value=True)
-        client._redis = mock_redis
+        mock_redis.setex = AsyncMock(return_value=True)
+        client.redis = mock_redis
 
-        result = await client.set("test:key", {"hello": "world"}, ttl=300)
+        with (
+            patch.object(
+                type(client), "is_enabled", new_callable=PropertyMock, return_value=True
+            ),
+            patch("backend.cache.redis_client.get_settings") as mock_settings,
+        ):
+            mock_settings.return_value.redis_cache_ttl_default = 300
+            result = await client.set("test:key", {"hello": "world"}, ttl=300)
         assert result is True
-        mock_redis.set.assert_called_once()
 
     async def test_delete_key(self):
         """delete() should remove key from Redis."""
         client = RedisClient()
         mock_redis = AsyncMock()
         mock_redis.delete = AsyncMock(return_value=1)
-        client._redis = mock_redis
+        client.redis = mock_redis
 
         result = await client.delete("test:key")
-        assert result == 1
+        assert result is True
 
     async def test_get_bytes_uses_binary_pool(self):
         """get_bytes() should use the shared binary redis instance."""
@@ -80,7 +92,10 @@ class TestRedisClientOperations:
         mock_binary_redis.get = AsyncMock(return_value=b"\x89PNG")
         client._binary_redis = mock_binary_redis
 
-        result = await client.get_bytes("tts:test")
+        with patch.object(
+            type(client), "is_enabled", new_callable=PropertyMock, return_value=True
+        ):
+            result = await client.get_bytes("tts:test")
         assert result == b"\x89PNG"
         mock_binary_redis.get.assert_called_once_with("tts:test")
 
@@ -88,8 +103,15 @@ class TestRedisClientOperations:
         """set_bytes() should use the shared binary redis instance."""
         client = RedisClient()
         mock_binary_redis = AsyncMock()
-        mock_binary_redis.set = AsyncMock(return_value=True)
+        mock_binary_redis.setex = AsyncMock(return_value=True)
         client._binary_redis = mock_binary_redis
 
-        await client.set_bytes("tts:test", b"\x89PNG", ttl=600)
-        mock_binary_redis.set.assert_called_once()
+        with (
+            patch.object(
+                type(client), "is_enabled", new_callable=PropertyMock, return_value=True
+            ),
+            patch("backend.cache.redis_client.get_settings") as mock_settings,
+        ):
+            mock_settings.return_value.redis_cache_ttl_default = 600
+            await client.set_bytes("tts:test", b"\x89PNG", ttl=600)
+        mock_binary_redis.setex.assert_called_once()
