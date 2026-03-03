@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import {
   isTelegramWebApp,
   getTelegramUser,
@@ -138,24 +139,15 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Character image placeholder - replace with actual character image */}
-          <div className="relative h-40 w-64 flex items-center justify-center">
-            <div className="flex items-end gap-4">
-              {/* Honzík character */}
-              <div className="flex flex-col items-center">
-                <div className="h-28 w-20 rounded-xl bg-white/30 backdrop-blur-sm flex items-center justify-center">
-                  <span className="text-4xl">📚</span>
-                </div>
-                <span className="mt-1 text-xs font-medium text-white/90">Honzík</span>
-              </div>
-              {/* Nováková character */}
-              <div className="flex flex-col items-center">
-                <div className="h-28 w-20 rounded-xl bg-white/30 backdrop-blur-sm flex items-center justify-center">
-                  <span className="text-4xl">👩‍🏫</span>
-                </div>
-                <span className="mt-1 text-xs font-medium text-white/90">Nováková</span>
-              </div>
-            </div>
+          {/* Characters image */}
+          <div className="relative w-64 h-52">
+            <Image
+              src="/images/mascot/characters-login.png"
+              alt="Honzík & Nováková"
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
         </div>
 
