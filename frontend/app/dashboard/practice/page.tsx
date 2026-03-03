@@ -291,25 +291,27 @@ export default function PracticePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="container mx-auto max-w-4xl p-6">
-        <div className="mb-6">
-          <Button variant="outline" onClick={() => router.push("/dashboard")}>
-            ← Back to Dashboard
-          </Button>
+    <div className="min-h-screen cream-bg pb-24">
+      {/* Purple Header */}
+      <div className="illustrated-header relative pb-6">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="rounded-lg p-2 text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            ← Back
+          </button>
+          <QuotaIndicator />
         </div>
+        <h1 className="illustrated-header-title mt-2">Practice Czech</h1>
+        <p className="text-center text-sm text-white/80 mt-1">Chat with Honzík, your AI teacher</p>
+      </div>
 
-        <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Practice Czech with Honzík</h1>
-            <QuotaIndicator />
-          </div>
-          <p className="mb-4 text-gray-600 dark:text-gray-400">
-            Type in Czech and get instant feedback from your AI teacher
-          </p>
+      <div className="container mx-auto max-w-4xl px-4 pt-4">
+        {/* Quota / subscription banner */}
+        <QuotaBanner />
 
-          {/* Quota / subscription banner */}
-          <QuotaBanner />
+        <div className="rounded-2xl bg-white dark:bg-gray-900 p-6 shadow-sm mt-4">
 
           {/* Topic Selector */}
           {showTopicSelector && conversation.length === 0 && (
@@ -357,9 +359,9 @@ export default function PracticePage() {
           {!showTopicSelector && (
             <div className="mb-6 space-y-4 max-h-[500px] overflow-y-auto">
               {conversation.length === 0 ? (
-                <Card className="bg-blue-50 border-blue-200">
+                <Card className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
                   <CardContent className="p-6">
-                    <p className="text-center text-blue-900">
+                    <p className="text-center text-purple-900 dark:text-purple-200">
                       👋 Nazdar! Jsem Honzík. Let&apos;s start practicing Czech! Write
                       something in Czech and I&apos;ll help you improve.
                     </p>
@@ -373,8 +375,8 @@ export default function PracticePage() {
                   >
                     <div
                       className={`max-w-[80%] ${msg.role === "user"
-                        ? `rounded-lg bg-blue-500 p-4 text-white ${msg.status === "sending" ? "opacity-70" : ""}`
-                        : "rounded-lg bg-gray-100 dark:bg-gray-800 p-4"
+                        ? `rounded-2xl rounded-br-sm bg-[#7d3bed] p-4 text-white ${msg.status === "sending" ? "opacity-70" : ""}`
+                        : "rounded-2xl rounded-bl-sm bg-white dark:bg-gray-800 p-4 shadow-sm"
                         }`}
                     >
                       {/* Message text - use ClickableText in translate mode */}
@@ -397,7 +399,7 @@ export default function PracticePage() {
                       )}
 
                       {msg.role === "user" && msg.response && msg.status === "sent" && (
-                        <div className="mt-3 space-y-2 border-t border-blue-400 pt-3">
+                        <div className="mt-3 space-y-2 border-t border-white/30 pt-3">
                           <div className="flex items-center gap-2 text-sm">
                             <span>⭐ {msg.response.stars_earned} stars</span>
                             <span>•</span>
@@ -516,7 +518,7 @@ export default function PracticePage() {
         </div>
 
         {/* Tips Section */}
-        <div className="mt-6 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
+        <div className="mt-6 rounded-2xl bg-white dark:bg-gray-900 p-6 shadow-sm">
           <h3 className="mb-3 font-semibold text-gray-900 dark:text-gray-100">Practice Tips:</h3>
           <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
             <li>✅ Try to write complete sentences</li>

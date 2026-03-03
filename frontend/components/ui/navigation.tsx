@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { User, Settings, GraduationCap } from "lucide-react"
+import { User, Settings, GraduationCap, MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCallback } from "react"
 
@@ -22,6 +22,11 @@ const navigationItems = [
     icon: GraduationCap,
   },
   {
+    href: "/dashboard/practice",
+    label: "Chat",
+    icon: MessageCircle,
+  },
+  {
     href: "/dashboard/settings",
     label: "Nastavení",
     icon: Settings,
@@ -33,7 +38,8 @@ const navigationItems = [
  *
  * Features:
  * - Prefetches routes when user hovers over links
- * - Active state indication
+ * - Active state indication with purple accent
+ * - Bigger tap targets for mobile
  * - Responsive design (bottom on mobile, sidebar on desktop)
  */
 export function Navigation({ className }: NavigationProps) {
@@ -49,11 +55,11 @@ export function Navigation({ className }: NavigationProps) {
     <nav
       aria-label="Hlavní navigace"
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 border-t bg-white dark:bg-gray-900 dark:border-gray-800 shadow-lg md:left-auto md:top-0 md:h-screen md:w-20 md:border-r md:border-t-0",
+        "fixed bottom-0 left-0 right-0 z-50 border-t bg-white dark:bg-gray-900 dark:border-gray-800 shadow-lg md:left-auto md:top-0 md:h-screen md:w-24 md:border-r md:border-t-0",
         className
       )}
     >
-      <div className="flex h-16 items-center justify-around md:h-full md:flex-col md:py-8" role="list">
+      <div className="flex h-[72px] items-center justify-around md:h-full md:flex-col md:py-8" role="list">
         {navigationItems.map((item) => {
           const isActive = pathname === item.href
           const Icon = item.icon
@@ -69,20 +75,21 @@ export function Navigation({ className }: NavigationProps) {
               aria-current={isActive ? "page" : undefined}
               aria-label={item.label}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm transition-all hover:bg-purple-50 dark:hover:bg-purple-900/20 md:w-full md:gap-2 md:py-4",
+                "flex flex-col items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 transition-all md:w-full md:gap-2 md:py-4",
                 "hover:scale-105 active:scale-95 transition-transform duration-150",
                 isActive
-                  ? "text-purple-600 dark:text-purple-400 font-semibold bg-purple-50 dark:bg-purple-900/30"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                  ? "text-[#7d3bed] font-semibold"
+                  : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               )}
             >
               <Icon
                 className={cn(
-                  "h-6 w-6 transition-colors",
-                  isActive ? "text-purple-600 dark:text-purple-400" : "text-gray-500 dark:text-gray-500"
+                  "h-7 w-7 transition-colors",
+                  isActive ? "text-[#7d3bed]" : "text-gray-400"
                 )}
+                strokeWidth={isActive ? 2.5 : 1.8}
               />
-              <span className="text-xs">{item.label}</span>
+              <span className="text-[11px] leading-tight font-medium">{item.label}</span>
             </Link>
           )
         })}
