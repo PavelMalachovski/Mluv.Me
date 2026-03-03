@@ -38,6 +38,8 @@ class TestScenarioServiceAsync:
         from backend.cache.redis_client import redis_client
 
         service = ScenarioService.__new__(ScenarioService)
+        service._active_scenarios = {}
+        service.logger = __import__("structlog").get_logger()
         with patch.object(redis_client, "get", new_callable=AsyncMock, return_value=None):
             result = await service.get_active_scenario(user_id=42)
         assert result is None
@@ -47,6 +49,8 @@ class TestScenarioServiceAsync:
         from backend.cache.redis_client import redis_client
 
         service = ScenarioService.__new__(ScenarioService)
+        service._active_scenarios = {}
+        service.logger = __import__("structlog").get_logger()
         state = {"scenario_id": "v_hospode", "current_step": 2}
 
         with patch.object(redis_client, "get", new_callable=AsyncMock, return_value=state), \
@@ -59,6 +63,8 @@ class TestScenarioServiceAsync:
         from backend.cache.redis_client import redis_client
 
         service = ScenarioService.__new__(ScenarioService)
+        service._active_scenarios = {}
+        service.logger = __import__("structlog").get_logger()
         with patch.object(redis_client, "get", new_callable=AsyncMock, return_value=None):
             result = await service.cancel_scenario(user_id=42)
         assert result is False

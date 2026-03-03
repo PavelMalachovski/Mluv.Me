@@ -7,16 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.db.database import get_session
 from backend.db.repositories import (
-    UserRepository,
     MessageRepository,
     UserSettingsRepository,
-    StatsRepository,
 )
 from backend.services.honzik_personality import HonzikPersonality
-from backend.services.gamification import GamificationService
 from backend.services.openai_client import OpenAIClient
 from backend.services.lesson_processing import save_lesson_messages, update_lesson_gamification
-from backend.config import Settings, get_settings
+from backend.config import get_settings
 from backend.routers.web_auth import get_authenticated_user
 from backend.services.subscription_service import SubscriptionService
 

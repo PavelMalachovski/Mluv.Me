@@ -3,8 +3,7 @@ Tests for GrammarRepository - joinedload N+1 fix and basic queries.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timezone
+from unittest.mock import AsyncMock, MagicMock
 
 from backend.db.grammar_repository import GrammarRepository
 
@@ -70,10 +69,11 @@ class TestGrammarRepository:
         progress1.success_rate = 0.8
 
         mock_result = MagicMock()
+        mock_unique = MagicMock()
         mock_scalars = MagicMock()
-        mock_scalars.unique.return_value = mock_scalars
         mock_scalars.all.return_value = [progress1]
-        mock_result.scalars.return_value = mock_scalars
+        mock_unique.scalars.return_value = mock_scalars
+        mock_result.unique.return_value = mock_unique
         mock_session.execute = AsyncMock(return_value=mock_result)
 
         repo = GrammarRepository(mock_session)

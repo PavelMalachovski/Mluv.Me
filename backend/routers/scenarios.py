@@ -8,9 +8,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.db.database import get_session
 from backend.services.scenario_service import ScenarioService, SCENARIOS
 from backend.services.openai_client import OpenAIClient
 from backend.config import Settings, get_settings

@@ -162,7 +162,7 @@ async def handle_successful_payment(
         )
 
         if result and result.get("success"):
-            expires = result.get("expires_at", "")
+            _expires = result.get("expires_at", "")
             days = product["days"] if product else "?"
             await message.answer(
                 f"🎉 <b>Platba úspěšná!</b>\n\n"

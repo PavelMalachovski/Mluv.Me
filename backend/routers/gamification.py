@@ -463,7 +463,7 @@ async def get_my_rank(
         "accuracy": "avg_correctness",
     }
 
-    mv_repo = MaterializedViewRepository(db)
+    _mv_repo = MaterializedViewRepository(db)  # noqa: F841
 
     try:
         from sqlalchemy import text

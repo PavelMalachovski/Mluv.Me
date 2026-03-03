@@ -3,12 +3,10 @@ Repository for grammar rules and user grammar progress.
 Abstrahuje SQL dotazy pro gramatická pravidla.
 """
 
-import json
-import random
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import select, update, func, and_, not_
+from sqlalchemy import select, func, not_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog

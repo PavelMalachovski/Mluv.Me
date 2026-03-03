@@ -10,10 +10,9 @@ Game Service for grammar-based mini-games.
 """
 
 import random
-import json
 from datetime import datetime, timezone
 from typing import Literal
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
 import structlog
 

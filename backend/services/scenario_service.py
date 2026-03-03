@@ -16,7 +16,6 @@ from typing import Literal
 import structlog
 
 from backend.services.openai_client import OpenAIClient
-from backend.cache.redis_client import redis_client
 
 logger = structlog.get_logger(__name__)
 
@@ -276,6 +275,34 @@ class ScenarioService:
         while len(self._active_scenarios) > self._MAX_ACTIVE_SCENARIOS:
             oldest = min(self._active_scenarios, key=lambda k: self._active_scenarios[k].get("_ts", 0))
             del self._active_scenarios[oldest]
+
+    async def _get_state(self, user_id: int) -> dict | None:
+        """Get scenario state from in-memory store (or Redis if available)."""
+        from backend.cache.redis_client import redis_client
+
+        # Try Redis first
+        state = await redis_client.get(f"scenario:{user_id}")
+        if state:
+            return state
+        # Fallback to in-memory
+        return self._active_scenarios.get(user_id)
+
+    async def _set_state(self, user_id: int, state: dict) -> None:
+        """Save scenario state to in-memory store and Redis."""
+        import time as _time
+        from backend.cache.redis_client import redis_client
+
+        state["_ts"] = _time.time()
+        self._active_scenarios[user_id] = state
+        self._cleanup_stale_scenarios()
+        await redis_client.set(f"scenario:{user_id}", state, ttl=self._SCENARIO_TTL)
+
+    async def _delete_state(self, user_id: int) -> None:
+        """Delete scenario state from in-memory store and Redis."""
+        from backend.cache.redis_client import redis_client
+
+        self._active_scenarios.pop(user_id, None)
+        await redis_client.delete(f"scenario:{user_id}")
 
     def get_available_scenarios(self, user_level: CzechLevel) -> list[dict]:
         """

@@ -16,10 +16,8 @@ Usage:
 """
 
 import asyncio
-import io
 from typing import Any
 
-from celery import shared_task
 
 from backend.tasks.celery_app import celery_app
 

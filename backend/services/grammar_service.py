@@ -10,7 +10,6 @@ Provides:
 
 import json
 import random
-from datetime import datetime
 from typing import Any
 
 import structlog

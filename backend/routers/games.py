@@ -13,7 +13,6 @@ from backend.services.game_service import GameService, GAMES
 from backend.services.grammar_service import GrammarService
 from backend.db.grammar_repository import GrammarRepository
 from backend.db.database import get_session
-from backend.config import Settings, get_settings
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/v1/games", tags=["games"])

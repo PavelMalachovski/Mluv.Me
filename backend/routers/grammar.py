@@ -8,10 +8,10 @@ Provides endpoints for:
 """
 
 import json
-from typing import Annotated, Any
+from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.db.database import get_session
@@ -367,7 +367,6 @@ async def trigger_notifications(
         # Full broadcast — runs directly (no Celery required)
         try:
             import asyncio
-            import traceback as tb
             from datetime import datetime, timedelta
             from aiogram import Bot
             from sqlalchemy import select as sa_select

@@ -8,7 +8,6 @@ Both endpoints (web text, mobile voice/text) share the same core:
  - Award stars via gamification
 """
 
-from datetime import date
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 

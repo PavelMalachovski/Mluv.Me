@@ -350,7 +350,6 @@ async def full_reset_user(
         HTTPException: Если пользователь не найден
     """
     from sqlalchemy import delete
-    from backend.models.user import User
     from backend.models.word import SavedWord
     from backend.models.message import Message
     from backend.models.stats import DailyStats, Stars

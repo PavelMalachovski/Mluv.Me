@@ -92,7 +92,7 @@ celery_app.autodiscover_tasks([
 ])
 
 # Сигналы для мониторинга (будет использоваться в monitoring.py)
-from celery.signals import task_failure, task_success, task_retry
+from celery.signals import task_failure, task_success, task_retry  # noqa: E402
 
 @task_failure.connect
 def handle_task_failure(sender=None, task_id=None, exception=None, **kwargs):

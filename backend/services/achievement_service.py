@@ -100,7 +100,6 @@ class AchievementService:
         Returns:
             dict: {"streak": N, "messages": N, "stars": N, ...}
         """
-        from sqlalchemy import literal_column
 
         # Выполняем все запросы параллельно одним батчем
         streak_q = session.execute(

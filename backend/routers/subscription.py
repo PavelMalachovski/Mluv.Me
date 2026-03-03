@@ -17,8 +17,6 @@ from backend.db.repositories import UserRepository
 from backend.routers.web_auth import get_authenticated_user
 from backend.services.subscription_service import (
     SubscriptionService,
-    PLAN_LIMITS,
-    STAR_PRODUCTS,
 )
 
 logger = structlog.get_logger(__name__)

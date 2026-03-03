@@ -3,9 +3,9 @@ Tests for GameService (Redis-backed active games).
 """
 
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch
 
-from backend.services.game_service import GameService, GAMES
+from backend.services.game_service import GameService
 
 
 @pytest.mark.asyncio

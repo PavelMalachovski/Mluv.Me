@@ -100,12 +100,12 @@ class CorrectionEngine:
 
             # Новый формат с двумя объяснениями
             explanation_cs = mistake.get("explanation_cs", "")
-            explanation_native = mistake.get("explanation_native", "")
+            _explanation_native = mistake.get("explanation_native", "")
 
             # Fallback на старый формат (для совместимости)
             if not explanation_cs and "explanation" in mistake:
                 explanation_cs = mistake.get("explanation", "")
-                explanation_native = ""
+                _explanation_native = ""
 
             formatted += f"{i}. ❌ {original}\n"
             formatted += f"   ✅ {corrected}\n"

@@ -5,7 +5,6 @@ Seasonal Service for time-limited events.
 """
 
 from datetime import datetime, timezone
-from typing import Literal
 
 import structlog
 

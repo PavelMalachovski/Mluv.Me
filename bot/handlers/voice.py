@@ -6,7 +6,6 @@ Language Immersion: Все сообщения бота на чешском.
 """
 
 import asyncio
-import base64
 import time
 import urllib.parse
 
@@ -97,7 +96,7 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
 
     # Keep "recording" indicator alive during the entire backend round-trip
     action_stop = asyncio.Event()
-    action_task = asyncio.create_task(
+    _action_task = asyncio.create_task(  # noqa: F841 – prevent GC
         _keep_chat_action(message.bot, message.chat.id, "record_voice", action_stop)
     )
 
@@ -170,7 +169,7 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
         if honzik_text:
             # Show "recording voice" while TTS generates
             action_stop2 = asyncio.Event()
-            action_task2 = asyncio.create_task(
+            _action_task2 = asyncio.create_task(  # noqa: F841 – prevent GC
                 _keep_chat_action(message.bot, message.chat.id, "record_voice", action_stop2)
             )
 
