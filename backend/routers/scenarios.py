@@ -18,8 +18,10 @@ router = APIRouter(prefix="/api/v1/scenarios", tags=["scenarios"])
 
 # === Pydantic Models ===
 
+
 class ScenarioInfo(BaseModel):
     """Информация о сценарии."""
+
     id: str
     name_cs: str
     name_ru: str
@@ -32,6 +34,7 @@ class ScenarioInfo(BaseModel):
 
 class StartScenarioRequest(BaseModel):
     """Запрос на начало сценария."""
+
     user_id: int = Field(..., description="Telegram ID пользователя")
     level: str = Field("beginner", description="Уровень чешского языка")
     native_language: str = Field("ru", description="Родной язык пользователя")
@@ -39,6 +42,7 @@ class StartScenarioRequest(BaseModel):
 
 class StartScenarioResponse(BaseModel):
     """Ответ на начало сценария."""
+
     scenario_id: str
     name_cs: str
     step: int
@@ -52,6 +56,7 @@ class StartScenarioResponse(BaseModel):
 
 class ContinueScenarioRequest(BaseModel):
     """Запрос на продолжение сценария."""
+
     user_id: int = Field(..., description="Telegram ID пользователя")
     text: str = Field(..., description="Текст пользователя на чешском")
     level: str = Field("beginner", description="Уровень чешского языка")
@@ -60,6 +65,7 @@ class ContinueScenarioRequest(BaseModel):
 
 class CorrectionItem(BaseModel):
     """Исправление ошибки."""
+
     original: str
     corrected: str
     explanation_cs: str
@@ -67,6 +73,7 @@ class CorrectionItem(BaseModel):
 
 class ContinueScenarioResponse(BaseModel):
     """Ответ на продолжение сценария."""
+
     scenario_id: str
     step: int
     total_steps: int
@@ -82,6 +89,7 @@ class ContinueScenarioResponse(BaseModel):
 
 class ActiveScenarioResponse(BaseModel):
     """Информация об активном сценарии."""
+
     scenario_id: str
     name_cs: str
     step: int
@@ -92,19 +100,23 @@ class ActiveScenarioResponse(BaseModel):
 
 # === Dependencies ===
 
-def get_openai_client(settings: Annotated[Settings, Depends(get_settings)]) -> OpenAIClient:
+
+def get_openai_client(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> OpenAIClient:
     """Get OpenAI client."""
     return OpenAIClient(settings)
 
 
 def get_scenario_service(
-    openai_client: Annotated[OpenAIClient, Depends(get_openai_client)]
+    openai_client: Annotated[OpenAIClient, Depends(get_openai_client)],
 ) -> ScenarioService:
     """Get scenario service."""
     return ScenarioService(openai_client)
 
 
 # === Endpoints ===
+
 
 @router.get("/available", response_model=list[ScenarioInfo])
 async def get_available_scenarios(

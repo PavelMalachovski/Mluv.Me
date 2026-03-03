@@ -26,7 +26,10 @@ class AsyncTask(Task):
     def __call__(self, *args, **kwargs):
         """Override to run async functions."""
         import asyncio
-        return asyncio.get_event_loop().run_until_complete(self.run_async(*args, **kwargs))
+
+        return asyncio.get_event_loop().run_until_complete(
+            self.run_async(*args, **kwargs)
+        )
 
     async def run_async(self, *args, **kwargs):
         """Override this method in subclasses."""
@@ -54,20 +57,14 @@ async def check_and_reset_streaks(self) -> Dict[str, Any]:
             # Находим всех пользователей с активным streak
             query = (
                 select(DailyStats.user_id, DailyStats.streak_day)
-                .where(
-                    DailyStats.date == yesterday,
-                    DailyStats.streak_day > 0
-                )
+                .where(DailyStats.date == yesterday, DailyStats.streak_day > 0)
                 .distinct()
             )
 
             result = await db.execute(query)
             users_with_streak = [(row[0], row[1]) for row in result.all()]
 
-            logger.info(
-                "checking_streaks",
-                users_count=len(users_with_streak)
-            )
+            logger.info("checking_streaks", users_count=len(users_with_streak))
 
             stats_repo = StatsRepository(db)
             reset_count = 0
@@ -91,33 +88,29 @@ async def check_and_reset_streaks(self) -> Dict[str, Any]:
                 logger.info(
                     "streak_will_reset",
                     user_id=user_id,
-                    yesterday_streak=yesterday_streak
+                    yesterday_streak=yesterday_streak,
                 )
 
             result = {
                 "total_checked": len(users_with_streak),
                 "maintained": maintained_count,
                 "will_reset": reset_count,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
-            logger.info(
-                "streak_check_completed",
-                **result
-            )
+            logger.info("streak_check_completed", **result)
 
             return result
 
     except Exception as exc:
-        logger.error(
-            "streak_check_failed",
-            error=str(exc)
-        )
+        logger.error("streak_check_failed", error=str(exc))
         raise
 
 
 @celery_app.task(bind=True, base=AsyncTask)
-async def award_streak_milestone_bonus(self, user_id: int, streak_days: int) -> Dict[str, Any]:
+async def award_streak_milestone_bonus(
+    self, user_id: int, streak_days: int
+) -> Dict[str, Any]:
     """
     Начислить бонус за достижение milestone в streak.
 
@@ -144,7 +137,7 @@ async def award_streak_milestone_bonus(self, user_id: int, streak_days: int) -> 
                 "user_id": user_id,
                 "streak_days": streak_days,
                 "bonus_awarded": False,
-                "reason": "not_a_milestone"
+                "reason": "not_a_milestone",
             }
 
         milestone = milestones[streak_days]
@@ -164,7 +157,7 @@ async def award_streak_milestone_bonus(self, user_id: int, streak_days: int) -> 
                     user_id=user_id,
                     total=new_total,
                     available=new_available,
-                    lifetime=new_lifetime
+                    lifetime=new_lifetime,
                 )
 
                 await db.commit()
@@ -173,14 +166,14 @@ async def award_streak_milestone_bonus(self, user_id: int, streak_days: int) -> 
                     "streak_milestone_bonus_awarded",
                     user_id=user_id,
                     streak_days=streak_days,
-                    bonus_stars=milestone["stars"]
+                    bonus_stars=milestone["stars"],
                 )
 
                 # Отправляем уведомление пользователю
                 from backend.tasks.notifications import send_achievement_notification
+
                 send_achievement_notification.apply_async(
-                    args=[user_id, "streak_milestone", milestone],
-                    countdown=5
+                    args=[user_id, "streak_milestone", milestone], countdown=5
                 )
 
                 return {
@@ -189,14 +182,14 @@ async def award_streak_milestone_bonus(self, user_id: int, streak_days: int) -> 
                     "bonus_awarded": True,
                     "bonus_stars": milestone["stars"],
                     "milestone_title": milestone["title"],
-                    "new_total": new_total
+                    "new_total": new_total,
                 }
 
             return {
                 "user_id": user_id,
                 "streak_days": streak_days,
                 "bonus_awarded": False,
-                "reason": "stars_not_found"
+                "reason": "stars_not_found",
             }
 
     except Exception as exc:
@@ -204,10 +197,6 @@ async def award_streak_milestone_bonus(self, user_id: int, streak_days: int) -> 
             "milestone_bonus_failed",
             user_id=user_id,
             streak_days=streak_days,
-            error=str(exc)
+            error=str(exc),
         )
-        return {
-            "user_id": user_id,
-            "bonus_awarded": False,
-            "error": str(exc)
-        }
+        return {"user_id": user_id, "bonus_awarded": False, "error": str(exc)}

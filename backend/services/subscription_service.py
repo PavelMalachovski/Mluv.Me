@@ -29,7 +29,7 @@ PLAN_LIMITS: dict[str, dict[str, int]] = {
         "voice_per_day": 4,
     },
     "pro": {
-        "text_per_day": 999_999,   # effectively unlimited
+        "text_per_day": 999_999,  # effectively unlimited
         "voice_per_day": 999_999,
     },
 }

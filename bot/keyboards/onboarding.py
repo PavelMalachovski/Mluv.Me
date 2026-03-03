@@ -72,7 +72,9 @@ NATIVE_LANGUAGES = [
 ]
 
 
-def get_native_language_keyboard(page: int = 0, per_page: int = 8, prefix: str = "native") -> InlineKeyboardMarkup:
+def get_native_language_keyboard(
+    page: int = 0, per_page: int = 8, prefix: str = "native"
+) -> InlineKeyboardMarkup:
     """
     Клавиатура выбора родного языка с пагинацией.
 
@@ -81,7 +83,7 @@ def get_native_language_keyboard(page: int = 0, per_page: int = 8, prefix: str =
 
     Args:
         page: Page number (0-based)
-        per_page: Items per page  
+        per_page: Items per page
         prefix: Callback data prefix (e.g. "native" or "onb_native")
 
     Returns:
@@ -121,7 +123,9 @@ def get_native_language_keyboard(page: int = 0, per_page: int = 8, prefix: str =
     nav_row: list[InlineKeyboardButton] = []
     if page > 0:
         nav_row.append(
-            InlineKeyboardButton(text="◀️ Zpět", callback_data=f"{prefix}_page:{page - 1}")
+            InlineKeyboardButton(
+                text="◀️ Zpět", callback_data=f"{prefix}_page:{page - 1}"
+            )
         )
     if has_more:
         label = "Další jazyky ▶️" if page == 0 else "Další ▶️"
@@ -185,5 +189,3 @@ def get_level_keyboard(prefix: str = "level") -> InlineKeyboardMarkup:
         ]
     )
     return keyboard
-
-

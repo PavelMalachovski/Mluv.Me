@@ -43,9 +43,7 @@ class UserRepository:
             User | None: Пользователь или None
         """
         result = await self.session.execute(
-            select(User)
-            .where(User.id == user_id)
-            .options(selectinload(User.settings))
+            select(User).where(User.id == user_id).options(selectinload(User.settings))
         )
         return result.scalar_one_or_none()
 
@@ -168,9 +166,7 @@ class UserRepository:
         Returns:
             bool: True если удален, False если не найден
         """
-        result = await self.session.execute(
-            delete(User).where(User.id == user_id)
-        )
+        result = await self.session.execute(delete(User).where(User.id == user_id))
         await self.session.commit()
         return result.rowcount > 0
 
@@ -211,30 +207,24 @@ class UserRepository:
 
         if include:
             # Settings - используем joinedload так как это 1:1 связь
-            if 'settings' in include:
+            if "settings" in include:
                 query = query.options(joinedload(User.settings))
 
             # Recent messages - selectinload loads all, then we slice in Python
             # Note: selectinload().limit() is NOT supported by SQLAlchemy
-            if 'recent_messages' in include:
-                query = query.options(
-                    selectinload(User.messages)
-                )
+            if "recent_messages" in include:
+                query = query.options(selectinload(User.messages))
 
             # Daily stats - load all, slice in application code
-            if 'daily_stats' in include:
-                query = query.options(
-                    selectinload(User.daily_stats)
-                )
+            if "daily_stats" in include:
+                query = query.options(selectinload(User.daily_stats))
 
             # Saved words
-            if 'saved_words' in include:
-                query = query.options(
-                    selectinload(User.saved_words)
-                )
+            if "saved_words" in include:
+                query = query.options(selectinload(User.saved_words))
 
             # Stars - 1:1 связь
-            if 'stars' in include:
+            if "stars" in include:
                 query = query.options(joinedload(User.stars))
 
         result = await self.session.execute(query)
@@ -274,15 +264,14 @@ class UserSettingsRepository:
             UserSettings | None: Обновленные настройки или None
         """
         await self.session.execute(
-            update(UserSettings)
-            .where(UserSettings.user_id == user_id)
-            .values(**kwargs)
+            update(UserSettings).where(UserSettings.user_id == user_id).values(**kwargs)
         )
         await self.session.commit()
 
         # Invalidate user cache (settings are part of user cache)
         if redis_client.is_enabled:
             from backend.models import User
+
             result = await self.session.execute(
                 select(User.telegram_id).where(User.id == user_id)
             )
@@ -334,11 +323,7 @@ class MessageRepository:
         """
         return await self.get_recent_by_user(user_id=user_id, limit=limit)
 
-    async def get_recent_by_user(
-        self,
-        user_id: int,
-        limit: int = 10
-    ) -> list[Message]:
+    async def get_recent_by_user(self, user_id: int, limit: int = 10) -> list[Message]:
         """
         Получить последние сообщения пользователя.
 
@@ -358,10 +343,7 @@ class MessageRepository:
         return list(result.scalars().all())
 
     async def get_user_messages_by_date(
-        self,
-        user_id: int,
-        start_date: date,
-        end_date: date | None = None
+        self, user_id: int, start_date: date, end_date: date | None = None
     ) -> list[Message]:
         """
         Получить сообщения пользователя за период.
@@ -385,7 +367,7 @@ class MessageRepository:
                 and_(
                     Message.user_id == user_id,
                     func.date(Message.created_at) >= start_date,
-                    func.date(Message.created_at) <= end_date
+                    func.date(Message.created_at) <= end_date,
                 )
             )
             .order_by(Message.created_at.asc())
@@ -393,9 +375,7 @@ class MessageRepository:
         return list(result.scalars().all())
 
     async def get_recent_with_user(
-        self,
-        user_id: int,
-        limit: int = 10
+        self, user_id: int, limit: int = 10
     ) -> list[Message]:
         """
         Получить последние сообщения с предзагруженными данными пользователя.
@@ -442,9 +422,7 @@ class SavedWordRepository:
         return word
 
     async def get_by_user(
-        self,
-        user_id: int,
-        limit: int | None = None
+        self, user_id: int, limit: int | None = None
     ) -> list[SavedWord]:
         """
         Получить сохраненные слова пользователя.
@@ -485,9 +463,7 @@ class SavedWordRepository:
         return result.rowcount > 0
 
     async def get_by_user_id(
-        self,
-        user_id: int,
-        limit: int | None = None
+        self, user_id: int, limit: int | None = None
     ) -> list[SavedWord]:
         """
         Alias для get_by_user чтобы сохранить обратную совместимость.
@@ -545,11 +521,7 @@ class StatsRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_or_create_daily(
-        self,
-        user_id: int,
-        date_value: date
-    ) -> DailyStats:
+    async def get_or_create_daily(self, user_id: int, date_value: date) -> DailyStats:
         """
         Получить или создать статистику за день.
 
@@ -561,12 +533,8 @@ class StatsRepository:
             DailyStats: Статистика за день
         """
         result = await self.session.execute(
-            select(DailyStats)
-            .where(
-                and_(
-                    DailyStats.user_id == user_id,
-                    DailyStats.date == date_value
-                )
+            select(DailyStats).where(
+                and_(DailyStats.user_id == user_id, DailyStats.date == date_value)
             )
         )
         stats = result.scalar_one_or_none()
@@ -580,10 +548,7 @@ class StatsRepository:
         return stats
 
     async def update_daily(
-        self,
-        user_id: int,
-        date_value: date,
-        **kwargs: Any
+        self, user_id: int, date_value: date, **kwargs: Any
     ) -> DailyStats:
         """
         Обновить статистику за день и инвалидировать кеш.
@@ -607,6 +572,7 @@ class StatsRepository:
         # Invalidate stats cache
         if redis_client.is_enabled:
             from backend.models import User
+
             result = await self.session.execute(
                 select(User.telegram_id).where(User.id == user_id)
             )
@@ -634,11 +600,7 @@ class StatsRepository:
         return result.scalar_one_or_none()
 
     async def update_stars(
-        self,
-        user_id: int,
-        total: int,
-        available: int,
-        lifetime: int
+        self, user_id: int, total: int, available: int, lifetime: int
     ) -> Stars | None:
         """
         Обновить звезды пользователя.
@@ -659,7 +621,7 @@ class StatsRepository:
                 total=total,
                 available=available,
                 lifetime=lifetime,
-                updated_at=datetime.now(timezone.utc)
+                updated_at=datetime.now(timezone.utc),
             )
         )
         await self.session.commit()
@@ -680,10 +642,7 @@ class StatsRepository:
         """
         result = await self.session.execute(
             select(DailyStats).where(
-                and_(
-                    DailyStats.user_id == user_id,
-                    DailyStats.date == date_value
-                )
+                and_(DailyStats.user_id == user_id, DailyStats.date == date_value)
             )
         )
         stats = result.scalar_one_or_none()
@@ -733,9 +692,7 @@ class StatsRepository:
         total_weighted = sum(
             s.correct_percent * s.words_said for s in all_stats if s.words_said > 0
         )
-        average_correctness = (
-            total_weighted / total_words if total_words > 0 else 0
-        )
+        average_correctness = total_weighted / total_words if total_words > 0 else 0
 
         # Текущий и максимальный streak
         current_streak = all_stats[0].streak_day if all_stats else 0
@@ -825,10 +782,7 @@ class StatsRepository:
         return {"total": row[0], "available": row[1], "lifetime": row[2]}
 
     async def get_stats_range(
-        self,
-        user_id: int,
-        start_date: date,
-        end_date: date
+        self, user_id: int, start_date: date, end_date: date
     ) -> list[dict[str, Any]]:
         """
         Получить статистику за период.
@@ -847,7 +801,7 @@ class StatsRepository:
                 and_(
                     DailyStats.user_id == user_id,
                     DailyStats.date >= start_date,
-                    DailyStats.date <= end_date
+                    DailyStats.date <= end_date,
                 )
             )
             .order_by(DailyStats.date.asc())
@@ -866,10 +820,7 @@ class StatsRepository:
         ]
 
     async def get_stats_range_with_user(
-        self,
-        user_id: int,
-        start_date: date,
-        end_date: date
+        self, user_id: int, start_date: date, end_date: date
     ) -> list[DailyStats]:
         """
         Получить статистику за период с предзагруженными данными пользователя.
@@ -890,7 +841,7 @@ class StatsRepository:
                 and_(
                     DailyStats.user_id == user_id,
                     DailyStats.date >= start_date,
-                    DailyStats.date <= end_date
+                    DailyStats.date <= end_date,
                 )
             )
             .options(joinedload(DailyStats.user))
@@ -909,7 +860,7 @@ class MaterializedViewRepository:
         self,
         telegram_id: int | None = None,
         limit: int | None = None,
-        order_by: str = "total_messages"
+        order_by: str = "total_messages",
     ) -> list[dict[str, Any]]:
         """
         Получить агрегированную статистику пользователей из материализованного представления.
@@ -937,8 +888,12 @@ class MaterializedViewRepository:
 
         # Order by
         valid_order_fields = [
-            "total_messages", "total_stars", "max_streak",
-            "avg_correctness", "last_activity", "total_words_said"
+            "total_messages",
+            "total_stars",
+            "max_streak",
+            "avg_correctness",
+            "last_activity",
+            "total_words_said",
         ]
         if order_by in valid_order_fields:
             query_parts.append(f"ORDER BY {order_by} DESC")
@@ -954,15 +909,10 @@ class MaterializedViewRepository:
         columns = result.keys()
         rows = result.fetchall()
 
-        return [
-            {col: val for col, val in zip(columns, row)}
-            for row in rows
-        ]
+        return [{col: val for col, val in zip(columns, row)} for row in rows]
 
     async def get_leaderboard(
-        self,
-        metric: str = "total_stars",
-        limit: int = 10
+        self, metric: str = "total_stars", limit: int = 10
     ) -> list[dict[str, Any]]:
         """
         Получить таблицу лидеров по выбранной метрике.
@@ -976,7 +926,12 @@ class MaterializedViewRepository:
         """
         from sqlalchemy import text
 
-        valid_metrics = ["total_stars", "max_streak", "total_messages", "avg_correctness"]
+        valid_metrics = [
+            "total_stars",
+            "max_streak",
+            "total_messages",
+            "avg_correctness",
+        ]
         if metric not in valid_metrics:
             metric = "total_stars"
 
@@ -1001,15 +956,10 @@ class MaterializedViewRepository:
         columns = result.keys()
         rows = result.fetchall()
 
-        return [
-            {col: val for col, val in zip(columns, row)}
-            for row in rows
-        ]
+        return [{col: val for col, val in zip(columns, row)} for row in rows]
 
     async def get_active_users(
-        self,
-        days: int = 7,
-        limit: int | None = None
+        self, days: int = 7, limit: int | None = None
     ) -> list[dict[str, Any]]:
         """
         Получить активных пользователей за последние N дней.
@@ -1047,9 +997,4 @@ class MaterializedViewRepository:
         columns = result.keys()
         rows = result.fetchall()
 
-        return [
-            {col: val for col, val in zip(columns, row)}
-            for row in rows
-        ]
-
-
+        return [{col: val for col, val in zip(columns, row)} for row in rows]

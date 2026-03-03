@@ -37,12 +37,16 @@ _CACHE_MAX_SIZE = 1000
 def _cleanup_old_corrections():
     """Remove corrections older than TTL and enforce max size."""
     now = time.time()
-    expired = [k for k, v in _corrections_cache.items() if now - v["timestamp"] > _CACHE_TTL]
+    expired = [
+        k for k, v in _corrections_cache.items() if now - v["timestamp"] > _CACHE_TTL
+    ]
     for k in expired:
         del _corrections_cache[k]
     # If still over cap, drop oldest entries
     while len(_corrections_cache) > _CACHE_MAX_SIZE:
-        oldest = min(_corrections_cache, key=lambda k: _corrections_cache[k]["timestamp"])
+        oldest = min(
+            _corrections_cache, key=lambda k: _corrections_cache[k]["timestamp"]
+        )
         del _corrections_cache[oldest]
 
 
@@ -85,6 +89,7 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
 
     # Quota check (voice)
     from bot.handlers.payments import get_subscription_keyboard, get_limit_reached_text
+
     quota = await api_client.check_quota(telegram_id, "voice")
     if quota and not quota.get("allowed", True):
         await message.answer(
@@ -156,11 +161,11 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
         action_stop.set()
 
         # ⚡ INSTANT: Send správnost — user sees result immediately
-        score_parts = [get_text('voice_correctness', score=correctness_score)]
+        score_parts = [get_text("voice_correctness", score=correctness_score)]
         if stars_earned > 0:
-            score_parts.append(get_text('voice_stars_earned', stars=stars_earned))
+            score_parts.append(get_text("voice_stars_earned", stars=stars_earned))
         if not mistakes:
-            score_parts.append(get_text('no_corrections'))
+            score_parts.append(get_text("no_corrections"))
         await message.answer("\n".join(score_parts), parse_mode="HTML")
 
         # ========================================
@@ -170,7 +175,9 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
             # Show "recording voice" while TTS generates
             action_stop2 = asyncio.Event()
             _action_task2 = asyncio.create_task(  # noqa: F841 – prevent GC
-                _keep_chat_action(message.bot, message.chat.id, "record_voice", action_stop2)
+                _keep_chat_action(
+                    message.bot, message.chat.id, "record_voice", action_stop2
+                )
             )
 
             try:
@@ -193,8 +200,7 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                 encoded_text = urllib.parse.quote(honzik_text, safe="")
                 webui_url = f"{config.webui_url}/response?text={encoded_text}"
                 text_button = InlineKeyboardButton(
-                    text=get_text("btn_show_text"),
-                    web_app=WebAppInfo(url=webui_url)
+                    text=get_text("btn_show_text"), web_app=WebAppInfo(url=webui_url)
                 )
                 buttons.append(text_button)
 
@@ -216,9 +222,7 @@ async def handle_voice(message: Message, api_client: APIClient) -> None:
                 keyboard = InlineKeyboardMarkup(inline_keyboard=[buttons])
 
                 # Отправляем голосовое сообщение с кнопками
-                await message.answer_voice(
-                    voice=voice_file, reply_markup=keyboard
-                )
+                await message.answer_voice(voice=voice_file, reply_markup=keyboard)
 
         logger.info(
             "voice_processed",

@@ -29,7 +29,10 @@ class AsyncTask(Task):
     def __call__(self, *args, **kwargs):
         """Override to run async functions."""
         import asyncio
-        return asyncio.get_event_loop().run_until_complete(self.run_async(*args, **kwargs))
+
+        return asyncio.get_event_loop().run_until_complete(
+            self.run_async(*args, **kwargs)
+        )
 
     async def run_async(self, *args, **kwargs):
         """Override this method in subclasses."""
@@ -64,23 +67,19 @@ async def calculate_daily_statistics(self, user_id: int) -> Dict[str, Any]:
 
             # Получаем все сообщения пользователя за сегодня
             messages = await message_repo.get_user_messages_by_date(
-                user_id=user_id,
-                start_date=today,
-                end_date=today
+                user_id=user_id, start_date=today, end_date=today
             )
 
             if not messages:
                 logger.info(
-                    "no_messages_for_stats",
-                    user_id=user_id,
-                    date=today.isoformat()
+                    "no_messages_for_stats", user_id=user_id, date=today.isoformat()
                 )
                 return {
                     "user_id": user_id,
                     "date": today.isoformat(),
                     "messages_count": 0,
                     "words_said": 0,
-                    "correct_percent": 0
+                    "correct_percent": 0,
                 }
 
             # Рассчитываем метрики
@@ -88,7 +87,11 @@ async def calculate_daily_statistics(self, user_id: int) -> Dict[str, Any]:
             total_words = sum(msg.words_total or 0 for msg in messages)
 
             # Средний процент правильности
-            scores = [msg.correctness_score for msg in messages if msg.correctness_score is not None]
+            scores = [
+                msg.correctness_score
+                for msg in messages
+                if msg.correctness_score is not None
+            ]
             avg_correctness = int(sum(scores) / len(scores)) if scores else 0
 
             # Получаем текущий streak
@@ -102,7 +105,7 @@ async def calculate_daily_statistics(self, user_id: int) -> Dict[str, Any]:
                 "messages_count": messages_count,
                 "words_said": total_words,
                 "correct_percent": avg_correctness,
-                "streak_day": current_streak
+                "streak_day": current_streak,
             }
 
             # Обновляем в БД
@@ -112,15 +115,14 @@ async def calculate_daily_statistics(self, user_id: int) -> Dict[str, Any]:
                 messages_count=messages_count,
                 words_said=total_words,
                 correct_percent=avg_correctness,
-                streak_day=current_streak
+                streak_day=current_streak,
             )
 
             await db.commit()
 
             # Кешируем результаты до конца дня
             cache_key = CacheKeys.DAILY_STATS.format(
-                user_id=user_id,
-                date=today.isoformat()
+                user_id=user_id, date=today.isoformat()
             )
 
             # TTL до конца дня
@@ -135,22 +137,18 @@ async def calculate_daily_statistics(self, user_id: int) -> Dict[str, Any]:
                 user_id=user_id,
                 date=today.isoformat(),
                 messages_count=messages_count,
-                words_said=total_words
+                words_said=total_words,
             )
 
             return stats
 
     except Exception as exc:
-        logger.error(
-            "daily_stats_calculation_failed",
-            user_id=user_id,
-            error=str(exc)
-        )
+        logger.error("daily_stats_calculation_failed", user_id=user_id, error=str(exc))
         # Retry с экспоненциальной задержкой
-        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        raise self.retry(exc=exc, countdown=60 * (2**self.request.retries))
 
 
-@celery_app.task(bind=True, base=AsyncTask, rate_limit='10/m')
+@celery_app.task(bind=True, base=AsyncTask, rate_limit="10/m")
 async def aggregate_platform_metrics(self) -> Dict[str, Any]:
     """
     Агрегировать метрики платформы (rate-limited).
@@ -181,9 +179,9 @@ async def aggregate_platform_metrics(self) -> Dict[str, Any]:
             total_users = (await db.execute(total_users_query)).scalar()
 
             # Активные пользователи (за последние 7 дней)
-            active_users_query = select(func.count(func.distinct(Message.user_id))).where(
-                Message.created_at >= week_ago
-            )
+            active_users_query = select(
+                func.count(func.distinct(Message.user_id))
+            ).where(Message.created_at >= week_ago)
             active_users = (await db.execute(active_users_query)).scalar()
 
             # Сообщений за периоды
@@ -220,7 +218,7 @@ async def aggregate_platform_metrics(self) -> Dict[str, Any]:
                 "messages_week": messages_week,
                 "messages_month": messages_month,
                 "avg_correctness": round(avg_correctness, 2),
-                "total_stars_lifetime": total_stars
+                "total_stars_lifetime": total_stars,
             }
 
             # Кешируем на 30 минут
@@ -231,16 +229,13 @@ async def aggregate_platform_metrics(self) -> Dict[str, Any]:
                 "platform_metrics_aggregated",
                 total_users=total_users,
                 active_users=active_users,
-                messages_today=messages_today
+                messages_today=messages_today,
             )
 
             return metrics
 
     except Exception as exc:
-        logger.error(
-            "platform_metrics_aggregation_failed",
-            error=str(exc)
-        )
+        logger.error("platform_metrics_aggregation_failed", error=str(exc))
         raise
 
 
@@ -268,20 +263,15 @@ async def generate_weekly_report(self, user_id: int) -> Dict[str, Any]:
 
             # Получаем статистику за неделю
             weekly_stats = await stats_repo.get_stats_range(
-                user_id=user_id,
-                start_date=week_ago,
-                end_date=today
+                user_id=user_id, start_date=week_ago, end_date=today
             )
 
             if not weekly_stats:
-                logger.info(
-                    "no_activity_for_weekly_report",
-                    user_id=user_id
-                )
+                logger.info("no_activity_for_weekly_report", user_id=user_id)
                 return {
                     "user_id": user_id,
                     "period": f"{week_ago.isoformat()} - {today.isoformat()}",
-                    "active": False
+                    "active": False,
                 }
 
             # Агрегируем метрики
@@ -293,10 +283,16 @@ async def generate_weekly_report(self, user_id: int) -> Dict[str, Any]:
                 for day in weekly_stats
                 if day.get("correct_percent", 0) > 0
             ]
-            avg_correctness = int(sum(correctness_scores) / len(correctness_scores)) if correctness_scores else 0
+            avg_correctness = (
+                int(sum(correctness_scores) / len(correctness_scores))
+                if correctness_scores
+                else 0
+            )
 
             # Дни активности
-            active_days = len([day for day in weekly_stats if day.get("messages_count", 0) > 0])
+            active_days = len(
+                [day for day in weekly_stats if day.get("messages_count", 0) > 0]
+            )
 
             # Streak информация
             user_stats = await stats_repo.get_user_summary(user_id)
@@ -322,13 +318,19 @@ async def generate_weekly_report(self, user_id: int) -> Dict[str, Any]:
             recommendations = []
 
             if active_days < 5:
-                recommendations.append("Попробуйте практиковаться чаще - хотя бы 5 дней в неделю!")
+                recommendations.append(
+                    "Попробуйте практиковаться чаще - хотя бы 5 дней в неделю!"
+                )
 
             if avg_correctness < 70:
-                recommendations.append("Обратите внимание на грамматику - попросите Хонзика объяснять больше!")
+                recommendations.append(
+                    "Обратите внимание на грамматику - попросите Хонзика объяснять больше!"
+                )
 
             if total_messages < 10:
-                recommendations.append("Отправляйте больше сообщений - практика делает совершенным!")
+                recommendations.append(
+                    "Отправляйте больше сообщений - практика делает совершенным!"
+                )
 
             if current_streak == 0 and active_days > 0:
                 recommendations.append("Начните новый streak! Занимайтесь каждый день.")
@@ -344,17 +346,13 @@ async def generate_weekly_report(self, user_id: int) -> Dict[str, Any]:
                 user_id=user_id,
                 total_messages=total_messages,
                 active_days=active_days,
-                avg_correctness=avg_correctness
+                avg_correctness=avg_correctness,
             )
 
             return report
 
     except Exception as exc:
-        logger.error(
-            "weekly_report_generation_failed",
-            user_id=user_id,
-            error=str(exc)
-        )
+        logger.error("weekly_report_generation_failed", user_id=user_id, error=str(exc))
         raise self.retry(exc=exc, countdown=300)  # Retry после 5 минут
 
 
@@ -383,8 +381,7 @@ async def calculate_all_users_daily_stats(self) -> Dict[str, Any]:
             active_user_ids = [row[0] for row in result.all()]
 
             logger.info(
-                "calculating_daily_stats_for_users",
-                user_count=len(active_user_ids)
+                "calculating_daily_stats_for_users", user_count=len(active_user_ids)
             )
 
             # Запускаем задачи для каждого пользователя
@@ -394,16 +391,11 @@ async def calculate_all_users_daily_stats(self) -> Dict[str, Any]:
             for user_id in active_user_ids:
                 try:
                     # Запускаем задачу асинхронно
-                    calculate_daily_statistics.apply_async(
-                        args=[user_id],
-                        countdown=0
-                    )
+                    calculate_daily_statistics.apply_async(args=[user_id], countdown=0)
                     successful += 1
                 except Exception as e:
                     logger.error(
-                        "failed_to_schedule_user_stats",
-                        user_id=user_id,
-                        error=str(e)
+                        "failed_to_schedule_user_stats", user_id=user_id, error=str(e)
                     )
                     failed += 1
 
@@ -411,19 +403,13 @@ async def calculate_all_users_daily_stats(self) -> Dict[str, Any]:
                 "total_users": len(active_user_ids),
                 "scheduled": successful,
                 "failed": failed,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
-            logger.info(
-                "daily_stats_calculation_completed",
-                **result
-            )
+            logger.info("daily_stats_calculation_completed", **result)
 
             return result
 
     except Exception as exc:
-        logger.error(
-            "all_users_daily_stats_failed",
-            error=str(exc)
-        )
+        logger.error("all_users_daily_stats_failed", error=str(exc))
         raise

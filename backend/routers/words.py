@@ -179,7 +179,9 @@ async def save_word(
         "context_sentence": saved_word.context_sentence,
         "phonetics": saved_word.phonetics,
         "times_reviewed": saved_word.times_reviewed,
-        "created_at": saved_word.created_at.isoformat() if saved_word.created_at else None,
+        "created_at": saved_word.created_at.isoformat()
+        if saved_word.created_at
+        else None,
     }
 
 
@@ -209,7 +211,12 @@ async def delete_word(
         )
 
     if word.user_id != auth_user.id:
-        logger.warning("word_delete_forbidden", word_id=word_id, owner=word.user_id, requester=auth_user.id)
+        logger.warning(
+            "word_delete_forbidden",
+            word_id=word_id,
+            owner=word.user_id,
+            requester=auth_user.id,
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only delete your own words",
@@ -350,8 +357,10 @@ async def translate_word(
 
 # ============= Spaced Repetition Endpoints =============
 
+
 class ReviewAnswerRequest(BaseModel):
     """Request for submitting a review answer."""
+
     quality: int  # 0=again, 1=hard, 2=good, 3=easy
 
 
@@ -397,7 +406,8 @@ async def get_words_for_review(
         select(SavedWord)
         .where(
             SavedWord.user_id == user.id,
-            (SavedWord.next_review_date <= today) | (SavedWord.next_review_date.is_(None))
+            (SavedWord.next_review_date <= today)
+            | (SavedWord.next_review_date.is_(None)),
         )
         .order_by(SavedWord.next_review_date.asc().nullsfirst())
         .limit(limit)
@@ -548,34 +558,60 @@ async def get_review_stats(
     # Mastery breakdown via CASE WHEN + GROUP BY equivalent
     mastery_q = select(
         func.sum(case((SavedWord.sr_review_count == 0, 1), else_=0)).label("new"),
-        func.sum(case(
-            (SavedWord.sr_review_count > 0, case((SavedWord.interval_days < 7, 1), else_=0)),
-            else_=0,
-        )).label("learning"),
-        func.sum(case(
-            (SavedWord.sr_review_count > 0, case(
-                ((SavedWord.interval_days >= 7) & (SavedWord.interval_days < 30), 1),
+        func.sum(
+            case(
+                (
+                    SavedWord.sr_review_count > 0,
+                    case((SavedWord.interval_days < 7, 1), else_=0),
+                ),
                 else_=0,
-            )),
-            else_=0,
-        )).label("familiar"),
-        func.sum(case(
-            (SavedWord.sr_review_count > 0, case(
-                ((SavedWord.interval_days >= 30) & (SavedWord.interval_days < 90), 1),
+            )
+        ).label("learning"),
+        func.sum(
+            case(
+                (
+                    SavedWord.sr_review_count > 0,
+                    case(
+                        (
+                            (SavedWord.interval_days >= 7)
+                            & (SavedWord.interval_days < 30),
+                            1,
+                        ),
+                        else_=0,
+                    ),
+                ),
                 else_=0,
-            )),
-            else_=0,
-        )).label("known"),
-        func.sum(case(
-            (SavedWord.sr_review_count > 0, case((SavedWord.interval_days >= 90, 1), else_=0)),
-            else_=0,
-        )).label("mastered"),
+            )
+        ).label("familiar"),
+        func.sum(
+            case(
+                (
+                    SavedWord.sr_review_count > 0,
+                    case(
+                        (
+                            (SavedWord.interval_days >= 30)
+                            & (SavedWord.interval_days < 90),
+                            1,
+                        ),
+                        else_=0,
+                    ),
+                ),
+                else_=0,
+            )
+        ).label("known"),
+        func.sum(
+            case(
+                (
+                    SavedWord.sr_review_count > 0,
+                    case((SavedWord.interval_days >= 90, 1), else_=0),
+                ),
+                else_=0,
+            )
+        ).label("mastered"),
     ).where(SavedWord.user_id == user.id)
 
     # Next review date (minimum future date)
-    next_review_q = select(
-        func.min(SavedWord.next_review_date)
-    ).where(
+    next_review_q = select(func.min(SavedWord.next_review_date)).where(
         SavedWord.user_id == user.id,
         SavedWord.next_review_date > today,
     )
@@ -608,5 +644,3 @@ async def get_review_stats(
         "mastery_breakdown": mastery_breakdown,
         "next_review_in_days": next_review_in_days,
     }
-
-

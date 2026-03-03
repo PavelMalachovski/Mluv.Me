@@ -47,12 +47,14 @@ def get_subscription_keyboard() -> InlineKeyboardMarkup:
     """Inline keyboard with available subscription products."""
     buttons = []
     for product_id, product in PRODUCTS.items():
-        buttons.append([
-            InlineKeyboardButton(
-                text=f"{product['label']} — {product['stars']}⭐",
-                callback_data=f"buy:{product_id}",
-            )
-        ])
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    text=f"{product['label']} — {product['stars']}⭐",
+                    callback_data=f"buy:{product_id}",
+                )
+            ]
+        )
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
@@ -73,6 +75,7 @@ def get_limit_reached_text(msg_type: str = "text") -> str:
 
 # ──────────── Buy callback (user taps product) ────────────
 
+
 @router.callback_query(F.data.startswith("buy:"))
 async def handle_buy(callback: CallbackQuery) -> None:
     """
@@ -91,8 +94,8 @@ async def handle_buy(callback: CallbackQuery) -> None:
     await callback.message.answer_invoice(
         title=product["label"],
         description=product["description"],
-        payload=product_id,                    # will come back in successful_payment
-        currency="XTR",                        # Telegram Stars
+        payload=product_id,  # will come back in successful_payment
+        currency="XTR",  # Telegram Stars
         prices=[
             LabeledPrice(label=product["label"], amount=product["stars"]),
         ],
@@ -107,6 +110,7 @@ async def handle_buy(callback: CallbackQuery) -> None:
 
 
 # ──────────── Pre-checkout (Telegram asks: "confirm?") ────────────
+
 
 @router.pre_checkout_query()
 async def handle_pre_checkout(pre_checkout: PreCheckoutQuery) -> None:
@@ -131,10 +135,9 @@ async def handle_pre_checkout(pre_checkout: PreCheckoutQuery) -> None:
 
 # ──────────── Successful payment ────────────
 
+
 @router.message(F.successful_payment)
-async def handle_successful_payment(
-    message: Message, api_client: APIClient
-) -> None:
+async def handle_successful_payment(message: Message, api_client: APIClient) -> None:
     """
     Payment completed! Activate/extend Pro subscription.
     """
@@ -197,6 +200,7 @@ async def handle_successful_payment(
 
 
 # ──────────── /subscribe command ────────────
+
 
 @router.message(F.text == "/subscribe")
 async def handle_subscribe_command(message: Message) -> None:

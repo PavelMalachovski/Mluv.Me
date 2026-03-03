@@ -7,7 +7,13 @@ from datetime import datetime, date
 from typing import TYPE_CHECKING, List, Optional
 
 from sqlalchemy import (
-    Date, DateTime, ForeignKey, Integer, String, Boolean, UniqueConstraint
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Boolean,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -40,73 +46,50 @@ class Challenge(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     code: Mapped[str] = mapped_column(
-        String(50),
-        unique=True,
-        nullable=False,
-        comment="Unique challenge code"
+        String(50), unique=True, nullable=False, comment="Unique challenge code"
     )
 
     type: Mapped[str] = mapped_column(
-        String(20),
-        nullable=False,
-        comment="daily/weekly/special"
+        String(20), nullable=False, comment="daily/weekly/special"
     )
 
     title_cs: Mapped[str] = mapped_column(
-        String(100),
-        nullable=False,
-        comment="Czech title"
+        String(100), nullable=False, comment="Czech title"
     )
 
     description_cs: Mapped[str] = mapped_column(
-        String(500),
-        nullable=False,
-        comment="Czech description"
+        String(500), nullable=False, comment="Czech description"
     )
 
     goal_type: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        comment="messages/high_accuracy_messages/saved_words/topic_message/streak_days"
+        comment="messages/high_accuracy_messages/saved_words/topic_message/streak_days",
     )
 
     goal_topic: Mapped[Optional[str]] = mapped_column(
-        String(50),
-        nullable=True,
-        comment="Topic for topic_message goal type"
+        String(50), nullable=True, comment="Topic for topic_message goal type"
     )
 
     goal_value: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        comment="Target value"
+        Integer, nullable=False, comment="Target value"
     )
 
     reward_stars: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=5,
-        comment="Stars reward"
+        Integer, nullable=False, default=5, comment="Stars reward"
     )
 
     is_active: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=True,
-        comment="Is challenge active"
+        Boolean, nullable=False, default=True, comment="Is challenge active"
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now()
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
     # Relationships
     user_challenges: Mapped[List["UserChallenge"]] = relationship(
-        "UserChallenge",
-        back_populates="challenge",
-        cascade="all, delete-orphan"
+        "UserChallenge", back_populates="challenge", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
@@ -131,66 +114,50 @@ class UserChallenge(Base):
     __tablename__ = "user_challenges"
 
     __table_args__ = (
-        UniqueConstraint('user_id', 'challenge_id', 'date', name='uq_user_challenge_date'),
+        UniqueConstraint(
+            "user_id", "challenge_id", "date", name="uq_user_challenge_date"
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     user_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     challenge_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey("challenges.id", ondelete="CASCADE"),
-        nullable=False
+        Integer, ForeignKey("challenges.id", ondelete="CASCADE"), nullable=False
     )
 
     date: Mapped[date] = mapped_column(
-        Date,
-        nullable=False,
-        comment="Challenge date (for daily/weekly)"
+        Date, nullable=False, comment="Challenge date (for daily/weekly)"
     )
 
     progress: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Current progress towards challenge"
+        Integer, nullable=False, default=0, comment="Current progress towards challenge"
     )
 
     completed: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=False,
-        comment="Challenge completed"
+        Boolean, nullable=False, default=False, comment="Challenge completed"
     )
 
     completed_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-        comment="Completion timestamp"
+        DateTime(timezone=True), nullable=True, comment="Completion timestamp"
     )
 
     reward_claimed: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=False,
-        comment="Reward claimed"
+        Boolean, nullable=False, default=False, comment="Reward claimed"
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now()
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="challenges")
-    challenge: Mapped["Challenge"] = relationship("Challenge", back_populates="user_challenges")
+    challenge: Mapped["Challenge"] = relationship(
+        "Challenge", back_populates="user_challenges"
+    )
 
     def __repr__(self) -> str:
         return f"<UserChallenge(user_id={self.user_id}, challenge_id={self.challenge_id}, date={self.date})>"
@@ -209,37 +176,27 @@ class TopicMessageCount(Base):
 
     __tablename__ = "topic_message_counts"
 
-    __table_args__ = (
-        UniqueConstraint('user_id', 'topic', name='uq_user_topic'),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "topic", name="uq_user_topic"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     user_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     topic: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        comment="Topic: beer, food, history, travel, etc."
+        String(50), nullable=False, comment="Topic: beer, food, history, travel, etc."
     )
 
     count: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Number of messages on this topic"
+        Integer, nullable=False, default=0, comment="Number of messages on this topic"
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
-        onupdate=func.now()
+        onupdate=func.now(),
     )
 
     # Relationship

@@ -92,7 +92,12 @@ async def main() -> None:
 
         except Exception as e:
             error_str = str(e)
-            logger.error("bot_error", error=error_str, error_type=type(e).__name__, attempt=attempt + 1)
+            logger.error(
+                "bot_error",
+                error=error_str,
+                error_type=type(e).__name__,
+                attempt=attempt + 1,
+            )
 
             # Обработка конфликта
             if "Conflict" in error_str or "terminated by other getUpdates" in error_str:
@@ -101,14 +106,14 @@ async def main() -> None:
                         "bot_conflict_detected",
                         message="Another bot instance detected. Waiting before retry...",
                         retry_attempt=attempt + 1,
-                        retry_delay=retry_delay
+                        retry_delay=retry_delay,
                     )
                     await asyncio.sleep(retry_delay)
                     retry_delay *= 2  # Exponential backoff
                 else:
                     logger.error(
                         "bot_conflict_permanent",
-                        message="Multiple bot instances conflict. Stopping this instance."
+                        message="Multiple bot instances conflict. Stopping this instance.",
                     )
                     break
             else:

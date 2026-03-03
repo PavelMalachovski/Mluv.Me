@@ -18,23 +18,14 @@ class UserCreate(BaseModel):
         use_enum_values=True,
     )
 
-    telegram_id: int = Field(
-        description="Telegram user ID"
-    )
-    username: str | None = Field(
-        default=None,
-        description="Telegram username"
-    )
-    first_name: str = Field(
-        description="Имя пользователя"
-    )
+    telegram_id: int = Field(description="Telegram user ID")
+    username: str | None = Field(default=None, description="Telegram username")
+    first_name: str = Field(description="Имя пользователя")
     native_language: str = Field(
-        default="ru",
-        description="Родной язык — ISO 639-1 код (ru, uk, vi, ...)"
+        default="ru", description="Родной язык — ISO 639-1 код (ru, uk, vi, ...)"
     )
     level: Literal["beginner", "intermediate", "advanced", "native"] = Field(
-        default="beginner",
-        description="Уровень чешского языка"
+        default="beginner", description="Уровень чешского языка"
     )
 
 
@@ -110,6 +101,3 @@ class UserSettingsResponse(BaseModel):
     timezone: str
     notifications_enabled: bool
     character: Literal["honzik", "novakova"] = "honzik"
-
-
-

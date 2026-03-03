@@ -61,10 +61,7 @@ class ChallengeService:
         # Получаем все активные ежедневные челленджи
         result = await session.execute(
             select(Challenge).where(
-                and_(
-                    Challenge.type == "daily",
-                    Challenge.is_active
-                )
+                and_(Challenge.type == "daily", Challenge.is_active)
             )
         )
         daily_challenges = list(result.scalars().all())
@@ -133,10 +130,7 @@ class ChallengeService:
         # Получаем все активные еженедельные челленджи
         result = await session.execute(
             select(Challenge).where(
-                and_(
-                    Challenge.type == "weekly",
-                    Challenge.is_active
-                )
+                and_(Challenge.type == "weekly", Challenge.is_active)
             )
         )
         weekly_challenges = list(result.scalars().all())
@@ -159,21 +153,23 @@ class ChallengeService:
                 user_challenge.completed = True
                 user_challenge.completed_at = datetime.now(timezone.utc)
 
-            challenges_data.append({
-                "id": challenge.id,
-                "code": challenge.code,
-                "type": challenge.type,
-                "title": challenge.title_cs,
-                "description": challenge.description_cs,
-                "goal_type": challenge.goal_type,
-                "goal_value": challenge.goal_value,
-                "reward_stars": challenge.reward_stars,
-                "progress": progress,
-                "completed": user_challenge.completed,
-                "reward_claimed": user_challenge.reward_claimed,
-                "week_start": week_start.isoformat(),
-                "expires_at": (week_start + timedelta(days=7)).isoformat(),
-            })
+            challenges_data.append(
+                {
+                    "id": challenge.id,
+                    "code": challenge.code,
+                    "type": challenge.type,
+                    "title": challenge.title_cs,
+                    "description": challenge.description_cs,
+                    "goal_type": challenge.goal_type,
+                    "goal_value": challenge.goal_value,
+                    "reward_stars": challenge.reward_stars,
+                    "progress": progress,
+                    "completed": user_challenge.completed,
+                    "reward_claimed": user_challenge.reward_claimed,
+                    "week_start": week_start.isoformat(),
+                    "expires_at": (week_start + timedelta(days=7)).isoformat(),
+                }
+            )
 
         await session.flush()
         return challenges_data
@@ -191,7 +187,7 @@ class ChallengeService:
                 and_(
                     UserChallenge.user_id == user_id,
                     UserChallenge.challenge_id == challenge_id,
-                    UserChallenge.date == challenge_date
+                    UserChallenge.date == challenge_date,
                 )
             )
         )
@@ -225,7 +221,9 @@ class ChallengeService:
             return await self._count_daily_messages(session, user_id, target_date)
 
         elif goal_type == "high_accuracy_messages":
-            return await self._count_high_accuracy_messages(session, user_id, target_date)
+            return await self._count_high_accuracy_messages(
+                session, user_id, target_date
+            )
 
         elif goal_type == "saved_words":
             return await self._count_daily_saved_words(session, user_id, target_date)
@@ -253,13 +251,19 @@ class ChallengeService:
             return await self._get_current_streak(session, user_id)
 
         elif goal_type == "weekly_messages":
-            return await self._count_weekly_messages(session, user_id, week_start, week_end)
+            return await self._count_weekly_messages(
+                session, user_id, week_start, week_end
+            )
 
         elif goal_type == "weekly_accuracy":
-            return await self._get_weekly_accuracy(session, user_id, week_start, week_end)
+            return await self._get_weekly_accuracy(
+                session, user_id, week_start, week_end
+            )
 
         elif goal_type == "weekly_saved_words":
-            return await self._count_weekly_saved_words(session, user_id, week_start, week_end)
+            return await self._count_weekly_saved_words(
+                session, user_id, week_start, week_end
+            )
 
         return 0
 
@@ -268,12 +272,11 @@ class ChallengeService:
     ) -> int:
         """Подсчитать сообщения за день."""
         result = await session.execute(
-            select(func.count(Message.id))
-            .where(
+            select(func.count(Message.id)).where(
                 and_(
                     Message.user_id == user_id,
                     Message.role == "user",
-                    func.date(Message.created_at) == target_date
+                    func.date(Message.created_at) == target_date,
                 )
             )
         )
@@ -284,13 +287,12 @@ class ChallengeService:
     ) -> int:
         """Подсчитать сообщения с высокой точностью (>80%)."""
         result = await session.execute(
-            select(func.count(Message.id))
-            .where(
+            select(func.count(Message.id)).where(
                 and_(
                     Message.user_id == user_id,
                     Message.role == "user",
                     func.date(Message.created_at) == target_date,
-                    Message.correctness_score >= 80
+                    Message.correctness_score >= 80,
                 )
             )
         )
@@ -301,11 +303,10 @@ class ChallengeService:
     ) -> int:
         """Подсчитать сохранённые слова за день."""
         result = await session.execute(
-            select(func.count(SavedWord.id))
-            .where(
+            select(func.count(SavedWord.id)).where(
                 and_(
                     SavedWord.user_id == user_id,
-                    func.date(SavedWord.created_at) == target_date
+                    func.date(SavedWord.created_at) == target_date,
                 )
             )
         )
@@ -321,12 +322,11 @@ class ChallengeService:
         """Подсчитать сообщения на определённую тему за день."""
         # Для ежедневных тематических челленджей считаем минимум 1 если тема обсуждалась
         result = await session.execute(
-            select(TopicMessageCount.count)
-            .where(
+            select(TopicMessageCount.count).where(
                 and_(
                     TopicMessageCount.user_id == user_id,
                     TopicMessageCount.topic == topic,
-                    func.date(TopicMessageCount.updated_at) == target_date
+                    func.date(TopicMessageCount.updated_at) == target_date,
                 )
             )
         )
@@ -352,13 +352,12 @@ class ChallengeService:
     ) -> int:
         """Подсчитать сообщения за неделю."""
         result = await session.execute(
-            select(func.count(Message.id))
-            .where(
+            select(func.count(Message.id)).where(
                 and_(
                     Message.user_id == user_id,
                     Message.role == "user",
                     func.date(Message.created_at) >= week_start,
-                    func.date(Message.created_at) <= week_end
+                    func.date(Message.created_at) <= week_end,
                 )
             )
         )
@@ -373,14 +372,13 @@ class ChallengeService:
     ) -> int:
         """Получить среднюю точность за неделю."""
         result = await session.execute(
-            select(func.avg(Message.correctness_score))
-            .where(
+            select(func.avg(Message.correctness_score)).where(
                 and_(
                     Message.user_id == user_id,
                     Message.role == "user",
                     Message.correctness_score.isnot(None),
                     func.date(Message.created_at) >= week_start,
-                    func.date(Message.created_at) <= week_end
+                    func.date(Message.created_at) <= week_end,
                 )
             )
         )
@@ -396,12 +394,11 @@ class ChallengeService:
     ) -> int:
         """Подсчитать сохранённые слова за неделю."""
         result = await session.execute(
-            select(func.count(SavedWord.id))
-            .where(
+            select(func.count(SavedWord.id)).where(
                 and_(
                     SavedWord.user_id == user_id,
                     func.date(SavedWord.created_at) >= week_start,
-                    func.date(SavedWord.created_at) <= week_end
+                    func.date(SavedWord.created_at) <= week_end,
                 )
             )
         )
@@ -443,24 +440,32 @@ class ChallengeService:
 
         # Проверяем ежедневный челлендж
         if daily.get("completed") and not daily.get("reward_claimed"):
-            completed_challenges.append({
-                "type": "daily",
-                "challenge": daily,
-            })
+            completed_challenges.append(
+                {
+                    "type": "daily",
+                    "challenge": daily,
+                }
+            )
 
         # Проверяем еженедельные челленджи
         for weekly in weekly_list:
             if weekly.get("completed") and not weekly.get("reward_claimed"):
-                completed_challenges.append({
-                    "type": "weekly",
-                    "challenge": weekly,
-                })
+                completed_challenges.append(
+                    {
+                        "type": "weekly",
+                        "challenge": weekly,
+                    }
+                )
 
-        return {
-            "completed_challenges": completed_challenges,
-            "daily_progress": daily,
-            "weekly_progress": weekly_list,
-        } if completed_challenges else None
+        return (
+            {
+                "completed_challenges": completed_challenges,
+                "daily_progress": daily,
+                "weekly_progress": weekly_list,
+            }
+            if completed_challenges
+            else None
+        )
 
     async def claim_challenge_reward(
         self,
@@ -483,12 +488,11 @@ class ChallengeService:
         """
         # Получаем запись прогресса
         result = await session.execute(
-            select(UserChallenge)
-            .where(
+            select(UserChallenge).where(
                 and_(
                     UserChallenge.user_id == user_id,
                     UserChallenge.challenge_id == challenge_id,
-                    UserChallenge.date == challenge_date
+                    UserChallenge.date == challenge_date,
                 )
             )
         )
@@ -528,7 +532,7 @@ class ChallengeService:
                 user_id=user_id,
                 total=challenge.reward_stars,
                 available=challenge.reward_stars,
-                lifetime=challenge.reward_stars
+                lifetime=challenge.reward_stars,
             )
             session.add(stars)
 

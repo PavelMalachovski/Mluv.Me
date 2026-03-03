@@ -22,9 +22,7 @@ class CorrectionEngine:
         """Инициализация движка исправлений."""
         self.logger = logger.bind(service="correction_engine")
 
-    def calculate_words_stats(
-        self, text: str, mistakes_count: int
-    ) -> dict[str, int]:
+    def calculate_words_stats(self, text: str, mistakes_count: int) -> dict[str, int]:
         """
         Рассчитать статистику по словам.
 
@@ -215,9 +213,7 @@ class CorrectionEngine:
         score = self.normalize_correctness_score(response["correctness_score"])
 
         # Форматируем для отображения (чешский UI с переводами)
-        formatted_mistakes = self.format_mistakes_for_display(
-            mistakes, native_language
-        )
+        formatted_mistakes = self.format_mistakes_for_display(mistakes, native_language)
         formatted_suggestion = self.format_suggestion(
             response["suggestion"], native_language
         )
@@ -248,5 +244,3 @@ class CorrectionEngine:
             "words_correct": words_stats["words_correct"],
             "mistakes_count": mistakes_count,
         }
-
-

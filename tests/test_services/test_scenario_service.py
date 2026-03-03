@@ -40,7 +40,9 @@ class TestScenarioServiceAsync:
         service = ScenarioService.__new__(ScenarioService)
         service._active_scenarios = {}
         service.logger = __import__("structlog").get_logger()
-        with patch.object(redis_client, "get", new_callable=AsyncMock, return_value=None):
+        with patch.object(
+            redis_client, "get", new_callable=AsyncMock, return_value=None
+        ):
             result = await service.get_active_scenario(user_id=42)
         assert result is None
 
@@ -53,8 +55,14 @@ class TestScenarioServiceAsync:
         service.logger = __import__("structlog").get_logger()
         state = {"scenario_id": "v_hospode", "current_step": 2}
 
-        with patch.object(redis_client, "get", new_callable=AsyncMock, return_value=state), \
-             patch.object(redis_client, "delete", new_callable=AsyncMock, return_value=True):
+        with (
+            patch.object(
+                redis_client, "get", new_callable=AsyncMock, return_value=state
+            ),
+            patch.object(
+                redis_client, "delete", new_callable=AsyncMock, return_value=True
+            ),
+        ):
             result = await service.cancel_scenario(user_id=42)
         assert result is True
 
@@ -65,6 +73,8 @@ class TestScenarioServiceAsync:
         service = ScenarioService.__new__(ScenarioService)
         service._active_scenarios = {}
         service.logger = __import__("structlog").get_logger()
-        with patch.object(redis_client, "get", new_callable=AsyncMock, return_value=None):
+        with patch.object(
+            redis_client, "get", new_callable=AsyncMock, return_value=None
+        ):
             result = await service.cancel_scenario(user_id=42)
         assert result is False

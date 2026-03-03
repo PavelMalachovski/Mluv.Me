@@ -215,7 +215,10 @@ Odpověz ve formátu JSON:
             response_text = await self.openai_client.generate_chat_completion(
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"Původní příběh:\n{story}\n\nPokračuj..."},
+                    {
+                        "role": "user",
+                        "content": f"Původní příběh:\n{story}\n\nPokračuj...",
+                    },
                 ],
                 json_mode=True,
                 model="gpt-4o-mini",

@@ -43,28 +43,60 @@ class AdaptiveModelSelector:
     """
 
     # Паттерны для быстрого ответа (gpt-4o-mini)
-    SIMPLE_GREETINGS = frozenset([
-        "ahoj", "čau", "nazdar", "dobrý den", "dobré ráno", "dobrý večer",
-        "dobrou noc", "pa pa", "na shledanou", "měj se", "sbohem",
-    ])
+    SIMPLE_GREETINGS = frozenset(
+        [
+            "ahoj",
+            "čau",
+            "nazdar",
+            "dobrý den",
+            "dobré ráno",
+            "dobrý večer",
+            "dobrou noc",
+            "pa pa",
+            "na shledanou",
+            "měj se",
+            "sbohem",
+        ]
+    )
 
-    SIMPLE_ANSWERS = frozenset([
-        "ano", "ne", "možná", "nevím", "rozumím", "nerozumím",
-        "dobře", "ok", "fajn", "super", "výborně", "skvěle",
-    ])
+    SIMPLE_ANSWERS = frozenset(
+        [
+            "ano",
+            "ne",
+            "možná",
+            "nevím",
+            "rozumím",
+            "nerozumím",
+            "dobře",
+            "ok",
+            "fajn",
+            "super",
+            "výborně",
+            "skvěle",
+        ]
+    )
 
-    POLITE_PHRASES = frozenset([
-        "děkuji", "děkuju", "díky", "mockrát děkuji",
-        "prosím", "není zač", "rádo se stalo",
-        "promiň", "promiňte", "omlouvám se", "pardon",
-    ])
+    POLITE_PHRASES = frozenset(
+        [
+            "děkuji",
+            "děkuju",
+            "díky",
+            "mockrát děkuji",
+            "prosím",
+            "není zač",
+            "rádo se stalo",
+            "promiň",
+            "promiňte",
+            "omlouvám se",
+            "pardon",
+        ]
+    )
 
     # Regex для обнаружения сложных вопросов
     COMPLEX_QUESTION_PATTERNS = [
         re.compile(r"\?.*\?", re.IGNORECASE),  # Два и более вопроса
         re.compile(
-            r"\b(proč|jak|kdy|kde|kdo)\b.*\b(proč|jak|kdy|kde|kdo)\b",
-            re.IGNORECASE
+            r"\b(proč|jak|kdy|kde|kdo)\b.*\b(proč|jak|kdy|kde|kdo)\b", re.IGNORECASE
         ),  # Множественные вопросительные слова
     ]
 

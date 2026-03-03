@@ -159,8 +159,8 @@ class OpenAIClient:
 
         async def _transcribe():
             # Whisper API требует file-like объект с атрибутом name
-            if not hasattr(audio_file, 'name'):
-                audio_file.name = 'audio.ogg'
+            if not hasattr(audio_file, "name"):
+                audio_file.name = "audio.ogg"
 
             transcript = await self.client.audio.transcriptions.create(
                 model=self.settings.whisper_model,
@@ -211,9 +211,9 @@ class OpenAIClient:
         )
 
         # Конвертация в bytes для возможности retry
-        if hasattr(audio_file, 'read'):
+        if hasattr(audio_file, "read"):
             audio_bytes = audio_file.read()
-            if hasattr(audio_file, 'seek'):
+            if hasattr(audio_file, "seek"):
                 audio_file.seek(0)
         else:
             audio_bytes = audio_file
@@ -221,7 +221,7 @@ class OpenAIClient:
         async def _transcribe():
             # Создаём новый BytesIO для каждой попытки (важно для retry!)
             file_obj = io.BytesIO(audio_bytes)
-            file_obj.name = 'audio.ogg'
+            file_obj.name = "audio.ogg"
 
             # Без параметра language - Whisper автоматически определит язык
             # verbose_json возвращает дополнительную информацию включая язык
@@ -232,15 +232,15 @@ class OpenAIClient:
             )
 
             # Обработка разных форматов ответа
-            if hasattr(transcript, 'text'):
+            if hasattr(transcript, "text"):
                 text = transcript.text
-                language = getattr(transcript, 'language', 'cs') or 'cs'
+                language = getattr(transcript, "language", "cs") or "cs"
             elif isinstance(transcript, dict):
-                text = transcript.get('text', '')
-                language = transcript.get('language', 'cs') or 'cs'
+                text = transcript.get("text", "")
+                language = transcript.get("language", "cs") or "cs"
             else:
                 text = str(transcript)
-                language = 'cs'
+                language = "cs"
 
             return {
                 "text": text,
@@ -435,10 +435,10 @@ class OpenAIClient:
         # Улучшенный маппинг скоростей для лучшего восприятия
         # Диапазон OpenAI TTS: 0.25 - 4.0, где 1.0 = нормальная скорость
         speed_map = {
-            "very_slow": 0.6,   # Очень медленно для начинающих (было 0.75)
-            "slow": 0.8,        # Медленно (было 0.9)
-            "normal": 1.0,      # Нормальная скорость
-            "native": 1.2,      # Быстрее для продвинутых (было 1.1)
+            "very_slow": 0.6,  # Очень медленно для начинающих (было 0.75)
+            "slow": 0.8,  # Медленно (было 0.9)
+            "normal": 1.0,  # Нормальная скорость
+            "native": 1.2,  # Быстрее для продвинутых (было 1.1)
         }
         return speed_map.get(speed_setting, 1.0)
 
@@ -592,10 +592,11 @@ Shrnutí:"""
 
             return {
                 "role": "system",
-                "content": f"Předchozí konverzace (shrnutí): {summary}"
+                "content": f"Předchozí konverzace (shrnutí): {summary}",
             }
         except Exception as e:
             self.logger.error("summarization_failed", error=str(e))
-            return {"role": "system", "content": "Předchozí konverzace nebyla dostupná."}
-
-
+            return {
+                "role": "system",
+                "content": "Předchozí konverzace nebyla dostupná.",
+            }

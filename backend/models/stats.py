@@ -33,7 +33,7 @@ class DailyStats(Base):
 
     __tablename__ = "daily_stats"
     __table_args__ = (
-        UniqueConstraint('user_id', 'date', name='uq_daily_stats_user_date'),
+        UniqueConstraint("user_id", "date", name="uq_daily_stats_user_date"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -43,49 +43,34 @@ class DailyStats(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        comment="User ID"
+        comment="User ID",
     )
 
     date: Mapped[date] = mapped_column(
-        Date,
-        nullable=False,
-        index=True,
-        comment="Дата статистики"
+        Date, nullable=False, index=True, comment="Дата статистики"
     )
 
     messages_count: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Количество сообщений за день"
+        Integer, nullable=False, default=0, comment="Количество сообщений за день"
     )
 
     words_said: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Слов сказано за день"
+        Integer, nullable=False, default=0, comment="Слов сказано за день"
     )
 
     correct_percent: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Средний процент правильных за день"
+        Integer, nullable=False, default=0, comment="Средний процент правильных за день"
     )
 
     streak_day: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="День streak подряд"
+        Integer, nullable=False, default=0, comment="День streak подряд"
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
-        comment="Дата создания записи"
+        comment="Дата создания записи",
     )
 
     # Relationship
@@ -120,28 +105,25 @@ class Stars(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         unique=True,
-        comment="User ID"
+        comment="User ID",
     )
 
     total: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
         default=0,
-        comment="Всего заработано звезд (текущий баланс)"
+        comment="Всего заработано звезд (текущий баланс)",
     )
 
     available: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Доступно для обмена"
+        Integer, nullable=False, default=0, comment="Доступно для обмена"
     )
 
     lifetime: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
         default=0,
-        comment="За все время (не может уменьшаться)"
+        comment="За все время (не может уменьшаться)",
     )
 
     updated_at: Mapped[datetime] = mapped_column(
@@ -149,7 +131,7 @@ class Stars(Base):
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),
-        comment="Дата последнего обновления"
+        comment="Дата последнего обновления",
     )
 
     # Relationship
@@ -160,6 +142,3 @@ class Stars(Base):
             f"<Stars(id={self.id}, user_id={self.user_id}, "
             f"total={self.total}, lifetime={self.lifetime})>"
         )
-
-
-

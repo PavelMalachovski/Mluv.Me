@@ -187,7 +187,6 @@ async def reset_confirmed(callback: CallbackQuery, api_client: APIClient) -> Non
     await callback.answer()
 
 
-
 @router.callback_query(F.data == "reset:full")
 async def reset_full_requested(callback: CallbackQuery, api_client: APIClient) -> None:
     """
@@ -200,7 +199,7 @@ async def reset_full_requested(callback: CallbackQuery, api_client: APIClient) -
     await callback.message.edit_text(
         get_text("reset_full_confirm"),
         reply_markup=get_reset_full_confirm_keyboard(),
-        parse_mode="HTML"
+        parse_mode="HTML",
     )
     await callback.answer()
 
@@ -268,7 +267,9 @@ async def command_clear_history(message: Message, api_client: APIClient) -> None
 
 
 @router.callback_query(F.data == "clear_history:yes")
-async def clear_history_confirmed(callback: CallbackQuery, api_client: APIClient) -> None:
+async def clear_history_confirmed(
+    callback: CallbackQuery, api_client: APIClient
+) -> None:
     """
     Подтверждение удаления истории переписки.
 
@@ -288,8 +289,7 @@ async def clear_history_confirmed(callback: CallbackQuery, api_client: APIClient
 
     if success:
         await callback.message.edit_text(
-            get_text("clear_history_done"),
-            parse_mode="HTML"
+            get_text("clear_history_done"), parse_mode="HTML"
         )
         logger.info("conversation_history_cleared", telegram_id=telegram_id)
     else:
@@ -299,7 +299,9 @@ async def clear_history_confirmed(callback: CallbackQuery, api_client: APIClient
 
 
 @router.callback_query(F.data == "clear_history:no")
-async def clear_history_cancelled(callback: CallbackQuery, api_client: APIClient) -> None:
+async def clear_history_cancelled(
+    callback: CallbackQuery, api_client: APIClient
+) -> None:
     """
     Отмена удаления истории переписки.
 
@@ -399,7 +401,9 @@ async def command_native(message: Message, api_client: APIClient) -> None:
 
 
 @router.callback_query(F.data.startswith("native:"))
-async def native_language_changed(callback: CallbackQuery, api_client: APIClient) -> None:
+async def native_language_changed(
+    callback: CallbackQuery, api_client: APIClient
+) -> None:
     """
     Изменение родного языка для объяснений.
 
@@ -425,11 +429,17 @@ async def native_language_changed(callback: CallbackQuery, api_client: APIClient
     )
     await callback.answer()
 
-    logger.info("native_language_changed", telegram_id=telegram_id, native_language=native_language)
+    logger.info(
+        "native_language_changed",
+        telegram_id=telegram_id,
+        native_language=native_language,
+    )
 
 
 @router.callback_query(F.data.startswith("native_page:"))
-async def native_language_page_changed(callback: CallbackQuery, api_client: APIClient) -> None:
+async def native_language_page_changed(
+    callback: CallbackQuery, api_client: APIClient
+) -> None:
     """
     Пагинация списка родных языков в настройках.
     """
@@ -546,7 +556,9 @@ async def corrections_changed(callback: CallbackQuery, api_client: APIClient) ->
     corrections_level = callback.data.split(":")[1]
 
     # Обновляем настройки
-    await api_client.update_user_settings(telegram_id, corrections_level=corrections_level)
+    await api_client.update_user_settings(
+        telegram_id, corrections_level=corrections_level
+    )
 
     await callback.message.edit_text(
         get_text("settings_corrections_changed", level=corrections_level),
@@ -554,9 +566,7 @@ async def corrections_changed(callback: CallbackQuery, api_client: APIClient) ->
     )
     await callback.answer()
 
-    logger.info(
-        "corrections_changed", telegram_id=telegram_id, level=corrections_level
-    )
+    logger.info("corrections_changed", telegram_id=telegram_id, level=corrections_level)
 
 
 @router.message(Command("style"))
@@ -637,15 +647,15 @@ async def command_translate(message: Message, api_client: APIClient) -> None:
     # Получаем слово из команды
     command_parts = message.text.split(maxsplit=1)
     if len(command_parts) < 2:
-        await message.answer(
-            get_text("translate_usage"), parse_mode="HTML"
-        )
+        await message.answer(get_text("translate_usage"), parse_mode="HTML")
         return
 
     word = command_parts[1].strip()
 
     # Переводим слово на родной язык пользователя
-    translation_result = await api_client.translate_word(word, target_language=native_language)
+    translation_result = await api_client.translate_word(
+        word, target_language=native_language
+    )
 
     if not translation_result:
         await message.answer(get_text("translate_error"))

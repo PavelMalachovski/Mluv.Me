@@ -56,7 +56,7 @@ class TestCorrectionEngine:
         result = engine.format_mistakes_for_display(mistakes, "ru")
 
         # assert "Отлично" in result # Old string
-        assert "Výborně" in result # New string (CS)
+        assert "Výborně" in result  # New string (CS)
         assert "žádné chyby" in result.lower()
 
     def test_format_mistakes_for_display_with_mistakes_ru(self, engine):
@@ -72,7 +72,7 @@ class TestCorrectionEngine:
         result = engine.format_mistakes_for_display(mistakes, "ru")
 
         # assert "Исправления" in result # Old string
-        assert "Opravy" in result # New string (CS)
+        assert "Opravy" in result  # New string (CS)
         assert "já jsem dobře" in result
         assert "mám se dobře" in result
         assert "В чешском" in result
@@ -90,7 +90,7 @@ class TestCorrectionEngine:
         result = engine.format_mistakes_for_display(mistakes, "uk")
 
         # assert "Виправлення" in result # Old string
-        assert "Opravy" in result # New string (CS)
+        assert "Opravy" in result  # New string (CS)
         assert "chybný text" in result
         assert "správný text" in result
 
@@ -105,7 +105,7 @@ class TestCorrectionEngine:
         result = engine.format_suggestion(suggestion, "ru")
 
         # assert "Совет от Хонзика" in result  # Old string
-        assert "Tip" in result # New string from localization
+        assert "Tip" in result  # New string from localization
         assert suggestion in result
 
     def test_format_suggestion_with_text_uk(self, engine):
@@ -114,7 +114,7 @@ class TestCorrectionEngine:
         result = engine.format_suggestion(suggestion, "uk")
 
         # assert "Порада від Хонзіка" in result # Old string
-        assert "Tip" in result # New string from localization
+        assert "Tip" in result  # New string from localization
         assert suggestion in result
 
     def test_validate_honzik_response_valid(self, engine):
@@ -191,5 +191,3 @@ class TestCorrectionEngine:
 
         with pytest.raises(ValueError):
             engine.process_honzik_response(response, "test", "ru")
-
-

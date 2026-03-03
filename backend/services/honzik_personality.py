@@ -25,8 +25,8 @@ logger = structlog.get_logger(__name__)
 
 # --- TTS voice mapping per character ---
 CHARACTER_TTS_VOICE = {
-    "honzik": "alloy",      # male, friendly
-    "novakova": "nova",      # female, professional
+    "honzik": "alloy",  # male, friendly
+    "novakova": "nova",  # female, professional
 }
 
 
@@ -77,26 +77,65 @@ class HonzikPersonality:
 
         # --- Native language name (expanded for all supported languages) ---
         native_lang_names = {
-            "ru": "ruština", "uk": "ukrajinština", "pl": "polština", "sk": "slovenčina",
-            "vi": "vietnamština", "hi": "hindština", "en": "angličtina", "de": "němčina",
-            "fr": "francouzština", "es": "španělština", "it": "italština", "pt": "portugalština",
-            "zh": "čínština", "ja": "japonština", "ko": "korejština", "tr": "turečtina",
-            "ar": "arabština", "bg": "bulharština", "hr": "chorvatština", "ro": "rumunština",
-            "hu": "maďarština", "nl": "holandština", "sv": "švédština", "da": "dánština",
-            "fi": "finština", "no": "norština", "el": "řečtina", "he": "hebrejština",
-            "th": "thajština", "id": "indonéština", "tl": "tagalogština", "mn": "mongolština",
-            "ka": "gruzínština", "az": "ázerbájdžánština", "kk": "kazaština",
-            "uz": "uzbečtina", "ky": "kyrgyzština", "tg": "tádžičtina",
-            "be": "běloruština", "sr": "srbština", "sl": "slovinština",
-            "lt": "litevština", "lv": "lotyšština", "et": "estonština",
-            "sq": "albánština", "hy": "arménština", "fa": "perština",
-            "bn": "bengálština", "pa": "paňdžábština", "my": "myanmarština",
-            "lo": "laoština", "sw": "svahilština",
+            "ru": "ruština",
+            "uk": "ukrajinština",
+            "pl": "polština",
+            "sk": "slovenčina",
+            "vi": "vietnamština",
+            "hi": "hindština",
+            "en": "angličtina",
+            "de": "němčina",
+            "fr": "francouzština",
+            "es": "španělština",
+            "it": "italština",
+            "pt": "portugalština",
+            "zh": "čínština",
+            "ja": "japonština",
+            "ko": "korejština",
+            "tr": "turečtina",
+            "ar": "arabština",
+            "bg": "bulharština",
+            "hr": "chorvatština",
+            "ro": "rumunština",
+            "hu": "maďarština",
+            "nl": "holandština",
+            "sv": "švédština",
+            "da": "dánština",
+            "fi": "finština",
+            "no": "norština",
+            "el": "řečtina",
+            "he": "hebrejština",
+            "th": "thajština",
+            "id": "indonéština",
+            "tl": "tagalogština",
+            "mn": "mongolština",
+            "ka": "gruzínština",
+            "az": "ázerbájdžánština",
+            "kk": "kazaština",
+            "uz": "uzbečtina",
+            "ky": "kyrgyzština",
+            "tg": "tádžičtina",
+            "be": "běloruština",
+            "sr": "srbština",
+            "sl": "slovinština",
+            "lt": "litevština",
+            "lv": "lotyšština",
+            "et": "estonština",
+            "sq": "albánština",
+            "hy": "arménština",
+            "fa": "perština",
+            "bn": "bengálština",
+            "pa": "paňdžábština",
+            "my": "myanmarština",
+            "lo": "laoština",
+            "sw": "svahilština",
         }
         native_lang_name = native_lang_names.get(native_language, native_language)
 
         level_desc = level_descriptions.get(level, level_descriptions["beginner"])
-        corrections_desc = corrections_descriptions.get(corrections_level, corrections_descriptions["balanced"])
+        corrections_desc = corrections_descriptions.get(
+            corrections_level, corrections_descriptions["balanced"]
+        )
 
         # --- Grammar rules block (only for detailed corrections) ---
         grammar_block = ""
@@ -109,13 +148,15 @@ class HonzikPersonality:
 
         # --- CHARACTER-SPECIFIC PERSONALITY ---
         if character == "novakova":
-            return _build_novakova_prompt(style, level_desc, corrections_desc, native_lang_name, grammar_block)
+            return _build_novakova_prompt(
+                style, level_desc, corrections_desc, native_lang_name, grammar_block
+            )
         else:
-            return _build_honzik_prompt(style, level_desc, corrections_desc, native_lang_name, grammar_block)
+            return _build_honzik_prompt(
+                style, level_desc, corrections_desc, native_lang_name, grammar_block
+            )
 
-    def _format_conversation_history(
-        self, history: list[dict[str, str]]
-    ) -> str:
+    def _format_conversation_history(self, history: list[dict[str, str]]) -> str:
         if not history:
             return ""
 
@@ -285,7 +326,9 @@ class HonzikPersonality:
             return response_data
 
         except json.JSONDecodeError as e:
-            self.logger.error("json_decode_error", error=str(e), response_text=response_text[:200])
+            self.logger.error(
+                "json_decode_error", error=str(e), response_text=response_text[:200]
+            )
             raise ValueError(f"Invalid JSON response from GPT: {e}")
 
         except Exception as e:
@@ -325,6 +368,7 @@ class HonzikPersonality:
 # ======================================================================
 # Character prompt builders (module-level for clarity)
 # ======================================================================
+
 
 def _build_honzik_prompt(
     style: str,
@@ -439,5 +483,3 @@ ODPOVĚZTE POUZE PLATNÝM JSON:
   "suggestion": "krátký tip ve spisovné češtině",
   "new_words": [{{{{"word_czech":"české slovo","translation":"překlad do {native_lang_name}","context_sentence":"příkladová věta"}}}}]
 }}}}"""
-
-

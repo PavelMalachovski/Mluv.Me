@@ -81,6 +81,7 @@ GAMES = {
 @dataclass
 class ActiveGame:
     """Active game for a user."""
+
     game_id: str
     game_type: GameType
     user_id: int
@@ -342,7 +343,9 @@ class GameService:
 
         elif game_type == "spravna_veta":
             answer = exercise["answer"]
-            words = answer.replace("?", " ?").replace(".", " .").replace(",", " ,").split()
+            words = (
+                answer.replace("?", " ?").replace(".", " .").replace(",", " ,").split()
+            )
             shuffled = words.copy()
             for _ in range(10):
                 random.shuffle(shuffled)
@@ -374,21 +377,60 @@ class GameService:
 
         if game_type == "pravopisny_duel":
             questions = [
-                {"q": "b_dlit — doplň i nebo y:", "a": "y", "opts": ["i", "y"], "h": "bydlit = to live"},
-                {"q": "ch_ba — doplň i nebo y:", "a": "y", "opts": ["i", "y"], "h": "chyba = mistake"},
-                {"q": "č_slo — doplň í nebo ý:", "a": "í", "opts": ["í", "ý"], "h": "číslo = number"},
-                {"q": "v_běhnout — doplň i nebo y:", "a": "y", "opts": ["i", "y"], "h": "Předpona vy-"},
-                {"q": "jaz_k — doplň i nebo y:", "a": "y", "opts": ["i", "y"], "h": "jazyk = language"},
-                {"q": "_kol — ú nebo ů?", "a": "ú", "opts": ["ú", "ů"], "h": "Na začátku slova: ú"},
-                {"q": "d_m — ú nebo ů?", "a": "ů", "opts": ["ú", "ů"], "h": "Uprostřed slova: ů"},
+                {
+                    "q": "b_dlit — doplň i nebo y:",
+                    "a": "y",
+                    "opts": ["i", "y"],
+                    "h": "bydlit = to live",
+                },
+                {
+                    "q": "ch_ba — doplň i nebo y:",
+                    "a": "y",
+                    "opts": ["i", "y"],
+                    "h": "chyba = mistake",
+                },
+                {
+                    "q": "č_slo — doplň í nebo ý:",
+                    "a": "í",
+                    "opts": ["í", "ý"],
+                    "h": "číslo = number",
+                },
+                {
+                    "q": "v_běhnout — doplň i nebo y:",
+                    "a": "y",
+                    "opts": ["i", "y"],
+                    "h": "Předpona vy-",
+                },
+                {
+                    "q": "jaz_k — doplň i nebo y:",
+                    "a": "y",
+                    "opts": ["i", "y"],
+                    "h": "jazyk = language",
+                },
+                {
+                    "q": "_kol — ú nebo ů?",
+                    "a": "ú",
+                    "opts": ["ú", "ů"],
+                    "h": "Na začátku slova: ú",
+                },
+                {
+                    "q": "d_m — ú nebo ů?",
+                    "a": "ů",
+                    "opts": ["ú", "ů"],
+                    "h": "Uprostřed slova: ů",
+                },
             ]
             q = random.choice(questions)
-            return {
-                "type": "choose",
-                "prompt": q["q"],
-                "options": q["opts"],
-                "hint": q.get("h", ""),
-            }, q["a"], None
+            return (
+                {
+                    "type": "choose",
+                    "prompt": q["q"],
+                    "options": q["opts"],
+                    "hint": q.get("h", ""),
+                },
+                q["a"],
+                None,
+            )
 
         elif game_type == "doplnka":
             questions = [
@@ -399,55 +441,107 @@ class GameService:
                 {"q": "Oni ___ doma. (být)", "a": "jsou", "h": "3. os. pl."},
             ]
             q = random.choice(questions)
-            return {
-                "type": "fill_gap",
-                "prompt": q["q"],
-                "hint": q.get("h", ""),
-            }, q["a"], None
+            return (
+                {
+                    "type": "fill_gap",
+                    "prompt": q["q"],
+                    "hint": q.get("h", ""),
+                },
+                q["a"],
+                None,
+            )
 
         elif game_type == "kde_je_chyba":
             questions = [
-                {"q": "Která věta je správně?", "a": "bydlím v Praze", "opts": ["bidlím v Praze", "bydlím v Praze"]},
-                {"q": "Která věta je správně?", "a": "jsou doma", "opts": ["sou doma", "jsou doma"]},
-                {"q": "Která věta je správně?", "a": "Myslím, že ano.", "opts": ["Myslím že ano.", "Myslím, že ano."]},
+                {
+                    "q": "Která věta je správně?",
+                    "a": "bydlím v Praze",
+                    "opts": ["bidlím v Praze", "bydlím v Praze"],
+                },
+                {
+                    "q": "Která věta je správně?",
+                    "a": "jsou doma",
+                    "opts": ["sou doma", "jsou doma"],
+                },
+                {
+                    "q": "Která věta je správně?",
+                    "a": "Myslím, že ano.",
+                    "opts": ["Myslím že ano.", "Myslím, že ano."],
+                },
             ]
             q = random.choice(questions)
-            return {
-                "type": "find_error",
-                "prompt": q["q"],
-                "options": q["opts"],
-                "hint": "",
-            }, q["a"], None
+            return (
+                {
+                    "type": "find_error",
+                    "prompt": q["q"],
+                    "options": q["opts"],
+                    "hint": "",
+                },
+                q["a"],
+                None,
+            )
 
         elif game_type == "spravna_veta":
             sentences = [
-                {"q": "jsem / Včera / v kině / byl", "a": "Včera jsem byl v kině.", "h": "Příklonky na 2. místo"},
-                {"q": "auto / Koupil / si / jsem", "a": "Koupil jsem si auto.", "h": "jsem = příklonka"},
-                {"q": "česky / se / Učím", "a": "Učím se česky.", "h": "se = příklonka"},
+                {
+                    "q": "jsem / Včera / v kině / byl",
+                    "a": "Včera jsem byl v kině.",
+                    "h": "Příklonky na 2. místo",
+                },
+                {
+                    "q": "auto / Koupil / si / jsem",
+                    "a": "Koupil jsem si auto.",
+                    "h": "jsem = příklonka",
+                },
+                {
+                    "q": "česky / se / Učím",
+                    "a": "Učím se česky.",
+                    "h": "se = příklonka",
+                },
             ]
             s = random.choice(sentences)
             words = s["q"].split(" / ")
             random.shuffle(words)
-            return {
-                "type": "order",
-                "prompt": "Seřaď slova do věty:",
-                "words": words,
-                "hint": s.get("h", ""),
-            }, s["a"], None
+            return (
+                {
+                    "type": "order",
+                    "prompt": "Seřaď slova do věty:",
+                    "words": words,
+                    "hint": s.get("h", ""),
+                },
+                s["a"],
+                None,
+            )
 
         elif game_type == "carky_prosim":
             sentences = [
-                {"q": "Myslím že máš pravdu.", "a": "Myslím, že máš pravdu.", "h": "Čárka před že"},
-                {"q": "Řekl že přijde zítra.", "a": "Řekl, že přijde zítra.", "h": "Čárka před že"},
-                {"q": "Je hezky ale studené.", "a": "Je hezky, ale studené.", "h": "Čárka před ale"},
+                {
+                    "q": "Myslím že máš pravdu.",
+                    "a": "Myslím, že máš pravdu.",
+                    "h": "Čárka před že",
+                },
+                {
+                    "q": "Řekl že přijde zítra.",
+                    "a": "Řekl, že přijde zítra.",
+                    "h": "Čárka před že",
+                },
+                {
+                    "q": "Je hezky ale studené.",
+                    "a": "Je hezky, ale studené.",
+                    "h": "Čárka před ale",
+                },
             ]
             s = random.choice(sentences)
-            return {
-                "type": "transform",
-                "prompt": s["q"],
-                "sentence": s["q"],
-                "hint": s.get("h", ""),
-            }, s["a"], None
+            return (
+                {
+                    "type": "transform",
+                    "prompt": s["q"],
+                    "sentence": s["q"],
+                    "hint": s.get("h", ""),
+                },
+                s["a"],
+                None,
+            )
 
         return {"type": "unknown", "prompt": ""}, "", None
 
@@ -464,12 +558,18 @@ class GameService:
         if game_type in ("spravna_veta", "carky_prosim"):
             # Normalize punctuation spacing
             user_clean = (
-                user_norm.replace(" ?", "?").replace(" .", ".")
-                .replace(" ,", ",").replace("  ", " ").strip()
+                user_norm.replace(" ?", "?")
+                .replace(" .", ".")
+                .replace(" ,", ",")
+                .replace("  ", " ")
+                .strip()
             )
             correct_clean = (
-                correct_norm.replace(" ?", "?").replace(" .", ".")
-                .replace(" ,", ",").replace("  ", " ").strip()
+                correct_norm.replace(" ?", "?")
+                .replace(" .", ".")
+                .replace(" ,", ",")
+                .replace("  ", " ")
+                .strip()
             )
             return user_clean.lower() == correct_clean.lower()
 
@@ -498,12 +598,14 @@ class GameService:
             if time_seconds < existing["best_time"]:
                 existing["best_time"] = time_seconds
         else:
-            leaderboard.append({
-                "user_id": user_id,
-                "total_stars": stars,
-                "games_played": 1,
-                "best_time": time_seconds,
-            })
+            leaderboard.append(
+                {
+                    "user_id": user_id,
+                    "total_stars": stars,
+                    "games_played": 1,
+                    "best_time": time_seconds,
+                }
+            )
 
     def cancel_game(self, user_id: int) -> bool:
         """Cancel active game."""

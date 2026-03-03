@@ -151,9 +151,7 @@ class PronunciationAnalyzer:
         overall_score = self._calculate_pronunciation_score(transcript, found_sounds)
 
         # Генерация рекомендаций
-        recommendations = self._generate_recommendations(
-            found_sounds, native_language
-        )
+        recommendations = self._generate_recommendations(found_sounds, native_language)
 
         # Слова для практики
         practice_words = self._get_practice_words(found_sounds)
@@ -263,11 +261,13 @@ class PronunciationAnalyzer:
             list: Список рекомендаций
         """
         if not found_sounds:
-            return [{
-                "type": "success",
-                "message_cs": "Výborně! Tvoje výslovnost je skvělá! 🎉",
-                "message_native": self._get_native_success_message(native_language),
-            }]
+            return [
+                {
+                    "type": "success",
+                    "message_cs": "Výborně! Tvoje výslovnost je skvělá! 🎉",
+                    "message_native": self._get_native_success_message(native_language),
+                }
+            ]
 
         recommendations = []
 
@@ -276,23 +276,27 @@ class PronunciationAnalyzer:
 
         # Сортируем по сложности
         sorted_sounds = sorted(
-            unique_sounds,
-            key=lambda s: DIFFICULT_SOUNDS[s]["difficulty"],
-            reverse=True
+            unique_sounds, key=lambda s: DIFFICULT_SOUNDS[s]["difficulty"], reverse=True
         )
 
         # Берём топ-3 самых сложных
         for sound in sorted_sounds[:3]:
             info = DIFFICULT_SOUNDS[sound]
-            tip_key = f"tip_{native_language}" if f"tip_{native_language}" in info else "tip_ru"
+            tip_key = (
+                f"tip_{native_language}"
+                if f"tip_{native_language}" in info
+                else "tip_ru"
+            )
 
-            recommendations.append({
-                "sound": sound,
-                "type": "practice",
-                "message_cs": info["tip_cs"],
-                "message_native": info.get(tip_key, info["tip_ru"]),
-                "practice_words": info["practice_words"][:5],
-            })
+            recommendations.append(
+                {
+                    "sound": sound,
+                    "type": "practice",
+                    "message_cs": info["tip_cs"],
+                    "message_native": info.get(tip_key, info["tip_ru"]),
+                    "practice_words": info["practice_words"][:5],
+                }
+            )
 
         return recommendations
 
@@ -317,11 +321,13 @@ class PronunciationAnalyzer:
             for word in info["practice_words"][:3]:
                 if word not in seen_words:
                     seen_words.add(word)
-                    practice.append({
-                        "word": word,
-                        "target_sound": sound,
-                        "difficulty": info["difficulty"],
-                    })
+                    practice.append(
+                        {
+                            "word": word,
+                            "target_sound": sound,
+                            "difficulty": info["difficulty"],
+                        }
+                    )
 
         # Сортируем по сложности
         practice.sort(key=lambda x: x["difficulty"])
@@ -338,7 +344,9 @@ class PronunciationAnalyzer:
         }
         return messages.get(native_language, messages["ru"])
 
-    def get_sound_info(self, sound: str, native_language: NativeLanguage = "ru") -> dict | None:
+    def get_sound_info(
+        self, sound: str, native_language: NativeLanguage = "ru"
+    ) -> dict | None:
         """
         Получить информацию о конкретном звуке.
 
@@ -356,14 +364,18 @@ class PronunciationAnalyzer:
         return {
             "sound": sound,
             "description_cs": info["description_cs"],
-            "description_native": info.get(f"description_{native_language}", info.get("description_ru", "")),
+            "description_native": info.get(
+                f"description_{native_language}", info.get("description_ru", "")
+            ),
             "tip_cs": info["tip_cs"],
             "tip_native": info.get(f"tip_{native_language}", info.get("tip_ru", "")),
             "difficulty": info["difficulty"],
             "practice_words": info["practice_words"],
         }
 
-    def get_all_difficult_sounds(self, native_language: NativeLanguage = "ru") -> list[dict]:
+    def get_all_difficult_sounds(
+        self, native_language: NativeLanguage = "ru"
+    ) -> list[dict]:
         """
         Получить список всех сложных звуков.
 
@@ -375,13 +387,17 @@ class PronunciationAnalyzer:
         """
         sounds = []
         for sound, info in DIFFICULT_SOUNDS.items():
-            sounds.append({
-                "sound": sound,
-                "description_cs": info["description_cs"],
-                "description_native": info.get(f"description_{native_language}", info.get("description_ru", "")),
-                "difficulty": info["difficulty"],
-                "practice_words_count": len(info["practice_words"]),
-            })
+            sounds.append(
+                {
+                    "sound": sound,
+                    "description_cs": info["description_cs"],
+                    "description_native": info.get(
+                        f"description_{native_language}", info.get("description_ru", "")
+                    ),
+                    "difficulty": info["difficulty"],
+                    "practice_words_count": len(info["practice_words"]),
+                }
+            )
 
         # Сортируем по сложности
         sounds.sort(key=lambda x: x["difficulty"], reverse=True)

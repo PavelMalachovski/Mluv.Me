@@ -38,6 +38,7 @@ def format_datetime(dt) -> str:
 
 class TelegramAuthData(BaseModel):
     """Telegram Login Widget auth data"""
+
     id: int
     first_name: str
     username: Optional[str] = None
@@ -125,21 +126,14 @@ def verify_telegram_auth(auth_data: TelegramAuthData) -> bool:
     check_dict = auth_data.dict(exclude={"hash"})
     check_dict = {k: v for k, v in check_dict.items() if v is not None}
 
-    check_string = "\n".join([
-        f"{k}={v}"
-        for k, v in sorted(check_dict.items())
-    ])
+    check_string = "\n".join([f"{k}={v}" for k, v in sorted(check_dict.items())])
 
     # Create secret key from bot token
-    secret_key = hashlib.sha256(
-        settings.telegram_bot_token.encode()
-    ).digest()
+    secret_key = hashlib.sha256(settings.telegram_bot_token.encode()).digest()
 
     # Calculate expected hash
     expected_hash = hmac.new(
-        secret_key,
-        check_string.encode(),
-        hashlib.sha256
+        secret_key, check_string.encode(), hashlib.sha256
     ).hexdigest()
 
     return expected_hash == auth_data.hash
@@ -149,7 +143,7 @@ def verify_telegram_auth(auth_data: TelegramAuthData) -> bool:
 async def telegram_web_auth(
     auth_data: TelegramAuthData,
     response: Response,
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(get_session),
 ):
     """
     Verify Telegram Login Widget data and create session
@@ -182,7 +176,7 @@ async def telegram_web_auth(
             first_name=auth_data.first_name,
             username=auth_data.username,
             native_language="ru",  # Default language
-            level="beginner"  # Default level
+            level="beginner",  # Default level
         )
         await db.commit()
 
@@ -194,13 +188,10 @@ async def telegram_web_auth(
         httponly=True,
         secure=True,
         samesite="lax",
-        max_age=30 * 24 * 60 * 60  # 30 days
+        max_age=30 * 24 * 60 * 60,  # 30 days
     )
 
-    return {
-        "user": _user_response_dict(user),
-        "access_token": session_token
-    }
+    return {"user": _user_response_dict(user), "access_token": session_token}
 
 
 @router.post("/logout")
@@ -233,6 +224,7 @@ async def get_current_user(
 
 class WebAppAuthData(BaseModel):
     """Telegram Web App auth data"""
+
     initData: str
 
 
@@ -255,26 +247,22 @@ def validate_telegram_web_app_data(init_data: str, bot_token: str) -> dict:
         parsed_data = dict(parse_qsl(init_data, keep_blank_values=True))
 
         # Extract hash
-        hash_value = parsed_data.pop('hash', None)
+        hash_value = parsed_data.pop("hash", None)
         if not hash_value:
             raise ValueError("No hash in init_data")
 
         # Create data-check-string
         data_check_arr = [f"{k}={v}" for k, v in sorted(parsed_data.items())]
-        data_check_string = '\n'.join(data_check_arr)
+        data_check_string = "\n".join(data_check_arr)
 
         # Create secret key
         secret_key = hmac.new(
-            key=b"WebAppData",
-            msg=bot_token.encode(),
-            digestmod=hashlib.sha256
+            key=b"WebAppData", msg=bot_token.encode(), digestmod=hashlib.sha256
         ).digest()
 
         # Calculate hash
         calculated_hash = hmac.new(
-            key=secret_key,
-            msg=data_check_string.encode(),
-            digestmod=hashlib.sha256
+            key=secret_key, msg=data_check_string.encode(), digestmod=hashlib.sha256
         ).hexdigest()
 
         # Verify hash
@@ -282,8 +270,8 @@ def validate_telegram_web_app_data(init_data: str, bot_token: str) -> dict:
             raise ValueError("Invalid hash")
 
         # Check auth_date (not older than 1 hour)
-        if 'auth_date' in parsed_data:
-            auth_date = int(parsed_data['auth_date'])
+        if "auth_date" in parsed_data:
+            auth_date = int(parsed_data["auth_date"])
             current_time = int(datetime.now(timezone.utc).timestamp())
             if current_time - auth_date > 3600:  # 1 hour
                 raise ValueError("Auth data expired")
@@ -296,8 +284,7 @@ def validate_telegram_web_app_data(init_data: str, bot_token: str) -> dict:
 
 @router.post("/webapp")
 async def authenticate_web_app(
-    auth_data: WebAppAuthData,
-    db: AsyncSession = Depends(get_session)
+    auth_data: WebAppAuthData, db: AsyncSession = Depends(get_session)
 ):
     """
     Authenticate user via Telegram Web App
@@ -310,18 +297,18 @@ async def authenticate_web_app(
     try:
         # Validate initData
         validated_data = validate_telegram_web_app_data(
-            auth_data.initData,
-            settings.telegram_bot_token
+            auth_data.initData, settings.telegram_bot_token
         )
 
         # Extract user data
         import json
-        user_data = json.loads(validated_data.get('user', '{}'))
 
-        if not user_data or 'id' not in user_data:
+        user_data = json.loads(validated_data.get("user", "{}"))
+
+        if not user_data or "id" not in user_data:
             raise HTTPException(status_code=400, detail="No user data in initData")
 
-        telegram_id = user_data['id']
+        telegram_id = user_data["id"]
 
         # Get or create user
         user_repo = UserRepository(db)
@@ -330,7 +317,7 @@ async def authenticate_web_app(
         if not user:
             raise HTTPException(
                 status_code=404,
-                detail="User not found. Please start the bot first with /start"
+                detail="User not found. Please start the bot first with /start",
             )
 
         # Create session in Redis
@@ -339,7 +326,7 @@ async def authenticate_web_app(
         return {
             "success": True,
             "token": session_token,
-            "user": _user_response_dict(user)
+            "user": _user_response_dict(user),
         }
 
     except ValueError as e:

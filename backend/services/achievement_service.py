@@ -36,6 +36,7 @@ logger = structlog.get_logger()
 
 class AchievementCategory(str, Enum):
     """Achievement categories."""
+
     STREAK = "streak"
     MESSAGES = "messages"
     VOCABULARY = "vocabulary"
@@ -51,29 +52,99 @@ class AchievementCategory(str, Enum):
 # Ключевые слова для определения тем
 TOPIC_KEYWORDS = {
     "beer": [
-        "pivo", "plzeň", "hospoda", "pijte", "čepované", "ležák",
-        "pivovar", "pilsner", "kozel", "budvar", "staropramen",
-        "točené", "půllitr", "koruna", "piva", "pivko"
+        "pivo",
+        "plzeň",
+        "hospoda",
+        "pijte",
+        "čepované",
+        "ležák",
+        "pivovar",
+        "pilsner",
+        "kozel",
+        "budvar",
+        "staropramen",
+        "točené",
+        "půllitr",
+        "koruna",
+        "piva",
+        "pivko",
     ],
     "food": [
-        "jídlo", "knedlík", "svíčková", "guláš", "restaurace", "jíst",
-        "kuchyně", "večeře", "oběd", "snídaně", "bramborák", "smažený",
-        "řízek", "vepřo", "knedlo", "zelo", "trdelník", "párek", "klobása"
+        "jídlo",
+        "knedlík",
+        "svíčková",
+        "guláš",
+        "restaurace",
+        "jíst",
+        "kuchyně",
+        "večeře",
+        "oběd",
+        "snídaně",
+        "bramborák",
+        "smažený",
+        "řízek",
+        "vepřo",
+        "knedlo",
+        "zelo",
+        "trdelník",
+        "párek",
+        "klobása",
     ],
     "history": [
-        "praha", "hrad", "karel", "historie", "středověk", "most",
-        "kostel", "katedrála", "zámek", "palác", "revoluce", "válka",
-        "husité", "masaryk", "václav", "republika", "království"
+        "praha",
+        "hrad",
+        "karel",
+        "historie",
+        "středověk",
+        "most",
+        "kostel",
+        "katedrála",
+        "zámek",
+        "palác",
+        "revoluce",
+        "válka",
+        "husité",
+        "masaryk",
+        "václav",
+        "republika",
+        "království",
     ],
     "travel": [
-        "letadlo", "vlak", "cestování", "dovolená", "turista", "hotel",
-        "letiště", "nádraží", "metro", "tramvaj", "autobus", "taxi",
-        "cesta", "výlet", "průvodce", "mapa", "památky"
+        "letadlo",
+        "vlak",
+        "cestování",
+        "dovolená",
+        "turista",
+        "hotel",
+        "letiště",
+        "nádraží",
+        "metro",
+        "tramvaj",
+        "autobus",
+        "taxi",
+        "cesta",
+        "výlet",
+        "průvodce",
+        "mapa",
+        "památky",
     ],
     "culture": [
-        "divadlo", "kino", "film", "hudba", "koncert", "muzeum",
-        "galerie", "výstava", "kniha", "literatura", "umění",
-        "smetana", "dvořák", "kafka", "čapek", "havel"
+        "divadlo",
+        "kino",
+        "film",
+        "hudba",
+        "koncert",
+        "muzeum",
+        "galerie",
+        "výstava",
+        "kniha",
+        "literatura",
+        "umění",
+        "smetana",
+        "dvořák",
+        "kafka",
+        "čapek",
+        "havel",
     ],
 }
 
@@ -109,8 +180,9 @@ class AchievementService:
             .limit(1)
         )
         messages_q = session.execute(
-            select(func.count(Message.id))
-            .where(and_(Message.user_id == user.id, Message.role == "user"))
+            select(func.count(Message.id)).where(
+                and_(Message.user_id == user.id, Message.role == "user")
+            )
         )
         stars_q = session.execute(
             select(Stars.lifetime).where(Stars.user_id == user.id)
@@ -119,25 +191,29 @@ class AchievementService:
             select(func.count(SavedWord.id)).where(SavedWord.user_id == user.id)
         )
         mastered_q = session.execute(
-            select(func.count(SavedWord.id))
-            .where(and_(SavedWord.user_id == user.id, SavedWord.interval_days >= 90))
+            select(func.count(SavedWord.id)).where(
+                and_(SavedWord.user_id == user.id, SavedWord.interval_days >= 90)
+            )
         )
         challenges_q = session.execute(
-            select(func.count(UserChallenge.id))
-            .where(and_(UserChallenge.user_id == user.id, UserChallenge.completed))
+            select(func.count(UserChallenge.id)).where(
+                and_(UserChallenge.user_id == user.id, UserChallenge.completed)
+            )
         )
         no_mistakes_q = session.execute(
-            select(func.count(Message.id))
-            .where(and_(
-                Message.user_id == user.id,
-                Message.role == "user",
-                Message.correctness_score == 100,
-            ))
+            select(func.count(Message.id)).where(
+                and_(
+                    Message.user_id == user.id,
+                    Message.role == "user",
+                    Message.correctness_score == 100,
+                )
+            )
         )
         # Topics (all at once)
         topics_q = session.execute(
-            select(TopicMessageCount.topic, TopicMessageCount.count)
-            .where(TopicMessageCount.user_id == user.id)
+            select(TopicMessageCount.topic, TopicMessageCount.count).where(
+                TopicMessageCount.user_id == user.id
+            )
         )
 
         # Await all
@@ -238,15 +314,17 @@ class AchievementService:
                 if achievement.stars_reward > 0:
                     await self._award_stars(session, user.id, achievement.stars_reward)
 
-                newly_unlocked.append({
-                    "id": achievement.id,
-                    "code": achievement.code,
-                    "name": achievement.name,
-                    "description": achievement.description,
-                    "icon": achievement.icon,
-                    "category": achievement.category,
-                    "stars_reward": achievement.stars_reward,
-                })
+                newly_unlocked.append(
+                    {
+                        "id": achievement.id,
+                        "code": achievement.code,
+                        "name": achievement.name,
+                        "description": achievement.description,
+                        "icon": achievement.icon,
+                        "category": achievement.category,
+                        "stars_reward": achievement.stars_reward,
+                    }
+                )
 
                 logger.info(
                     "achievement_unlocked",
@@ -268,10 +346,22 @@ class AchievementService:
         """Resolve pre-fetched value for an achievement based on its category/code."""
         category = achievement.category
 
-        if category in ("streak", "messages", "stars", "vocabulary", "review", "challenge", "time"):
+        if category in (
+            "streak",
+            "messages",
+            "stars",
+            "vocabulary",
+            "review",
+            "challenge",
+            "time",
+        ):
             return prefetched.get(category, 0)
         elif category == "thematic":
-            topic = achievement.code.replace("_master", "").replace("_buff", "").replace("_lover", "")
+            topic = (
+                achievement.code.replace("_master", "")
+                .replace("_buff", "")
+                .replace("_lover", "")
+            )
             return prefetched.get(f"thematic:{topic}", 0)
         elif category == "quality":
             if "perfectionist" in achievement.code:
@@ -303,11 +393,17 @@ class AchievementService:
             return await self._get_mastered_words_count(session, user.id)
         elif category == "thematic":
             # Для тематических достижений используем код для определения темы
-            topic = achievement.code.replace("_master", "").replace("_buff", "").replace("_lover", "")
+            topic = (
+                achievement.code.replace("_master", "")
+                .replace("_buff", "")
+                .replace("_lover", "")
+            )
             return await self._get_topic_count(session, user.id, topic)
         elif category == "time":
             # Временные достижения проверяются отдельно
-            return await self._get_time_achievement_count(session, user.id, achievement.code)
+            return await self._get_time_achievement_count(
+                session, user.id, achievement.code
+            )
         elif category == "quality":
             return await self._get_quality_value(session, user.id, achievement.code)
         elif category == "challenge":
@@ -329,8 +425,9 @@ class AchievementService:
     async def _get_total_messages(self, session: AsyncSession, user_id: int) -> int:
         """Получить общее количество сообщений пользователя."""
         result = await session.execute(
-            select(func.count(Message.id))
-            .where(and_(Message.user_id == user_id, Message.role == "user"))
+            select(func.count(Message.id)).where(
+                and_(Message.user_id == user_id, Message.role == "user")
+            )
         )
         return result.scalar() or 0
 
@@ -348,15 +445,13 @@ class AchievementService:
         )
         return result.scalar() or 0
 
-    async def _get_mastered_words_count(self, session: AsyncSession, user_id: int) -> int:
+    async def _get_mastered_words_count(
+        self, session: AsyncSession, user_id: int
+    ) -> int:
         """Получить количество освоенных слов (interval >= 90 дней)."""
         result = await session.execute(
-            select(func.count(SavedWord.id))
-            .where(
-                and_(
-                    SavedWord.user_id == user_id,
-                    SavedWord.interval_days >= 90
-                )
+            select(func.count(SavedWord.id)).where(
+                and_(SavedWord.user_id == user_id, SavedWord.interval_days >= 90)
             )
         )
         return result.scalar() or 0
@@ -366,11 +461,10 @@ class AchievementService:
     ) -> int:
         """Получить количество сообщений по теме."""
         result = await session.execute(
-            select(TopicMessageCount.count)
-            .where(
+            select(TopicMessageCount.count).where(
                 and_(
                     TopicMessageCount.user_id == user_id,
-                    TopicMessageCount.topic == topic
+                    TopicMessageCount.topic == topic,
                 )
             )
         )
@@ -413,7 +507,7 @@ class AchievementService:
                 and_(
                     Message.user_id == user_id,
                     Message.role == "user",
-                    Message.correctness_score.isnot(None)
+                    Message.correctness_score.isnot(None),
                 )
             )
             .order_by(Message.created_at.desc())
@@ -433,12 +527,11 @@ class AchievementService:
     async def _get_no_mistakes_count(self, session: AsyncSession, user_id: int) -> int:
         """Получить количество сообщений без ошибок (100%)."""
         result = await session.execute(
-            select(func.count(Message.id))
-            .where(
+            select(func.count(Message.id)).where(
                 and_(
                     Message.user_id == user_id,
                     Message.role == "user",
-                    Message.correctness_score == 100
+                    Message.correctness_score == 100,
                 )
             )
         )
@@ -449,12 +542,8 @@ class AchievementService:
     ) -> int:
         """Получить количество выполненных челленджей."""
         result = await session.execute(
-            select(func.count(UserChallenge.id))
-            .where(
-                and_(
-                    UserChallenge.user_id == user_id,
-                    UserChallenge.completed
-                )
+            select(func.count(UserChallenge.id)).where(
+                and_(UserChallenge.user_id == user_id, UserChallenge.completed)
             )
         )
         return result.scalar() or 0
@@ -535,11 +624,10 @@ class AchievementService:
     ) -> int:
         """Увеличить счётчик сообщений по теме."""
         result = await session.execute(
-            select(TopicMessageCount)
-            .where(
+            select(TopicMessageCount).where(
                 and_(
                     TopicMessageCount.user_id == user_id,
-                    TopicMessageCount.topic == topic
+                    TopicMessageCount.topic == topic,
                 )
             )
         )
@@ -549,11 +637,7 @@ class AchievementService:
             topic_count.count += 1
             topic_count.updated_at = datetime.now(timezone.utc)
         else:
-            topic_count = TopicMessageCount(
-                user_id=user_id,
-                topic=topic,
-                count=1
-            )
+            topic_count = TopicMessageCount(user_id=user_id, topic=topic, count=1)
             session.add(topic_count)
 
         await session.flush()
@@ -651,11 +735,10 @@ class AchievementService:
 
         # Проверяем, не разблокировано ли уже
         existing = await session.execute(
-            select(UserAchievement)
-            .where(
+            select(UserAchievement).where(
                 and_(
                     UserAchievement.user_id == user.id,
-                    UserAchievement.achievement_id == achievement.id
+                    UserAchievement.achievement_id == achievement.id,
                 )
             )
         )
@@ -695,12 +778,11 @@ class AchievementService:
     async def _get_early_bird_count(self, session: AsyncSession, user_id: int) -> int:
         """Получить количество сообщений до 7 утра."""
         result = await session.execute(
-            select(func.count(Message.id))
-            .where(
+            select(func.count(Message.id)).where(
                 and_(
                     Message.user_id == user_id,
                     Message.role == "user",
-                    func.extract('hour', Message.created_at) < 7
+                    func.extract("hour", Message.created_at) < 7,
                 )
             )
         )
@@ -709,12 +791,11 @@ class AchievementService:
     async def _get_night_owl_count(self, session: AsyncSession, user_id: int) -> int:
         """Получить количество сообщений после 23:00."""
         result = await session.execute(
-            select(func.count(Message.id))
-            .where(
+            select(func.count(Message.id)).where(
                 and_(
                     Message.user_id == user_id,
                     Message.role == "user",
-                    func.extract('hour', Message.created_at) >= 23
+                    func.extract("hour", Message.created_at) >= 23,
                 )
             )
         )
@@ -738,33 +819,29 @@ class AchievementService:
 
         # Проверяем, есть ли сообщения в оба дня
         sat_result = await session.execute(
-            select(func.count(Message.id))
-            .where(
+            select(func.count(Message.id)).where(
                 and_(
                     Message.user_id == user.id,
                     Message.role == "user",
-                    func.date(Message.created_at) == saturday
+                    func.date(Message.created_at) == saturday,
                 )
             )
         )
         sat_count = sat_result.scalar() or 0
 
         sun_result = await session.execute(
-            select(func.count(Message.id))
-            .where(
+            select(func.count(Message.id)).where(
                 and_(
                     Message.user_id == user.id,
                     Message.role == "user",
-                    func.date(Message.created_at) == sunday
+                    func.date(Message.created_at) == sunday,
                 )
             )
         )
         sun_count = sun_result.scalar() or 0
 
         if sat_count > 0 and sun_count > 0:
-            return await self._unlock_time_achievement(
-                session, user, "weekend_warrior"
-            )
+            return await self._unlock_time_achievement(session, user, "weekend_warrior")
 
         return None
 
@@ -807,14 +884,15 @@ class AchievementService:
             Список достижений со статусом
         """
         # Получаем все достижения
-        all_query = select(Achievement).order_by(Achievement.category, Achievement.threshold)
+        all_query = select(Achievement).order_by(
+            Achievement.category, Achievement.threshold
+        )
         all_result = await session.execute(all_query)
         all_achievements = all_result.scalars().all()
 
         # Получаем разблокированные достижения пользователя
-        unlocked_query = (
-            select(UserAchievement)
-            .where(UserAchievement.user_id == user_id)
+        unlocked_query = select(UserAchievement).where(
+            UserAchievement.user_id == user_id
         )
         unlocked_result = await session.execute(unlocked_query)
         unlocked_map = {ua.achievement_id: ua for ua in unlocked_result.scalars().all()}
@@ -827,19 +905,23 @@ class AchievementService:
             if achievement.is_hidden and not unlocked:
                 continue
 
-            achievements.append({
-                "id": achievement.id,
-                "code": achievement.code,
-                "name": achievement.name,
-                "description": achievement.description,
-                "icon": achievement.icon,
-                "category": achievement.category,
-                "threshold": achievement.threshold,
-                "stars_reward": achievement.stars_reward,
-                "is_unlocked": unlocked is not None,
-                "unlocked_at": unlocked.unlocked_at.isoformat() if unlocked else None,
-                "progress": unlocked.progress if unlocked else 0,
-            })
+            achievements.append(
+                {
+                    "id": achievement.id,
+                    "code": achievement.code,
+                    "name": achievement.name,
+                    "description": achievement.description,
+                    "icon": achievement.icon,
+                    "category": achievement.category,
+                    "threshold": achievement.threshold,
+                    "stars_reward": achievement.stars_reward,
+                    "is_unlocked": unlocked is not None,
+                    "unlocked_at": unlocked.unlocked_at.isoformat()
+                    if unlocked
+                    else None,
+                    "progress": unlocked.progress if unlocked else 0,
+                }
+            )
 
         return achievements
 
@@ -863,7 +945,9 @@ class AchievementService:
         total_result = await session.execute(total_query)
         total_count = len(list(total_result.scalars().all()))
 
-        unlocked_query = select(UserAchievement).where(UserAchievement.user_id == user.id)
+        unlocked_query = select(UserAchievement).where(
+            UserAchievement.user_id == user.id
+        )
         unlocked_result = await session.execute(unlocked_query)
         unlocked_count = len(list(unlocked_result.scalars().all()))
 
@@ -879,15 +963,16 @@ class AchievementService:
 
         # Получаем счётчики по темам
         topic_result = await session.execute(
-            select(TopicMessageCount)
-            .where(TopicMessageCount.user_id == user.id)
+            select(TopicMessageCount).where(TopicMessageCount.user_id == user.id)
         )
         topic_counts = {tc.topic: tc.count for tc in topic_result.scalars().all()}
 
         return {
             "total_achievements": total_count,
             "unlocked_achievements": unlocked_count,
-            "completion_percent": round((unlocked_count / total_count) * 100) if total_count > 0 else 0,
+            "completion_percent": round((unlocked_count / total_count) * 100)
+            if total_count > 0
+            else 0,
             "category_progress": categories,
             "topic_progress": topic_counts,
         }

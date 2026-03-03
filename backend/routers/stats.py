@@ -84,7 +84,9 @@ async def get_stats_summary(
         ).seconds
 
         await redis_client.set(cache_key, result, ttl=seconds_until_midnight)
-        logger.debug("stats_cached", telegram_id=telegram_id, ttl=seconds_until_midnight)
+        logger.debug(
+            "stats_cached", telegram_id=telegram_id, ttl=seconds_until_midnight
+        )
 
     return result
 
@@ -139,13 +141,15 @@ async def get_daily_range(
         if date_str in stats_by_date:
             result.append(stats_by_date[date_str])
         else:
-            result.append({
-                "date": date_str,
-                "messages_count": 0,
-                "words_said": 0,
-                "correct_percent": 0,
-                "streak_day": 0,
-            })
+            result.append(
+                {
+                    "date": date_str,
+                    "messages_count": 0,
+                    "words_said": 0,
+                    "correct_percent": 0,
+                    "streak_day": 0,
+                }
+            )
         current += timedelta(days=1)
 
     return result

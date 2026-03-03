@@ -8,8 +8,10 @@ from pydantic import BaseModel, Field
 
 # ============ Challenge Schemas ============
 
+
 class ChallengeBase(BaseModel):
     """Base challenge schema."""
+
     id: int
     code: str
     type: str
@@ -27,6 +29,7 @@ class ChallengeBase(BaseModel):
 
 class ChallengeResponse(ChallengeBase):
     """Challenge response with progress."""
+
     progress: int
     completed: bool
     reward_claimed: bool
@@ -36,6 +39,7 @@ class ChallengeResponse(ChallengeBase):
 
 class AllChallengesResponse(BaseModel):
     """Response for all challenges endpoint."""
+
     daily_challenge: dict[str, Any]
     weekly_challenges: list[dict[str, Any]]
     stats: dict[str, Any]
@@ -44,12 +48,14 @@ class AllChallengesResponse(BaseModel):
 
 class ClaimRewardRequest(BaseModel):
     """Request to claim a challenge reward."""
+
     challenge_id: int
     challenge_date: str = Field(..., description="Date in YYYY-MM-DD format")
 
 
 class ClaimRewardResponse(BaseModel):
     """Response for claiming a reward."""
+
     success: bool
     stars_earned: int | None = None
     total_stars: int | None = None
@@ -59,8 +65,10 @@ class ClaimRewardResponse(BaseModel):
 
 # ============ Achievement Schemas ============
 
+
 class AchievementBase(BaseModel):
     """Base achievement schema."""
+
     id: int
     code: str
     name: str
@@ -76,6 +84,7 @@ class AchievementBase(BaseModel):
 
 class AchievementResponse(AchievementBase):
     """Achievement response with unlock status."""
+
     is_unlocked: bool
     unlocked_at: str | None = None
     progress: int
@@ -83,6 +92,7 @@ class AchievementResponse(AchievementBase):
 
 class AchievementProgressResponse(BaseModel):
     """Achievement progress summary."""
+
     total_achievements: int
     unlocked_achievements: int
     completion_percent: int
@@ -92,6 +102,7 @@ class AchievementProgressResponse(BaseModel):
 
 class NewlyUnlockedAchievement(BaseModel):
     """Newly unlocked achievement notification."""
+
     id: int
     code: str
     name: str
@@ -103,8 +114,10 @@ class NewlyUnlockedAchievement(BaseModel):
 
 # ============ Leaderboard Schemas ============
 
+
 class LeaderboardEntry(BaseModel):
     """A single leaderboard entry."""
+
     rank: int
     telegram_id: int
     first_name: str
@@ -119,6 +132,7 @@ class LeaderboardEntry(BaseModel):
 
 class LeaderboardResponse(BaseModel):
     """Leaderboard response."""
+
     metric: str
     period: str
     leaderboard: list[LeaderboardEntry]
@@ -128,6 +142,7 @@ class LeaderboardResponse(BaseModel):
 
 class MyRankResponse(BaseModel):
     """User's rank response."""
+
     metric: str
     rank: int | None
     score: int | float | None

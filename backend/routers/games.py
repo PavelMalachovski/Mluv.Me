@@ -20,8 +20,10 @@ router = APIRouter(prefix="/api/v1/games", tags=["games"])
 
 # === Pydantic Models ===
 
+
 class GameInfo(BaseModel):
     """Game information."""
+
     id: str
     name_cs: str
     description_cs: str
@@ -31,12 +33,14 @@ class GameInfo(BaseModel):
 
 class StartGameRequest(BaseModel):
     """Start game request."""
+
     user_id: int = Field(..., description="User ID")
     level: str = Field("beginner", description="beginner|intermediate|advanced|native")
 
 
 class StartGameResponse(BaseModel):
     """Start game response."""
+
     game_id: str
     game_type: str
     name_cs: str
@@ -47,12 +51,14 @@ class StartGameResponse(BaseModel):
 
 class SubmitAnswerRequest(BaseModel):
     """Submit answer request."""
+
     user_id: int = Field(..., description="User ID")
     answer: str = Field(..., description="User answer")
 
 
 class SubmitAnswerResponse(BaseModel):
     """Game result."""
+
     is_correct: bool
     correct_answer: str
     user_answer: str
@@ -65,6 +71,7 @@ class SubmitAnswerResponse(BaseModel):
 
 class LeaderboardEntry(BaseModel):
     """Leaderboard entry."""
+
     user_id: int
     total_stars: int
     games_played: int
@@ -72,6 +79,7 @@ class LeaderboardEntry(BaseModel):
 
 
 # === Dependencies ===
+
 
 async def get_game_service(
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -83,6 +91,7 @@ async def get_game_service(
 
 
 # === Endpoints ===
+
 
 @router.get("/available", response_model=list[GameInfo])
 async def get_available_games(

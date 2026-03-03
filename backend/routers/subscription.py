@@ -33,17 +33,20 @@ class SubscriptionInfoResponse(BaseModel):
 
 class CheckoutRequest(BaseModel):
     """Stripe checkout request (placeholder)."""
+
     plan: str = "pro"
     period: str = "monthly"  # monthly | yearly
 
 
 class CheckoutResponse(BaseModel):
     """Stripe checkout response (placeholder)."""
+
     url: str
     session_id: str
 
 
 # ──────────────────── GET /subscription ────────────────────
+
 
 @router.get("", response_model=SubscriptionInfoResponse)
 async def get_subscription_info(
@@ -57,6 +60,7 @@ async def get_subscription_info(
 
 
 # ──────────────────── POST /subscription/checkout (STUB) ────
+
 
 @router.post("/checkout", response_model=CheckoutResponse)
 async def create_checkout_session(
@@ -79,6 +83,7 @@ async def create_checkout_session(
 
 # ──────────────────── POST /subscription/webhook (STUB) ─────
 
+
 @router.post("/webhook")
 async def stripe_webhook():
     """
@@ -95,6 +100,7 @@ async def stripe_webhook():
 
 # ──────────────────── POST /subscription/activate-stars ───────
 # Called by the Telegram bot after successful Stars payment.
+
 
 class ActivateStarsRequest(BaseModel):
     telegram_id: int
@@ -136,6 +142,7 @@ async def activate_stars(
 
 # ──────────────────── GET /subscription/quota/{telegram_id} ──
 # Called by the bot to check if user can send a message.
+
 
 @router.get("/quota/{telegram_id}")
 async def check_quota_by_telegram_id(

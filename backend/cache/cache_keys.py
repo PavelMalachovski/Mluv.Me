@@ -56,4 +56,3 @@ class CacheKeys:
     def daily_stats(user_id: int, date: str) -> str:
         """Build cache key for daily stats."""
         return CacheKeys.DAILY_STATS.format(user_id=user_id, date=date)
-

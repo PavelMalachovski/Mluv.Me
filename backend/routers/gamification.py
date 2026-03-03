@@ -24,6 +24,7 @@ router = APIRouter(prefix="/api/v1/gamification", tags=["gamification"])
 
 # ============ Dependencies ============
 
+
 async def get_user_by_telegram_id(
     telegram_id: int = Query(..., description="Telegram user ID"),
     db: AsyncSession = Depends(get_session),
@@ -41,8 +42,10 @@ async def get_user_by_telegram_id(
 
 # ============ Pydantic Schemas ============
 
+
 class ChallengeResponse(BaseModel):
     """Response schema for a challenge."""
+
     id: int
     code: str
     type: str
@@ -59,6 +62,7 @@ class ChallengeResponse(BaseModel):
 
 class AllChallengesResponse(BaseModel):
     """Response schema for all challenges."""
+
     daily_challenge: dict[str, Any]
     weekly_challenges: list[dict[str, Any]]
     stats: dict[str, Any]
@@ -67,12 +71,14 @@ class AllChallengesResponse(BaseModel):
 
 class ClaimRewardRequest(BaseModel):
     """Request to claim a challenge reward."""
+
     challenge_id: int
     challenge_date: str = Field(description="Date in YYYY-MM-DD format")
 
 
 class ClaimRewardResponse(BaseModel):
     """Response for claiming a reward."""
+
     success: bool
     stars_earned: int | None = None
     total_stars: int | None = None
@@ -82,6 +88,7 @@ class ClaimRewardResponse(BaseModel):
 
 class AchievementResponse(BaseModel):
     """Response schema for an achievement."""
+
     id: int
     code: str
     name: str
@@ -97,6 +104,7 @@ class AchievementResponse(BaseModel):
 
 class AchievementProgressResponse(BaseModel):
     """Response schema for achievement progress summary."""
+
     total_achievements: int
     unlocked_achievements: int
     completion_percent: int
@@ -106,6 +114,7 @@ class AchievementProgressResponse(BaseModel):
 
 class LeaderboardEntry(BaseModel):
     """A single leaderboard entry."""
+
     rank: int
     telegram_id: int
     first_name: str
@@ -120,6 +129,7 @@ class LeaderboardEntry(BaseModel):
 
 class LeaderboardResponse(BaseModel):
     """Response schema for leaderboard."""
+
     metric: str
     period: str
     leaderboard: list[LeaderboardEntry]
@@ -128,6 +138,7 @@ class LeaderboardResponse(BaseModel):
 
 
 # ============ Dependencies ============
+
 
 async def get_achievement_service() -> AchievementService:
     """Get AchievementService instance."""
@@ -140,6 +151,7 @@ async def get_challenge_service() -> ChallengeService:
 
 
 # ============ Challenge Endpoints ============
+
 
 @router.get("/challenges", response_model=AllChallengesResponse)
 async def get_all_challenges(
@@ -237,7 +249,9 @@ async def claim_challenge_reward(
     try:
         challenge_date = date.fromisoformat(request.challenge_date)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+        raise HTTPException(
+            status_code=400, detail="Invalid date format. Use YYYY-MM-DD"
+        )
 
     result = await challenge_service.claim_challenge_reward(
         session=db,
@@ -260,6 +274,7 @@ async def claim_challenge_reward(
 
 
 # ============ Achievement Endpoints ============
+
 
 @router.get("/achievements", response_model=list[AchievementResponse])
 async def get_user_achievements(
@@ -316,7 +331,7 @@ async def get_achievements_by_category(
     if category not in valid_categories:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid category. Valid categories: {', '.join(valid_categories)}"
+            detail=f"Invalid category. Valid categories: {', '.join(valid_categories)}",
         )
 
     all_achievements = await achievement_service.get_user_achievements(
@@ -332,11 +347,14 @@ async def get_achievements_by_category(
 
 # ============ Leaderboard Endpoints ============
 
+
 @router.get("/leaderboard/weekly", response_model=LeaderboardResponse)
 async def get_weekly_leaderboard(
     metric: str = Query("stars", description="Metric: stars, streak, messages"),
     limit: int = Query(10, ge=1, le=100, description="Number of entries"),
-    telegram_id: int | None = Query(None, description="Current user's Telegram ID for rank"),
+    telegram_id: int | None = Query(
+        None, description="Current user's Telegram ID for rank"
+    ),
     db: AsyncSession = Depends(get_session),
 ):
     """
@@ -348,7 +366,7 @@ async def get_weekly_leaderboard(
     if metric not in valid_metrics:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid metric. Valid metrics: {', '.join(valid_metrics)}"
+            detail=f"Invalid metric. Valid metrics: {', '.join(valid_metrics)}",
         )
 
     # Map metric names to DB column names
@@ -376,18 +394,20 @@ async def get_weekly_leaderboard(
     for i, entry in enumerate(leaderboard_data, 1):
         # Check privacy setting - hide names for users who opted out
         # (This is handled in the query itself, but we double-check here)
-        leaderboard.append(LeaderboardEntry(
-            rank=i,
-            telegram_id=entry.get("telegram_id", 0),
-            first_name=entry.get("first_name", "User"),
-            username=entry.get("username"),
-            level=entry.get("level", "beginner"),
-            score=entry.get("score", 0),
-            total_messages=entry.get("total_messages", 0),
-            total_stars=entry.get("total_stars", 0),
-            max_streak=entry.get("max_streak", 0),
-            avg_correctness=entry.get("avg_correctness"),
-        ))
+        leaderboard.append(
+            LeaderboardEntry(
+                rank=i,
+                telegram_id=entry.get("telegram_id", 0),
+                first_name=entry.get("first_name", "User"),
+                username=entry.get("username"),
+                level=entry.get("level", "beginner"),
+                score=entry.get("score", 0),
+                total_messages=entry.get("total_messages", 0),
+                total_stars=entry.get("total_stars", 0),
+                max_streak=entry.get("max_streak", 0),
+                avg_correctness=entry.get("avg_correctness"),
+            )
+        )
 
     # Get current user's rank if telegram_id provided
     user_rank = None
@@ -402,7 +422,9 @@ async def get_weekly_leaderboard(
         # If not in top N, try to find their rank
         if user_rank is None:
             try:
-                user_data = await mv_repo.get_user_stats_summary(telegram_id=telegram_id)
+                user_data = await mv_repo.get_user_stats_summary(
+                    telegram_id=telegram_id
+                )
                 if user_data:
                     user_score = user_data[0].get(metric_map[metric], 0)
             except Exception:
@@ -453,7 +475,7 @@ async def get_my_rank(
     if metric not in valid_metrics:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid metric. Valid metrics: {', '.join(valid_metrics)}"
+            detail=f"Invalid metric. Valid metrics: {', '.join(valid_metrics)}",
         )
 
     metric_map = {

@@ -39,7 +39,9 @@ class TestRedisClientOperations:
         mock_redis.get = AsyncMock(return_value='{"key": "val"}')
         client.redis = mock_redis
 
-        with patch.object(type(client), "is_enabled", new_callable=PropertyMock, return_value=True):
+        with patch.object(
+            type(client), "is_enabled", new_callable=PropertyMock, return_value=True
+        ):
             result = await client.get("test:key")
         assert result == {"key": "val"}
 
@@ -50,7 +52,9 @@ class TestRedisClientOperations:
         mock_redis.get = AsyncMock(return_value=None)
         client.redis = mock_redis
 
-        with patch.object(type(client), "is_enabled", new_callable=PropertyMock, return_value=True):
+        with patch.object(
+            type(client), "is_enabled", new_callable=PropertyMock, return_value=True
+        ):
             result = await client.get("nonexistent")
         assert result is None
 
@@ -61,8 +65,12 @@ class TestRedisClientOperations:
         mock_redis.setex = AsyncMock(return_value=True)
         client.redis = mock_redis
 
-        with patch.object(type(client), "is_enabled", new_callable=PropertyMock, return_value=True), \
-             patch("backend.cache.redis_client.get_settings") as mock_settings:
+        with (
+            patch.object(
+                type(client), "is_enabled", new_callable=PropertyMock, return_value=True
+            ),
+            patch("backend.cache.redis_client.get_settings") as mock_settings,
+        ):
             mock_settings.return_value.redis_cache_ttl_default = 300
             result = await client.set("test:key", {"hello": "world"}, ttl=300)
         assert result is True
@@ -84,7 +92,9 @@ class TestRedisClientOperations:
         mock_binary_redis.get = AsyncMock(return_value=b"\x89PNG")
         client._binary_redis = mock_binary_redis
 
-        with patch.object(type(client), "is_enabled", new_callable=PropertyMock, return_value=True):
+        with patch.object(
+            type(client), "is_enabled", new_callable=PropertyMock, return_value=True
+        ):
             result = await client.get_bytes("tts:test")
         assert result == b"\x89PNG"
         mock_binary_redis.get.assert_called_once_with("tts:test")
@@ -96,8 +106,12 @@ class TestRedisClientOperations:
         mock_binary_redis.setex = AsyncMock(return_value=True)
         client._binary_redis = mock_binary_redis
 
-        with patch.object(type(client), "is_enabled", new_callable=PropertyMock, return_value=True), \
-             patch("backend.cache.redis_client.get_settings") as mock_settings:
+        with (
+            patch.object(
+                type(client), "is_enabled", new_callable=PropertyMock, return_value=True
+            ),
+            patch("backend.cache.redis_client.get_settings") as mock_settings,
+        ):
             mock_settings.return_value.redis_cache_ttl_default = 600
             await client.set_bytes("tts:test", b"\x89PNG", ttl=600)
         mock_binary_redis.setex.assert_called_once()

@@ -38,6 +38,7 @@ class AsyncTask(Task):
 #  send_grammar_reminder
 # ────────────────────────────────────────────────────────
 
+
 class _SendGrammarReminderTask(AsyncTask):
     name = "backend.tasks.notifications.send_grammar_reminder"
     max_retries = 5
@@ -53,10 +54,18 @@ class _SendGrammarReminderTask(AsyncTask):
                 user = await user_repo.get_by_id(user_id)
                 if not user:
                     logger.warning("user_not_found_for_reminder", user_id=user_id)
-                    return {"user_id": user_id, "sent": False, "reason": "user_not_found"}
+                    return {
+                        "user_id": user_id,
+                        "sent": False,
+                        "reason": "user_not_found",
+                    }
 
                 if user.settings and not user.settings.notifications_enabled:
-                    return {"user_id": user_id, "sent": False, "reason": "notifications_disabled"}
+                    return {
+                        "user_id": user_id,
+                        "sent": False,
+                        "reason": "notifications_disabled",
+                    }
 
                 user_stats = await stats_repo.get_user_summary(user_id)
                 current_streak = user_stats.get("current_streak", 0)
@@ -91,12 +100,14 @@ class _SendGrammarReminderTask(AsyncTask):
                     }
 
                 except Exception as bot_exc:
-                    logger.error("telegram_send_failed", user_id=user_id, error=str(bot_exc))
+                    logger.error(
+                        "telegram_send_failed", user_id=user_id, error=str(bot_exc)
+                    )
                     raise self.retry(exc=bot_exc, countdown=300)
 
         except Exception as exc:
             logger.error("grammar_reminder_failed", user_id=user_id, error=str(exc))
-            raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+            raise self.retry(exc=exc, countdown=60 * (2**self.request.retries))
 
 
 send_grammar_reminder = celery_app.register_task(_SendGrammarReminderTask())
@@ -105,6 +116,7 @@ send_grammar_reminder = celery_app.register_task(_SendGrammarReminderTask())
 # ────────────────────────────────────────────────────────
 #  send_evening_grammar_notifications
 # ────────────────────────────────────────────────────────
+
 
 class _SendEveningNotificationsTask(AsyncTask):
     name = "backend.tasks.notifications.send_evening_grammar_notifications"
@@ -170,12 +182,15 @@ class _SendEveningNotificationsTask(AsyncTask):
             raise
 
 
-send_evening_grammar_notifications = celery_app.register_task(_SendEveningNotificationsTask())
+send_evening_grammar_notifications = celery_app.register_task(
+    _SendEveningNotificationsTask()
+)
 
 
 # ────────────────────────────────────────────────────────
 #  send_weekly_report_notification
 # ────────────────────────────────────────────────────────
+
 
 class _SendWeeklyReportTask(AsyncTask):
     name = "backend.tasks.notifications.send_weekly_report_notification"
@@ -188,8 +203,14 @@ class _SendWeeklyReportTask(AsyncTask):
                 grammar_service = GrammarService(grammar_repo)
 
                 user = await user_repo.get_by_id(user_id)
-                if not user or (user.settings and not user.settings.notifications_enabled):
-                    return {"user_id": user_id, "sent": False, "reason": "notifications_disabled"}
+                if not user or (
+                    user.settings and not user.settings.notifications_enabled
+                ):
+                    return {
+                        "user_id": user_id,
+                        "sent": False,
+                        "reason": "notifications_disabled",
+                    }
 
                 summary = await grammar_service.get_progress_summary(user_id)
                 message = "📊 <b>Týdenní přehled</b>\n\n"
@@ -202,7 +223,9 @@ class _SendWeeklyReportTask(AsyncTask):
                         f"📚 Celkem pravidel: {summary['total_rules']}\n\n"
                     )
                     if summary.get("weak_count", 0) > 0:
-                        message += f"💪 K procvičení: {summary['weak_count']} pravidel\n\n"
+                        message += (
+                            f"💪 K procvičení: {summary['weak_count']} pravidel\n\n"
+                        )
                     message += "Pokračuj dál — každý den se zlepšuješ! 🚀"
                 else:
                     message += (

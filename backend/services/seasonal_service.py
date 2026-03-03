@@ -308,16 +308,18 @@ class SeasonalService:
             start_date, end_date = event["dates"]
             is_active = self._is_date_in_range(current_date, start_date, end_date)
 
-            events.append({
-                "id": event_id,
-                "name_cs": event["name_cs"],
-                "name_ru": event["name_ru"],
-                "dates": event["dates"],
-                "is_active": is_active,
-                "vocabulary_count": len(event["vocabulary"]),
-                "bonus_stars": event["bonus_stars"],
-                "theme_color": event["theme_color"],
-            })
+            events.append(
+                {
+                    "id": event_id,
+                    "name_cs": event["name_cs"],
+                    "name_ru": event["name_ru"],
+                    "dates": event["dates"],
+                    "is_active": is_active,
+                    "vocabulary_count": len(event["vocabulary"]),
+                    "bonus_stars": event["bonus_stars"],
+                    "theme_color": event["theme_color"],
+                }
+            )
 
         return events
 

@@ -27,7 +27,9 @@ _ONBOARDING_TTL = 3600  # 1 hour — abandon timeout
 def _cleanup_onboarding():
     """Remove stale onboarding entries and enforce max size."""
     now = time.time()
-    expired = [k for k, v in onboarding_data.items() if now - v.get("_ts", 0) > _ONBOARDING_TTL]
+    expired = [
+        k for k, v in onboarding_data.items() if now - v.get("_ts", 0) > _ONBOARDING_TTL
+    ]
     for k in expired:
         del onboarding_data[k]
     # If still over cap, drop oldest
@@ -105,7 +107,11 @@ async def native_language_selected_handler(
 
     await callback.answer()
 
-    logger.info("native_language_selected", telegram_id=telegram_id, native_language=native_language)
+    logger.info(
+        "native_language_selected",
+        telegram_id=telegram_id,
+        native_language=native_language,
+    )
 
 
 @router.callback_query(F.data.startswith("onb_native_page:"))
@@ -201,5 +207,3 @@ async def level_selected_handler(
         await callback.answer()
 
         logger.error("user_registration_failed", telegram_id=telegram_id)
-
-

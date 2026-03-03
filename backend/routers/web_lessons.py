@@ -12,7 +12,10 @@ from backend.db.repositories import (
 )
 from backend.services.honzik_personality import HonzikPersonality
 from backend.services.openai_client import OpenAIClient
-from backend.services.lesson_processing import save_lesson_messages, update_lesson_gamification
+from backend.services.lesson_processing import (
+    save_lesson_messages,
+    update_lesson_gamification,
+)
 from backend.config import get_settings
 from backend.routers.web_auth import get_authenticated_user
 from backend.services.subscription_service import SubscriptionService
@@ -22,12 +25,14 @@ router = APIRouter(prefix="/api/v1/web/lessons", tags=["web_lessons"])
 
 class TextMessageRequest(BaseModel):
     """Request for text message processing"""
+
     text: str
     user_id: int
 
 
 class TextMessageResponse(BaseModel):
     """Response for text message processing"""
+
     honzik_text: str
     honzik_transcript: str  # Transcript of Honzík's audio response
     user_mistakes: List[str]
@@ -38,6 +43,7 @@ class TextMessageResponse(BaseModel):
 
 class MessageHistoryItem(BaseModel):
     """Single message in history"""
+
     id: int
     role: str
     text: str
@@ -48,6 +54,7 @@ class MessageHistoryItem(BaseModel):
 
 class MessageHistoryResponse(BaseModel):
     """Paginated message history response"""
+
     messages: List[MessageHistoryItem]
     pagination: dict
 
@@ -56,7 +63,7 @@ class MessageHistoryResponse(BaseModel):
 async def process_text_message(
     request: TextMessageRequest,
     auth_user=Depends(get_authenticated_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(get_session),
 ):
     """
     Process text input (no audio) for web users.
@@ -88,17 +95,10 @@ async def process_text_message(
     settings = await settings_repo.get_by_user_id(user_id)
 
     # Get conversation history (last 5 messages)
-    recent_messages = await message_repo.get_recent_by_user(
-        user_id=user_id,
-        limit=5
-    )
+    recent_messages = await message_repo.get_recent_by_user(user_id=user_id, limit=5)
 
     conversation_history = [
-        {
-            "role": msg.role,
-            "content": msg.text
-        }
-        for msg in reversed(recent_messages)
+        {"role": msg.role, "content": msg.text} for msg in reversed(recent_messages)
     ]
 
     # Process with character (Honzík or paní Nováková)
@@ -149,7 +149,7 @@ async def process_text_message(
         user_mistakes=response.get("mistakes", []),
         suggestions=[response.get("suggestion", "")],
         stars_earned=stars_result["stars_earned"],
-        correctness_score=response.get("correctness_score", 0)
+        correctness_score=response.get("correctness_score", 0),
     )
 
 
@@ -158,7 +158,7 @@ async def get_lesson_history(
     page: int = 1,
     limit: int = 20,
     auth_user=Depends(get_authenticated_user),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(get_session),
 ):
     """
     Get paginated lesson history.
@@ -170,9 +170,7 @@ async def get_lesson_history(
     offset = (page - 1) * limit
 
     messages = await message_repo.get_by_user_paginated(
-        user_id=user_id,
-        offset=offset,
-        limit=limit
+        user_id=user_id, offset=offset, limit=limit
     )
 
     total = await message_repo.count_by_user(user_id)
@@ -184,7 +182,9 @@ async def get_lesson_history(
             text=msg.text,
             correctness_score=msg.correctness_score,
             created_at=msg.created_at.isoformat(),
-            user_mistakes=[] if not msg.role == "user" else []  # TODO: Add mistakes parsing
+            user_mistakes=[]
+            if not msg.role == "user"
+            else [],  # TODO: Add mistakes parsing
         )
         for msg in messages
     ]
@@ -195,6 +195,6 @@ async def get_lesson_history(
             "page": page,
             "limit": limit,
             "total": total,
-            "pages": (total + limit - 1) // limit
-        }
+            "pages": (total + limit - 1) // limit,
+        },
     )

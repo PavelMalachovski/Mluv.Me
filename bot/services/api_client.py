@@ -107,9 +107,7 @@ class APIClient:
                 "native_language": native_language,
                 "level": level,
             }
-            async with session.post(
-                f"{self.base_url}/api/v1/users", json=data
-            ) as resp:
+            async with session.post(f"{self.base_url}/api/v1/users", json=data) as resp:
                 if resp.status in [200, 201]:
                     return await resp.json()
                 else:
@@ -152,13 +150,14 @@ class APIClient:
                     )
                     return None
         except Exception as e:
-            logger.error(
-                "update_settings_error", telegram_id=telegram_id, error=str(e)
-            )
+            logger.error("update_settings_error", telegram_id=telegram_id, error=str(e))
             return None
 
     async def process_voice(
-        self, user_id: int, audio_bytes: bytes, filename: str = "voice.ogg",
+        self,
+        user_id: int,
+        audio_bytes: bytes,
+        filename: str = "voice.ogg",
         include_audio: bool = True,
     ) -> Optional[dict[str, Any]]:
         """
@@ -202,9 +201,7 @@ class APIClient:
             logger.error("process_voice_error", user_id=user_id, error=str(e))
             return None
 
-    async def generate_tts(
-        self, user_id: int, text: str
-    ) -> Optional[bytes]:
+    async def generate_tts(self, user_id: int, text: str) -> Optional[bytes]:
         """
         Сгенерировать TTS аудио для готового текста.
 
@@ -344,9 +341,7 @@ class APIClient:
                     )
                     return None
         except Exception as e:
-            logger.error(
-                "get_saved_words_error", telegram_id=telegram_id, error=str(e)
-            )
+            logger.error("get_saved_words_error", telegram_id=telegram_id, error=str(e))
             return None
 
     async def reset_conversation(self, telegram_id: int) -> bool:
@@ -389,7 +384,9 @@ class APIClient:
                 return resp.status == 200
         except Exception as e:
             logger.error(
-                "delete_conversation_history_error", telegram_id=telegram_id, error=str(e)
+                "delete_conversation_history_error",
+                telegram_id=telegram_id,
+                error=str(e),
             )
             return False
 
@@ -434,7 +431,6 @@ class APIClient:
             )
             return None
 
-
     async def full_reset_user(self, telegram_id: int) -> bool:
         """
         Полный сброс прогресса пользователя.
@@ -452,9 +448,7 @@ class APIClient:
             ) as resp:
                 return resp.status == 200
         except Exception as e:
-            logger.error(
-                "full_reset_user_error", telegram_id=telegram_id, error=str(e)
-            )
+            logger.error("full_reset_user_error", telegram_id=telegram_id, error=str(e))
             return False
 
     async def close(self):
@@ -545,5 +539,3 @@ class APIClient:
                 error=str(e),
             )
             return None
-
-

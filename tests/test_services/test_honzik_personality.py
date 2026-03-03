@@ -2,7 +2,6 @@
 Tests for HonzikPersonality - prompt caching and generation.
 """
 
-
 from backend.services.honzik_personality import HonzikPersonality
 
 

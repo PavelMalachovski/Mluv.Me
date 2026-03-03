@@ -26,6 +26,7 @@ router = APIRouter(prefix="/api/v1/grammar", tags=["grammar"])
 
 class GrammarRuleResponse(BaseModel):
     """Grammar rule response."""
+
     id: int
     code: str
     category: str
@@ -42,18 +43,21 @@ class GrammarRuleResponse(BaseModel):
 
 class CategoryResponse(BaseModel):
     """Category info."""
+
     category: str
     count: int
 
 
 class DailyRuleResponse(BaseModel):
     """Daily rule for user."""
+
     rule: GrammarRuleResponse | None = None
     message: str | None = None
 
 
 class ProgressSummary(BaseModel):
     """User grammar progress summary."""
+
     total_rules: int
     practiced_rules: int
     mastered_rules: int
@@ -63,6 +67,7 @@ class ProgressSummary(BaseModel):
 
 class RuleProgressResponse(BaseModel):
     """Progress on a single rule."""
+
     rule_id: int
     rule_code: str
     rule_title: str
@@ -124,7 +129,9 @@ async def get_rules(
             explanation_cs=r.explanation_cs,
             examples=json.loads(r.examples) if r.examples else None,
             mnemonic=r.mnemonic,
-            common_mistakes=json.loads(r.common_mistakes) if r.common_mistakes else None,
+            common_mistakes=json.loads(r.common_mistakes)
+            if r.common_mistakes
+            else None,
             source_ref=r.source_ref,
         )
         for r in rules
@@ -162,7 +169,9 @@ async def get_rule(
         explanation_cs=rule.explanation_cs,
         examples=json.loads(rule.examples) if rule.examples else None,
         mnemonic=rule.mnemonic,
-        common_mistakes=json.loads(rule.common_mistakes) if rule.common_mistakes else None,
+        common_mistakes=json.loads(rule.common_mistakes)
+        if rule.common_mistakes
+        else None,
         source_ref=rule.source_ref,
     )
 
@@ -170,7 +179,9 @@ async def get_rule(
 @router.get("/daily-rule/{user_id}", response_model=DailyRuleResponse)
 async def get_daily_rule(
     user_id: int,
-    skip: int = Query(0, ge=0, description="Skip N already-shown rules (for Next button)"),
+    skip: int = Query(
+        0, ge=0, description="Skip N already-shown rules (for Next button)"
+    ),
     service: GrammarService = Depends(get_grammar_service),
 ) -> DailyRuleResponse:
     """Get today's grammar rule for a user (prioritizes unseen/weak rules)."""
@@ -198,6 +209,7 @@ async def get_daily_rule(
         )
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         return DailyRuleResponse(message=f"Chyba: {str(e)}")
 
@@ -241,6 +253,7 @@ async def get_progress_details(
 
 # === Admin endpoint for seeding (temporary) ===
 
+
 @router.post("/admin/seed")
 async def seed_grammar_rules_endpoint(
     session: AsyncSession = Depends(get_session),
@@ -251,30 +264,31 @@ async def seed_grammar_rules_endpoint(
     Requires admin secret key for security.
     """
     import os
+
     admin_secret = os.getenv("ADMIN_SECRET")
     if not admin_secret:
         raise HTTPException(status_code=500, detail="ADMIN_SECRET not configured")
-    
+
     if secret != admin_secret:
         raise HTTPException(status_code=403, detail="Invalid secret")
-    
+
     from backend.models.grammar import GrammarRule
     from backend.data.grammar_seed_data import GRAMMAR_RULES
     from sqlalchemy import select
-    
+
     inserted = 0
     updated = 0
-    
+
     for rule_data in GRAMMAR_RULES:
         # Ensure is_active is set (server_default doesn't apply via ORM)
         rule_data["is_active"] = True
-        
+
         # Check if rule already exists
         result = await session.execute(
             select(GrammarRule).where(GrammarRule.code == rule_data["code"])
         )
         existing = result.scalar_one_or_none()
-        
+
         if existing:
             # Update existing rule
             for key, value in rule_data.items():
@@ -286,9 +300,9 @@ async def seed_grammar_rules_endpoint(
             rule = GrammarRule(**rule_data)
             session.add(rule)
             inserted += 1
-    
+
     await session.commit()
-    
+
     return {
         "status": "success",
         "inserted": inserted,
@@ -299,10 +313,13 @@ async def seed_grammar_rules_endpoint(
 
 # === Admin: trigger notifications manually ===
 
+
 @router.post("/admin/send-notifications")
 async def trigger_notifications(
     secret: str = Header(..., alias="X-Admin-Secret", description="Admin secret key"),
-    test_telegram_id: int = Query(None, description="Send only to this telegram_id (test mode)"),
+    test_telegram_id: int = Query(
+        None, description="Send only to this telegram_id (test mode)"
+    ),
 ) -> dict:
     """
     Trigger evening grammar notifications immediately.
@@ -313,6 +330,7 @@ async def trigger_notifications(
     Requires ADMIN_SECRET.
     """
     import os
+
     admin_secret = os.getenv("ADMIN_SECRET")
     if not admin_secret:
         raise HTTPException(status_code=500, detail="ADMIN_SECRET not configured")
@@ -336,12 +354,16 @@ async def trigger_notifications(
 
                 from sqlalchemy import select as sa_select
                 from backend.models.user import User
+
                 result = await db.execute(
                     sa_select(User).where(User.telegram_id == test_telegram_id)
                 )
                 user = result.scalar_one_or_none()
                 if not user:
-                    raise HTTPException(status_code=404, detail=f"User with telegram_id={test_telegram_id} not found")
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"User with telegram_id={test_telegram_id} not found",
+                    )
 
                 msg_data = await grammar_service.get_notification_message(
                     user_id=user.id,
@@ -349,8 +371,12 @@ async def trigger_notifications(
                     stars=0,
                 )
                 if not msg_data:
-                    raise HTTPException(status_code=404, detail="No grammar rule available")
-                message = msg_data["message"] if isinstance(msg_data, dict) else msg_data
+                    raise HTTPException(
+                        status_code=404, detail="No grammar rule available"
+                    )
+                message = (
+                    msg_data["message"] if isinstance(msg_data, dict) else msg_data
+                )
 
                 bot = Bot(token=cfg.telegram_bot_token)
                 await bot.send_message(test_telegram_id, message, parse_mode="HTML")
@@ -361,7 +387,11 @@ async def trigger_notifications(
             raise
         except Exception as e:
             import traceback
-            raise HTTPException(status_code=500, detail=f"Test send failed: {str(e)}\n{traceback.format_exc()}")
+
+            raise HTTPException(
+                status_code=500,
+                detail=f"Test send failed: {str(e)}\n{traceback.format_exc()}",
+            )
 
     else:
         # Full broadcast — runs directly (no Celery required)
@@ -425,9 +455,15 @@ async def trigger_notifications(
                         if not msg_data:
                             skipped += 1
                             continue
-                        message = msg_data["message"] if isinstance(msg_data, dict) else msg_data
+                        message = (
+                            msg_data["message"]
+                            if isinstance(msg_data, dict)
+                            else msg_data
+                        )
 
-                        await bot.send_message(user.telegram_id, message, parse_mode="HTML")
+                        await bot.send_message(
+                            user.telegram_id, message, parse_mode="HTML"
+                        )
                         sent += 1
                         await asyncio.sleep(0.05)
 
@@ -450,4 +486,8 @@ async def trigger_notifications(
             raise
         except Exception as e:
             import traceback
-            raise HTTPException(status_code=500, detail=f"Broadcast failed: {str(e)}\n{traceback.format_exc()}")
+
+            raise HTTPException(
+                status_code=500,
+                detail=f"Broadcast failed: {str(e)}\n{traceback.format_exc()}",
+            )

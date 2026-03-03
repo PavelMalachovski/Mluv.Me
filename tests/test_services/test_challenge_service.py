@@ -50,8 +50,12 @@ class TestChallengeServiceDeterministicRNG:
         user_date = date(2025, 1, 15)
 
         # Call twice with same params
-        r1 = await service.get_daily_challenge(mock_session, user_id=42, user_date=user_date)
-        r2 = await service.get_daily_challenge(mock_session, user_id=42, user_date=user_date)
+        r1 = await service.get_daily_challenge(
+            mock_session, user_id=42, user_date=user_date
+        )
+        r2 = await service.get_daily_challenge(
+            mock_session, user_id=42, user_date=user_date
+        )
 
         assert r1["id"] == r2["id"], "Same user+date must produce same challenge"
 

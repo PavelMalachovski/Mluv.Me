@@ -44,8 +44,8 @@ class SavedWord(Base):
 
     # Performance: Composite index for efficient word lookup by user
     __table_args__ = (
-        Index('idx_saved_words_user_word', 'user_id', 'word_czech'),
-        Index('idx_saved_words_next_review', 'next_review_date'),
+        Index("idx_saved_words_user_word", "user_id", "word_czech"),
+        Index("idx_saved_words_next_review", "next_review_date"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -55,85 +55,59 @@ class SavedWord(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        comment="User ID"
+        comment="User ID",
     )
 
     word_czech: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
-        comment="Чешское слово"
+        String(255), nullable=False, comment="Чешское слово"
     )
 
     translation: Mapped[str] = mapped_column(
-        String(500),
-        nullable=False,
-        comment="Перевод на родной язык"
+        String(500), nullable=False, comment="Перевод на родной язык"
     )
 
     context_sentence: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-        comment="Предложение-контекст"
+        Text, nullable=True, comment="Предложение-контекст"
     )
 
     phonetics: Mapped[str | None] = mapped_column(
-        String(255),
-        nullable=True,
-        comment="Фонетическая транскрипция"
+        String(255), nullable=True, comment="Фонетическая транскрипция"
     )
 
     times_reviewed: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Сколько раз повторялось"
+        Integer, nullable=False, default=0, comment="Сколько раз повторялось"
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
-        comment="Дата добавления"
+        comment="Дата добавления",
     )
 
     last_reviewed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-        comment="Дата последнего повторения"
+        DateTime(timezone=True), nullable=True, comment="Дата последнего повторения"
     )
 
     # Spaced Repetition (SM-2) fields
     ease_factor: Mapped[float] = mapped_column(
-        Float,
-        nullable=False,
-        default=2.5,
-        comment="SM-2 ease factor"
+        Float, nullable=False, default=2.5, comment="SM-2 ease factor"
     )
 
     interval_days: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=1,
-        comment="Days until next review"
+        Integer, nullable=False, default=1, comment="Days until next review"
     )
 
     next_review_date: Mapped[date | None] = mapped_column(
-        Date,
-        nullable=True,
-        comment="Next review date"
+        Date, nullable=True, comment="Next review date"
     )
 
     sr_review_count: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="SR review count"
+        Integer, nullable=False, default=0, comment="SR review count"
     )
 
     quality_history: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-        comment="Quality history JSON"
+        Text, nullable=True, comment="Quality history JSON"
     )
 
     # Relationship
@@ -180,5 +154,3 @@ class SavedWord(Base):
             return "known"
         else:
             return "mastered"
-
-
