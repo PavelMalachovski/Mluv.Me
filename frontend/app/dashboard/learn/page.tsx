@@ -3,11 +3,12 @@
 import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Gamepad2, BookOpen, Target, BookmarkCheck } from "lucide-react"
+import { Gamepad2, BookOpen, Target, BookmarkCheck, MessageCircle } from "lucide-react"
 import { useAuthStore } from "@/lib/auth-store"
 import { ProfileMiniGames } from "@/components/features/ProfileMiniGames"
 import { ProfileGrammar } from "@/components/features/ProfileGrammar"
 import { SavedWordsTab } from "@/components/features/SavedWordsTab"
+import { SlangTab } from "@/components/features/SlangTab"
 import { apiClient } from "@/lib/api-client"
 import { ChallengeList } from "@/components/features/ChallengeCard"
 
@@ -31,11 +32,12 @@ interface Challenge {
 
 // ===== Tab definitions =====
 
-type LearnTab = "games" | "grammar" | "challenges" | "words"
+type LearnTab = "games" | "grammar" | "challenges" | "words" | "slang"
 
 const TABS: { id: LearnTab; label: string; icon: React.ElementType; emoji: string }[] = [
   { id: "words", label: "Slovíčka", icon: BookmarkCheck, emoji: "📚" },
   { id: "grammar", label: "Gramatika", icon: BookOpen, emoji: "📖" },
+  { id: "slang", label: "Slang", icon: MessageCircle, emoji: "🗣️" },
   { id: "games", label: "Mini hry", icon: Gamepad2, emoji: "🎮" },
   { id: "challenges", label: "Výzvy", icon: Target, emoji: "🏆" },
 ]
@@ -123,7 +125,7 @@ function LearnContent() {
   const user = useAuthStore((state) => state.user)
   const initialTab = (searchParams.get("tab") as LearnTab) || "words"
   const [activeTab, setActiveTab] = useState<LearnTab>(
-    ["games", "grammar", "words", "challenges"].includes(initialTab) ? initialTab : "words"
+    ["games", "grammar", "words", "challenges", "slang"].includes(initialTab) ? initialTab : "words"
   )
 
   if (!user) return null
@@ -214,6 +216,18 @@ function LearnContent() {
               transition={{ duration: 0.2 }}
             >
               <SavedWordsTab telegramId={user.telegram_id} />
+            </motion.div>
+          )}
+
+          {activeTab === "slang" && (
+            <motion.div
+              key="slang"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <SlangTab />
             </motion.div>
           )}
         </AnimatePresence>
