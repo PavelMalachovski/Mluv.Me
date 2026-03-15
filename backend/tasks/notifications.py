@@ -5,9 +5,14 @@ Evening grammar notifications (19:00 CET = 18:00 UTC):
 - Grammar rule of the day
 - Practice reminder with streak info
 - Czech-only content (immersion)
+
+Daily slang notification (19:00 CET = 18:00 UTC):
+- Random slang/idiom of the day
+- Sent to users with notifications_enabled
 """
 
 import asyncio
+import random
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
@@ -19,6 +24,7 @@ from backend.db.database import AsyncSessionLocal
 from backend.db.repositories import StatsRepository, UserRepository
 from backend.db.grammar_repository import GrammarRepository
 from backend.services.grammar_service import GrammarService
+from backend.data.slang_data import SLANG_ITEMS
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -251,3 +257,140 @@ class _SendWeeklyReportTask(AsyncTask):
 
 
 send_weekly_report_notification = celery_app.register_task(_SendWeeklyReportTask())
+
+
+# ────────────────────────────────────────────────────────
+#  send_slang_reminder  (per-user)
+# ────────────────────────────────────────────────────────
+
+
+def _get_daily_slang() -> tuple[str, str, str]:
+    """Pick a deterministic-random slang item based on the current date."""
+    day_seed = int(datetime.utcnow().strftime("%Y%m%d"))
+    rng = random.Random(day_seed)
+    return rng.choice(SLANG_ITEMS)
+
+
+class _SendSlangReminderTask(AsyncTask):
+    name = "backend.tasks.notifications.send_slang_reminder"
+    max_retries = 3
+
+    async def run_async(self, user_id: int) -> Dict[str, Any]:
+        try:
+            async with AsyncSessionLocal() as db:
+                user_repo = UserRepository(db)
+                user = await user_repo.get_by_id(user_id)
+
+                if not user:
+                    return {"user_id": user_id, "sent": False, "reason": "user_not_found"}
+
+                if user.settings and not user.settings.notifications_enabled:
+                    return {"user_id": user_id, "sent": False, "reason": "notifications_disabled"}
+
+                phrase, meaning, example = _get_daily_slang()
+
+                message = (
+                    f"🗣️ <b>Slovo dne</b>\n\n"
+                    f"Ahoj! Věděl(a) jsi, že <b>{phrase}</b> znamená "
+                    f"<i>{meaning}</i>?\n\n"
+                    f"📝 <b>Příklad:</b> {example}\n\n"
+                    f"A to je tvoje denní připomínka procvičovat češtinu! 💪\n"
+                    f"👉 Otevři sekci <b>Slang</b> v Procvičování a uč se další."
+                )
+
+                try:
+                    from aiogram import Bot
+                    from backend.config import get_settings
+
+                    settings = get_settings()
+                    bot = Bot(token=settings.telegram_bot_token)
+                    await bot.send_message(user.telegram_id, message, parse_mode="HTML")
+                    await bot.session.close()
+
+                    logger.info(
+                        "slang_reminder_sent",
+                        user_id=user_id,
+                        telegram_id=user.telegram_id,
+                        phrase=phrase,
+                    )
+                    return {"user_id": user_id, "sent": True, "phrase": phrase}
+
+                except Exception as bot_exc:
+                    logger.error("slang_telegram_send_failed", user_id=user_id, error=str(bot_exc))
+                    raise self.retry(exc=bot_exc, countdown=300)
+
+        except Exception as exc:
+            logger.error("slang_reminder_failed", user_id=user_id, error=str(exc))
+            raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+
+
+send_slang_reminder = celery_app.register_task(_SendSlangReminderTask())
+
+
+# ────────────────────────────────────────────────────────
+#  send_evening_slang_notifications  (dispatcher)
+# ────────────────────────────────────────────────────────
+
+
+class _SendEveningSlangNotificationsTask(AsyncTask):
+    name = "backend.tasks.notifications.send_evening_slang_notifications"
+
+    async def run_async(self) -> Dict[str, Any]:
+        """
+        Send evening slang notifications to all users with notifications enabled.
+        Triggered daily at 18:00 UTC (= 19:00 CET), same window as grammar.
+        """
+        try:
+            async with AsyncSessionLocal() as db:
+                from backend.models.user import User, UserSettings
+
+                query = (
+                    select(User.id)
+                    .join(UserSettings, User.id == UserSettings.user_id)
+                    .where(UserSettings.notifications_enabled == True)  # noqa: E712
+                )
+
+                result = await db.execute(query)
+                user_ids = [row[0] for row in result.all()]
+
+                logger.info(
+                    "sending_evening_slang_notifications",
+                    user_count=len(user_ids),
+                )
+
+                scheduled = 0
+                failed = 0
+
+                for uid in user_ids:
+                    try:
+                        send_slang_reminder.apply_async(
+                            args=[uid],
+                            countdown=scheduled * 2,  # stagger 2s apart
+                        )
+                        scheduled += 1
+                    except Exception as e:
+                        logger.error(
+                            "failed_to_schedule_slang_reminder",
+                            user_id=uid,
+                            error=str(e),
+                        )
+                        failed += 1
+
+                stats = {
+                    "total_users": len(user_ids),
+                    "scheduled": scheduled,
+                    "failed": failed,
+                    "phrase": _get_daily_slang()[0],
+                    "timestamp": datetime.now().isoformat(),
+                }
+                logger.info("evening_slang_notifications_completed", **stats)
+                return stats
+
+        except Exception as exc:
+            logger.error("evening_slang_notifications_failed", error=str(exc))
+            raise
+
+
+send_evening_slang_notifications = celery_app.register_task(
+    _SendEveningSlangNotificationsTask()
+)

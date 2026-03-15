@@ -590,6 +590,576 @@ const SLANG_CATEGORIES: SlangCategory[] = [
       },
     ],
   },
+  {
+    id: "physical",
+    title: "Fyzické stavy a tělo",
+    emoji: "💪",
+    items: [
+      {
+        phrase: "Dát si dvacet",
+        meaning: "Krátce se vyspat, zdřímnout si.",
+        example: "Jsem unavený, jdu si po obědě dát dvacet.",
+      },
+      {
+        phrase: "Chytat lelky",
+        meaning: "Nudit se, nic nedělat, koukat do blba.",
+        example: "Přestaň chytat lelky a začni se učit!",
+      },
+      {
+        phrase: "Mít obě ruce levé",
+        meaning: "Být velmi nešikovný.",
+        example: "Na opravu auta ho nevolej, má obě ruce levé.",
+      },
+      {
+        phrase: "Padat na hubu",
+        meaning: "Být extrémně vyčerpaný.",
+        example: "Po té dvanáctihodinové směně úplně padám na hubu.",
+      },
+      {
+        phrase: "Mít husí kůži",
+        meaning: "Bát se, nebo mít z něčeho silný (i pozitivní) zážitek.",
+        example: "Když začala zpívat, měl jsem úplně husí kůži.",
+      },
+      {
+        phrase: "Být kost a kůže",
+        meaning: "Být velmi hubený.",
+        example: "Po té nemoci je úplně kost a kůže.",
+      },
+      {
+        phrase: "Vyplivnout duši",
+        meaning: "Velmi se fyzicky unavit (např. při sportu).",
+        example: "Běželi jsme do takového kopce, že jsem myslel, že vyplivnu duši.",
+      },
+      {
+        phrase: "Mít jazyk na vestě",
+        meaning: "Být uhnaný, zadýchaný a unavený.",
+        example: "Doběhl na tramvaj na poslední chvíli a měl jazyk na vestě.",
+      },
+      {
+        phrase: "Mít roupy",
+        meaning: "Být neposedný, vymýšlet hlouposti (často o dětech).",
+        example: "Ty děti dneska mají zase roupy.",
+      },
+      {
+        phrase: "Mátoha",
+        meaning: "Unavený člověk bez energie, který se vleče.",
+        example: "Ráno před kávou jsem úplná mátoha.",
+      },
+    ],
+  },
+  {
+    id: "communication",
+    title: "Komunikace a mluvení",
+    emoji: "🗨️",
+    items: [
+      {
+        phrase: "Plácat játra",
+        meaning: "Mluvit nesmysly, říkat hlouposti.",
+        example: "Už neplácej játra a řekni mi, jak to doopravdy bylo.",
+      },
+      {
+        phrase: "Chodit kolem horké kaše",
+        meaning: "Vyhýbat se přímé odpovědi nebo hlavnímu tématu.",
+        example: "Nechoď kolem horké kaše a řekni mi rovnou, co chceš.",
+      },
+      {
+        phrase: "Mít prořízlou pusu",
+        meaning: "Být velmi výřečný, často až drze.",
+        example: "Ta tvoje sestra má docela prořízlou pusu.",
+      },
+      {
+        phrase: "Zdrbávat někoho",
+        meaning: "Pomlouvat někoho za jeho zády.",
+        example: "Holky se sešly na kávu a celou dobu jen někoho zdrbávaly.",
+      },
+      {
+        phrase: "Vykecat se z něčeho",
+        meaning: "Najít si dobrou výmluvu.",
+        example: "Přišel pozdě, ale zase se z toho mistrně vykecal.",
+      },
+      {
+        phrase: "Házet hrách na zeď / Mluvit do zdi",
+        meaning: "Zbytečně někomu něco vysvětlovat.",
+        example: "Říkám mu to stokrát, ale je to jako házet hrách na zeď.",
+      },
+      {
+        phrase: "Držet jazyk za zuby",
+        meaning: "Mlčet, neprozradit tajemství.",
+        example: "Slib mi, že o tom budeš držet jazyk za zuby.",
+      },
+      {
+        phrase: "Mít kecy",
+        meaning: "Zbytečně a nevhodně komentovat situaci, stěžovat si.",
+        example: "Udělej to, co jsem ti řekl, a neměj furt kecy.",
+      },
+      {
+        phrase: "Žvanit",
+        meaning: "Hodně a zbytečně mluvit.",
+        example: "Ten chlap pořád jenom žvaní a skutek utek.",
+      },
+      {
+        phrase: "Vyslepičit něco",
+        meaning: "Vyzradit tajemství (jako slepice).",
+        example: "Hned jak to zjistila, běžela to všem vyslepičit.",
+      },
+    ],
+  },
+  {
+    id: "mistakes",
+    title: "Zklamání, chyby a problémy",
+    emoji: "⚠️",
+    items: [
+      {
+        phrase: "Šlápnout vedle",
+        meaning: "Udělat chybu v rozhodnutí.",
+        example: "S touhle investicí jsme docela šlápli vedle.",
+      },
+      {
+        phrase: "Zvorat něco",
+        meaning: "Úplně něco zkazit (slang).",
+        example: "Tuhle zkoušku jsem fakt zvorala.",
+      },
+      {
+        phrase: "Dostat kartáč / čočku",
+        meaning: "Dostat od někoho silně vynadáno.",
+        example: "Když jsem přišel pozdě do práce, dostal jsem od šéfa pořádný kartáč.",
+      },
+      {
+        phrase: "Průšvih",
+        meaning: "Velký problém, malér.",
+        example: "Ztratil jsem firemní notebook, to je obrovský průšvih.",
+      },
+      {
+        phrase: "Nalítnout někomu",
+        meaning: "Nechat se hloupě oklamat.",
+        example: "Nalítnul podvodníkům na internetu a poslal jim peníze.",
+      },
+      {
+        phrase: "Být namydlený",
+        meaning: "Být v bezvýchodné situaci.",
+        example: "Jestli ten vlak zruší, jsme úplně namydlení.",
+      },
+      {
+        phrase: "Zpívat jinou písničku",
+        meaning: "Najednou změnit názor (většinou pod tlakem).",
+        example: "Až zjistí, kolik to stojí, bude zpívat jinou písničku.",
+      },
+      {
+        phrase: "Dostat po čumáku",
+        meaning: "Utrpět porážku, neuspět a poučit se.",
+        example: "Byl moc sebevědomý, ale u zkoušek dostal pěkně po čumáku.",
+      },
+      {
+        phrase: "Zabalit to",
+        meaning: "Vzdat se, ukončit činnost.",
+        example: "Už mě ta práce nebaví, asi to tady zabalím.",
+      },
+      {
+        phrase: "Jít ke dnu",
+        meaning: "Krachovat, upadat.",
+        example: "Jeho firma pomalu ale jistě jde ke dnu.",
+      },
+    ],
+  },
+  {
+    id: "time-speed",
+    title: "Čas a rychlost",
+    emoji: "⏰",
+    items: [
+      {
+        phrase: "Dát si na čas",
+        meaning: "Nespěchat, úmyslně něco dělat pomalu.",
+        example: "S tím úkolem si teda dal docela na čas.",
+      },
+      {
+        phrase: "Za pět minut dvanáct",
+        meaning: "Na úplně poslední chvíli.",
+        example: "Odevzdal tu práci za pět minut dvanáct.",
+      },
+      {
+        phrase: "Být v presu",
+        meaning: "Být pod časovým tlakem.",
+        example: "Nezavolala jsem ti, protože jsem byla celý den hrozně v presu.",
+      },
+      {
+        phrase: "Zabít čas",
+        meaning: "Dělat něco jen proto, aby čas uběhl.",
+        example: "Čekám na vlak a hraju hry na mobilu, abych zabil čas.",
+      },
+      {
+        phrase: "Nestíhat",
+        meaning: "Mít zpoždění, nemít na něco čas.",
+        example: "Promiň, ale tu schůzku dneska vůbec nestíhám.",
+      },
+      {
+        phrase: "Trvat celou věčnost",
+        meaning: "Trvat extrémně dlouho.",
+        example: "Než se ta tvoje sestra obleče, trvá to celou věčnost.",
+      },
+      {
+        phrase: "Co nevidět",
+        meaning: "Brzy, zanedlouho.",
+        example: "Autobus už tu musí být co nevidět.",
+      },
+      {
+        phrase: "Jednou za uherský rok",
+        meaning: "Velmi zřídka, téměř nikdy.",
+        example: "Do divadla chodíme jen jednou za uherský rok.",
+      },
+      {
+        phrase: "Zmeškat vlak",
+        meaning: "Propásnout důležitou životní příležitost.",
+        example: "S touhle nabídkou jsi už zmeškal vlak.",
+      },
+      {
+        phrase: "Hoří to / Nehoří to",
+        meaning: "Je to velmi naléhavé / Nespěchá to.",
+        example: "Klidně si ten e-mail přečti až zítra, nehoří to.",
+      },
+    ],
+  },
+  {
+    id: "money2",
+    title: "Peníze a majetek 2",
+    emoji: "💸",
+    items: [
+      {
+        phrase: "Být ve vatě",
+        meaning: "Být velmi bohatý, zabezpečený.",
+        example: "Její rodina je docela ve vatě, peníze řešit nemusí.",
+      },
+      {
+        phrase: "Nekoupit ani za zlaté prase",
+        meaning: "V žádném případě něco nekoupit, vůbec to nechtít.",
+        example: "Tyhle ošklivé boty bych si nekoupil ani za zlaté prase.",
+      },
+      {
+        phrase: "Pustit chlup",
+        meaning: "Utratit peníze, neochotně zaplatit.",
+        example: "Budeme muset na tu opravu pustit chlup.",
+      },
+      {
+        phrase: "Stát za starou bačkoru",
+        meaning: "Být k ničemu, mít mizernou kvalitu.",
+        example: "Ten film stál za starou bačkoru.",
+      },
+      {
+        phrase: "Vyhodit peníze oknem",
+        meaning: "Zbytečně utratit peníze za hloupost.",
+        example: "Koupit takhle drahé auto je jako vyhodit peníze oknem.",
+      },
+      {
+        phrase: "Mít z něčeho rito",
+        meaning: "Mít z něčeho dobrý zisk.",
+        example: "Na tomhle obchodu udělal slušné rito.",
+      },
+      {
+        phrase: "Prodělat kalhoty",
+        meaning: "Utrpět velkou finanční ztrátu.",
+        example: "Na burze letos hodně lidí prodělalo kalhoty.",
+      },
+      {
+        phrase: "Dřít z někoho kůži",
+        meaning: "Zneužívat někoho finančně nebo ho nutit moc pracovat.",
+        example: "Ten nový šéf z nás doslova dře kůži.",
+      },
+      {
+        phrase: "Být na mizině",
+        meaning: "Zbankrotovat, nemít vůbec žádné peníze.",
+        example: "Po tom rozvodu zůstal úplně na mizině.",
+      },
+      {
+        phrase: "Žít na vysoké noze",
+        meaning: "Žít luxusně, utrácet spoustu peněz.",
+        example: "I když nemá velký plat, pořád si žije na vysoké noze.",
+      },
+    ],
+  },
+  {
+    id: "party",
+    title: "Zábava a alkohol",
+    emoji: "🍻",
+    items: [
+      {
+        phrase: "Být pod obraz",
+        meaning: "Být extrémně opilý.",
+        example: "Po oslavě narozenin dorazil domů úplně pod obraz.",
+      },
+      {
+        phrase: "Dát si do trumpety",
+        meaning: "Pořádně se opít.",
+        example: "Včera jsme si s klukama v hospodě pěkně dali do trumpety.",
+      },
+      {
+        phrase: "Mít opici",
+        meaning: "Mít kocovinu.",
+        example: "Dneska radši nevstávám, mám šílenou opici.",
+      },
+      {
+        phrase: "Pařba",
+        meaning: "Velký večírek, párty.",
+        example: "To byla o víkendu neskutečná pařba!",
+      },
+      {
+        phrase: "Sosat",
+        meaning: "Pomalinku pít alkohol, vychutnávat si ho.",
+        example: "Celý večer sosal jen jednu skleničku vína.",
+      },
+      {
+        phrase: "Vyrazit si z kopýtka",
+        meaning: "Jít se pořádně bavit, užít si večer.",
+        example: "Po zkouškách si konečně vyrazíme z kopýtka.",
+      },
+      {
+        phrase: "Být namol",
+        meaning: "Být totálně opilý.",
+        example: "Včera jsme tě viděli, byl jsi namol!",
+      },
+      {
+        phrase: "Exnout něco",
+        meaning: "Vypít nápoj (často alkoholický) na ex, tedy naráz.",
+        example: "Když to exneš, koupím ti další.",
+      },
+      {
+        phrase: "Hospodský povaleč",
+        meaning: "Člověk, který tráví většinu času v hospodě (často pije pivo).",
+        example: "Nechci skončit jako nějaký hospodský povaleč.",
+      },
+      {
+        phrase: "Jít na tah",
+        meaning: "Jít se bavit do města na celou noc (z hospody do hospody).",
+        example: "S kolegy jdeme v pátek na tah.",
+      },
+    ],
+  },
+  {
+    id: "school",
+    title: "Učení, škola a pozornost",
+    emoji: "🎓",
+    items: [
+      {
+        phrase: "Mít v hlavě vymeteno",
+        meaning: "Nic nevědět, být hloupý nebo zrovna neschopný myslet.",
+        example: "Po té zkoušce mám v hlavě úplně vymeteno.",
+      },
+      {
+        phrase: "Tahák",
+        meaning: "Podvodný lístek (špargalka) při písemce.",
+        example: "Učitel mi našel tahák a dostal jsem pětku.",
+      },
+      {
+        phrase: "Být mimo",
+        meaning: "Nesoustředit se, nedávat pozor (nebo nechápat).",
+        example: "Dneska jsem na té přednášce byl úplně mimo.",
+      },
+      {
+        phrase: "Šprtat se / Brtit se",
+        meaning: "Intenzivně se učit, biflovat.",
+        example: "Musím se celou noc šprtat na test z matiky.",
+      },
+      {
+        phrase: "Projít s odřenýma ušima",
+        meaning: "Uspět jen tak tak, s nejhorší možnou známkou.",
+        example: "Maturoval jsem s odřenýma ušima.",
+      },
+      {
+        phrase: "Rupnout (u zkoušky)",
+        meaning: "Neudělat zkoušku, propadnout.",
+        example: "Zase jsem rupnul z angličtiny.",
+      },
+      {
+        phrase: "Zatáhnout školu / Jít za školu",
+        meaning: "Nepřijít na vyučování bez omluvy.",
+        example: "Včera jsme zatáhli fyziku a šli do kina.",
+      },
+      {
+        phrase: "Výtlem",
+        meaning: "Nekontrolovatelný záchvat smíchu (slang).",
+        example: "Když učitel zakopl, chytili jsme všichni hrozný výtlem.",
+      },
+      {
+        phrase: "Dávat bacha",
+        meaning: "Dávat pozor (jak ve škole, tak na nebezpečí).",
+        example: "Dávej bacha, ať to nerozbiješ!",
+      },
+      {
+        phrase: "Být za hvězdu",
+        meaning: "Být středem pozornosti za skvělý výkon, excelovat.",
+        example: "Odpověděl na všechno a byl před třídou za hvězdu.",
+      },
+    ],
+  },
+  {
+    id: "love2",
+    title: "Láska a vztahy 2",
+    emoji: "💕",
+    items: [
+      {
+        phrase: "Být pod pantoflem",
+        meaning: "Být zcela ovládán svou partnerkou.",
+        example: "Jirka nikam s námi nechodí, je hrozně pod pantoflem.",
+      },
+      {
+        phrase: "Uhánět někoho",
+        meaning: "Snažit se někoho získat, nadbíhat mu (romanticky).",
+        example: "Už měsíc ji uhání, ale ona ho nechce.",
+      },
+      {
+        phrase: "Namotat si někoho",
+        meaning: "Svésť někoho, okouzlit ho.",
+        example: "Namotala si ho na první pohled.",
+      },
+      {
+        phrase: "Žehlit průšvih",
+        meaning: "Snažit se udobřit partnera po tom, co jsme udělali chybu.",
+        example: "Zapomněl na výročí a teď to musí žehlit kytkou.",
+      },
+      {
+        phrase: "Lepit se na někoho",
+        meaning: "Být příliš dotěrný, nedat někomu prostor.",
+        example: "Na večírku se na mě lepil nějaký divný chlap.",
+      },
+      {
+        phrase: "Zlatokopka",
+        meaning: "Žena, která hledá partnera pouze pro jeho peníze.",
+        example: "Každý ví, že je to zlatokopka, miluje jen jeho kreditku.",
+      },
+      {
+        phrase: "Vylít si srdíčko",
+        meaning: "Svěřit se někomu se svými problémy a trápením.",
+        example: "Přišla ke mně na víno, aby si mohla vylít srdíčko.",
+      },
+      {
+        phrase: "Mít bokovku",
+        meaning: "Mít milenecký poměr vedle stálého vztahu.",
+        example: "Zjistila, že její manžel má už rok bokovku.",
+      },
+      {
+        phrase: "Skákat, jak někdo píská",
+        meaning: "Bezmezně někoho poslouchat.",
+        example: "On skáče přesně tak, jak ona píská.",
+      },
+      {
+        phrase: "Hrdličky",
+        meaning: "Čerstvě nebo silně zamilovaný pár.",
+        example: "Koukej na ně, to jsou ale hrdličky.",
+      },
+    ],
+  },
+  {
+    id: "proverbs2",
+    title: "Další populární přísloví a rčení",
+    emoji: "📖",
+    items: [
+      {
+        phrase: "Kdo jinému jámu kopá, sám do ní padá",
+        meaning: "Kdo se snaží uškodit jinému, doplatí na to sám.",
+        example: "Chtěl mě nechat vyhodit, ale nakonec dostal výpověď on. Kdo jinému jámu kopá...",
+      },
+      {
+        phrase: "Láska prochází žaludkem",
+        meaning: "Dobré jídlo je klíčem k srdci (hlavně mužů).",
+        example: "Uvař mu jeho oblíbené jídlo, víš přece, že láska prochází žaludkem.",
+      },
+      {
+        phrase: "Nechval dne před večerem",
+        meaning: "Neraduj se předčasně z úspěchu, dokud není vše hotovo.",
+        example: "Zatím to jde dobře, ale nechval dne před večerem.",
+      },
+      {
+        phrase: "Co na srdci, to na jazyku",
+        meaning: "O upřímném člověku, který řekne přímo to, co si myslí.",
+        example: "S ní se jedná narovinu, má co na srdci, to na jazyku.",
+      },
+      {
+        phrase: "Pes, který štěká, nekouše",
+        meaning: "Lidé, kteří hodně vyhrožují a křičí, většinou nic neudělají.",
+        example: "Neboj se ho, pes, který štěká, nekouše.",
+      },
+      {
+        phrase: "Práce kvapná, málo platná",
+        meaning: "Rychle a narychlo udělaná práce bývá často nekvalitní.",
+        example: "Měl jsi mi to dát zkontrolovat, pamatuješ? Práce kvapná, málo platná.",
+      },
+      {
+        phrase: "Trpělivost růže přináší",
+        meaning: "Kdo umí počkat, dočká se úspěchu.",
+        example: "Nevzdávej to po prvním týdnu. Trpělivost růže přináší.",
+      },
+      {
+        phrase: "Vrána k vráně sedá",
+        meaning: "Lidé se stejnou povahou nebo zájmy si k sobě vždycky najdou cestu.",
+        example: "Oba jsou strašně líní, není divu, že jsou spolu. Vrána k vráně sedá.",
+      },
+      {
+        phrase: "Bližší košile nežli kabát",
+        meaning: "Vlastní zájmy a rodina jsou nám přednější než cizí lidé.",
+        example: "Rád bych jim pomohl, ale musím se postarat o své děti. Bližší košile nežli kabát.",
+      },
+      {
+        phrase: "S poctivostí nejdál dojdeš",
+        meaning: "Být upřímný a čestný se dlouhodobě vyplatí nejvíce.",
+        example: "Nezapírej to, raději přiznej chybu. S poctivostí nejdál dojdeš.",
+      },
+    ],
+  },
+  {
+    id: "internet",
+    title: "Moderní výrazy a internetový slang",
+    emoji: "📱",
+    items: [
+      {
+        phrase: "Vygooglit",
+        meaning: "Najít něco na internetu pomocí vyhledávače Google.",
+        example: "Nevím, kdy ten vlak jede, musím to vygooglit.",
+      },
+      {
+        phrase: "Fejk",
+        meaning: "Padělek, falešná věc nebo zpráva (z anglického 'fake').",
+        example: "Ty značkové boty z tržnice jsou určitě fejk.",
+      },
+      {
+        phrase: "Hejtr",
+        meaning: "Člověk, který jen kritizuje a píše nenávistné komentáře na internetu.",
+        example: "Nečti ty komentáře, jsou tam jenom samí hejtři.",
+      },
+      {
+        phrase: "Stajlovat se",
+        meaning: "Upravovat se, dlouho se oblékat a česat před zrcadlem.",
+        example: "Už se stajluje hodinu, asi přijdeme pozdě.",
+      },
+      {
+        phrase: "Spamovat",
+        meaning: "Posílat nevyžádané nebo opakující se zprávy.",
+        example: "Nespamuj mi ten chat pořád dokola!",
+      },
+      {
+        phrase: "Zčeknout něco",
+        meaning: "Zkontrolovat, prohlédnout si (z anglického 'check').",
+        example: "Musím zčeknout, jestli už mi přišla výplata.",
+      },
+      {
+        phrase: "Ujetý",
+        meaning: "Velmi divný, bláznivý nebo nevkusný.",
+        example: "Ten jeho nový sestřih je fakt ujetý.",
+      },
+      {
+        phrase: "Mega",
+        meaning: "Univerzální předpona pro něco obrovského, skvělého nebo zkrátka 'velmi'.",
+        example: "Byla to mega dobrá pizza.",
+      },
+      {
+        phrase: "Chill / Chillovat",
+        meaning: "Odpočívat, relaxovat, nic nedělat.",
+        example: "Dneska večer budu jenom chillovat u Netflixu.",
+      },
+      {
+        phrase: "Hype",
+        meaning: "Velký (často přehnaný) rozruch, nadšení nebo reklama kolem nějaké novinky.",
+        example: "Nechápu ten hype kolem toho nového iPhonu.",
+      },
+    ],
+  },
 ]
 
 // ===== Components =====
