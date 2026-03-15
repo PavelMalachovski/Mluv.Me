@@ -374,7 +374,7 @@ const SLANG_CATEGORIES: SlangCategory[] = [
       },
       {
         phrase: "Vole",
-        meaning: "Původně nadávka, dnes univerzální vycpávkové slovo (jako „člověče").",
+        meaning: "Původně nadávka, dnes univerzální vycpávkové slovo (jako 'člověče').",
         example: "To je fakt síla, vole.",
       },
       {
