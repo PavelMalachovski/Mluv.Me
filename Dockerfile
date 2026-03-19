@@ -94,7 +94,7 @@ python -m bot.main &\n\
 BOT_PID=$!\n\
 \n\
 echo "Starting Celery worker..."\n\
-celery -A backend.tasks.celery_app worker --loglevel=info --concurrency=2 --max-tasks-per-child=1000 &\n\
+celery -A backend.tasks.celery_app worker --loglevel=info --concurrency=2 --max-tasks-per-child=1000 -Q celery,notifications,analytics,maintenance,ai &\n\
 WORKER_PID=$!\n\
 \n\
 echo "Starting Celery beat (scheduler)..."\n\

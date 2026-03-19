@@ -135,7 +135,7 @@ class _SendEveningNotificationsTask(AsyncTask):
         try:
             async with AsyncSessionLocal() as db:
                 from backend.models.message import Message
-                from backend.models.user_settings import UserSettings
+                from backend.models.user import UserSettings
 
                 two_weeks_ago = datetime.now() - timedelta(days=14)
 

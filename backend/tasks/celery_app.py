@@ -56,13 +56,9 @@ celery_app.conf.update(
             "task": "backend.tasks.gamification.check_and_reset_streaks",
             "schedule": crontab(hour=0, minute=5),  # 00:05 UTC daily
         },
-        "send-daily-reminders": {
-            "task": "backend.tasks.notifications.send_evening_grammar_notifications",
-            "schedule": crontab(hour=18, minute=0),  # 18:00 UTC = 19:00 CET
-        },
         "send-daily-slang": {
             "task": "backend.tasks.notifications.send_evening_slang_notifications",
-            "schedule": crontab(hour=18, minute=5),  # 18:05 UTC = 19:05 CET (5 min after grammar)
+            "schedule": crontab(hour=18, minute=0),  # 18:00 UTC = 19:00 CET
         },
         "aggregate-metrics": {
             "task": "backend.tasks.analytics.aggregate_platform_metrics",
