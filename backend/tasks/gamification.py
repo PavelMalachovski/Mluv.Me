@@ -27,9 +27,7 @@ class AsyncTask(Task):
         """Override to run async functions."""
         import asyncio
 
-        return asyncio.get_event_loop().run_until_complete(
-            self.run_async(*args, **kwargs)
-        )
+        return asyncio.run(self.run_async(*args, **kwargs))
 
     async def run_async(self, *args, **kwargs):
         """Override this method in subclasses."""

@@ -284,7 +284,7 @@ class _SendSlangReminderTask(AsyncTask):
                 if not user:
                     return {"user_id": user_id, "sent": False, "reason": "user_not_found"}
 
-                if user.settings and not user.settings.notifications_enabled:
+                if user.settings is not None and not user.settings.notifications_enabled:
                     return {"user_id": user_id, "sent": False, "reason": "notifications_disabled"}
 
                 phrase, meaning, example = _get_daily_slang()
@@ -343,11 +343,17 @@ class _SendEveningSlangNotificationsTask(AsyncTask):
         try:
             async with AsyncSessionLocal() as db:
                 from backend.models.user import User, UserSettings
+                from sqlalchemy.orm import selectinload
 
+                # LEFT OUTER JOIN — users without a settings row
+                # are treated as notifications_enabled=True (default)
                 query = (
                     select(User.id)
-                    .join(UserSettings, User.id == UserSettings.user_id)
-                    .where(UserSettings.notifications_enabled == True)  # noqa: E712
+                    .outerjoin(UserSettings, User.id == UserSettings.user_id)
+                    .where(
+                        (UserSettings.notifications_enabled == True)  # noqa: E712
+                        | (UserSettings.id == None)  # noqa: E711  — no settings row
+                    )
                 )
 
                 result = await db.execute(query)
