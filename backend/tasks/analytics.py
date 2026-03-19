@@ -30,11 +30,7 @@ class AsyncTask(Task):
         """Override to run async functions."""
         import asyncio
 
-        return asyncio.run(self.run_async(*args, **kwargs))
-
-    async def run_async(self, *args, **kwargs):
-        """Override this method in subclasses."""
-        raise NotImplementedError
+        return asyncio.run(self.run(*args, **kwargs))
 
 
 @celery_app.task(bind=True, base=AsyncTask, max_retries=3)
