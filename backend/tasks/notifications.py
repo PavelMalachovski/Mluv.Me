@@ -30,11 +30,25 @@ from backend.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+def _get_or_create_event_loop() -> asyncio.AbstractEventLoop:
+    """Get the current event loop or create a new one (keeps it open for connection pool reuse)."""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    return loop
+
+
 class AsyncTask(Task):
     """Base task class with async support (Python 3.10+ compatible)."""
 
     def __call__(self, *args, **kwargs):
-        return asyncio.run(self.run_async(*args, **kwargs))
+        loop = _get_or_create_event_loop()
+        return loop.run_until_complete(self.run_async(*args, **kwargs))
 
     async def run_async(self, *args, **kwargs):
         raise NotImplementedError
