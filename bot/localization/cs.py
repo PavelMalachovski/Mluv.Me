@@ -187,6 +187,18 @@ TEXTS_CS = {
     "translate_error": "Nepodařilo se přeložit slovo 😅\n\n"
     "Zkus znovu nebo použij tlačítko 'Menu'.",
     "phonetics": "Fonetika",
+    # Star Shop
+    "shop_header": "⭐ <b>Star Shop</b> — Máš {stars}⭐",
+    "shop_streak_shield": "Streak Shield",
+    "shop_streak_shield_desc": "Ochrání tvůj streak na 1 zmeškaný den",
+    "shop_trial_premium": "Pro na 1 den",
+    "shop_trial_premium_desc": "Neomezený přístup na 24 hodin",
+    "shop_scenarios_header": "Odemknutí scénářů",
+    "shop_purchase_success": "✅ <b>{item}</b> zakoupeno za {cost}⭐\n\nZbývá: {remaining}⭐",
+    "shop_insufficient_stars": "❌ Nemáš dost hvězd.\nPotřebuješ {cost}⭐, máš {available}⭐",
+    "shop_shield_already_active": "🛡 Streak Shield je už aktivní!",
+    "shop_already_pro": "💎 Už máš Pro přístup!",
+    "shop_scenario_unlocked": "🎭 Scénář <b>{scenario}</b> odemčen za {cost}⭐!\nZbývá: {remaining}⭐",
     # Ostatní
     "already_registered": "Už jsi zaregistrovaný!\n\n"
     "Použij /help pro zobrazení co umím.",

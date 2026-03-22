@@ -75,6 +75,7 @@ async def check_and_reset_streaks(self) -> Dict[str, Any]:
             stats_repo = StatsRepository(db)
             reset_count = 0
             maintained_count = 0
+            shield_used_count = 0
 
             # Проверяем каждого пользователя
             for user_id, yesterday_streak in users_with_streak:
@@ -87,8 +88,28 @@ async def check_and_reset_streaks(self) -> Dict[str, Any]:
                     maintained_count += 1
                     continue
 
-                # Пользователь не практиковался - сбрасываем streak
-                # (на самом деле ничего не делаем, streak просто не продолжится)
+                # Пользователь не практиковался — проверяем Streak Shield
+                from backend.services.star_shop import StarShopService
+
+                shop = StarShopService(db)
+                shield_consumed = await shop.consume_streak_shield(user_id)
+
+                if shield_consumed:
+                    # Shield защитил streak — сохраняем вчерашний streak на сегодня
+                    await stats_repo.update_daily(
+                        user_id=user_id,
+                        date_value=today,
+                        streak_day=yesterday_streak,
+                    )
+                    shield_used_count += 1
+                    logger.info(
+                        "streak_shield_saved",
+                        user_id=user_id,
+                        streak_preserved=yesterday_streak,
+                    )
+                    continue
+
+                # Нет shield — streak сбрасывается
                 reset_count += 1
 
                 logger.info(
@@ -101,6 +122,7 @@ async def check_and_reset_streaks(self) -> Dict[str, Any]:
                 "total_checked": len(users_with_streak),
                 "maintained": maintained_count,
                 "will_reset": reset_count,
+                "shield_used": shield_used_count,
                 "timestamp": datetime.now().isoformat(),
             }
 

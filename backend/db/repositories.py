@@ -781,6 +781,48 @@ class StatsRepository:
         await self.session.flush()
         return {"total": row[0], "available": row[1], "lifetime": row[2]}
 
+    async def spend_user_stars(
+        self,
+        user_id: int,
+        amount: int,
+    ) -> dict[str, int] | None:
+        """
+        Атомарно списать звезды с баланса пользователя.
+
+        Списывает из total и available, но НЕ из lifetime.
+        Возвращает None если недостаточно звёзд.
+
+        Args:
+            user_id: ID пользователя
+            amount: Количество звезд для списания
+
+        Returns:
+            dict с новыми значениями или None если недостаточно
+        """
+        # Check balance first
+        stars = await self.get_user_stars(user_id)
+        if not stars or stars.available < amount:
+            return None
+
+        stmt = (
+            update(Stars)
+            .where(Stars.user_id == user_id, Stars.available >= amount)
+            .values(
+                total=Stars.total - amount,
+                available=Stars.available - amount,
+                updated_at=datetime.now(timezone.utc),
+            )
+            .returning(Stars.total, Stars.available, Stars.lifetime)
+        )
+        result = await self.session.execute(stmt)
+        row = result.one_or_none()
+
+        if row is None:
+            return None
+
+        await self.session.flush()
+        return {"total": row[0], "available": row[1], "lifetime": row[2]}
+
     async def get_stats_range(
         self, user_id: int, start_date: date, end_date: date
     ) -> list[dict[str, Any]]:

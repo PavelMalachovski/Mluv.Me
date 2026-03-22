@@ -31,6 +31,7 @@ from backend.routers import (
     games,
     grammar,
     subscription,
+    star_shop,
 )
 
 # Configure structlog for Railway.com
@@ -131,6 +132,7 @@ app.include_router(scenarios.router)
 app.include_router(games.router)
 app.include_router(grammar.router)
 app.include_router(subscription.router)
+app.include_router(star_shop.router)
 
 
 @app.get(

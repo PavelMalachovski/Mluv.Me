@@ -152,6 +152,18 @@ TEXTS_RU = {
     "translate_error": "Не удалось перевести слово 😅\n\n"
     "Попробуй еще раз или используй кнопку 'Menu' для интерактивного перевода.",
     "phonetics": "Фонетика",
+    # Star Shop
+    "shop_header": "⭐ <b>Star Shop</b> — У тебя {stars}⭐",
+    "shop_streak_shield": "Streak Shield",
+    "shop_streak_shield_desc": "Защитит твой streak на 1 пропущенный день",
+    "shop_trial_premium": "Pro на 1 день",
+    "shop_trial_premium_desc": "Безлимитный доступ на 24 часа",
+    "shop_scenarios_header": "Разблокировка сценариев",
+    "shop_purchase_success": "✅ <b>{item}</b> куплено за {cost}⭐\n\nОсталось: {remaining}⭐",
+    "shop_insufficient_stars": "❌ Недостаточно звёзд.\nНужно {cost}⭐, у тебя {available}⭐",
+    "shop_shield_already_active": "🛡 Streak Shield уже активен!",
+    "shop_already_pro": "💎 У тебя уже есть Pro доступ!",
+    "shop_scenario_unlocked": "🎭 Сценарий <b>{scenario}</b> разблокирован за {cost}⭐!\nОсталось: {remaining}⭐",
     # Прочее
     "already_registered": "Ты уже зарегистрирован!\n\n"
     "Используй /help чтобы узнать что я умею.",

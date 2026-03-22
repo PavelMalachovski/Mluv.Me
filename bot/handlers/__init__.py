@@ -4,7 +4,7 @@
 
 from aiogram import Router
 
-from . import commands, start, text, voice, payments
+from . import commands, start, text, voice, payments, star_shop
 
 
 def get_main_router() -> Router:
@@ -20,11 +20,13 @@ def get_main_router() -> Router:
     # 1. start - регистрация и онбординг
     # 2. commands - команды /help, /stats и т.д.
     # 3. payments - Telegram Stars (pre_checkout, successful_payment, buy: callbacks)
-    # 4. voice - голосовые сообщения
-    # 5. text - текстовые сообщения (должен быть последним, т.к. ловит все текстовые)
+    # 4. star_shop - Star Shop (shop: callbacks, /shop command)
+    # 5. voice - голосовые сообщения
+    # 6. text - текстовые сообщения (должен быть последним, т.к. ловит все текстовые)
     main_router.include_router(start.router)
     main_router.include_router(commands.router)
     main_router.include_router(payments.router)
+    main_router.include_router(star_shop.router)
     main_router.include_router(voice.router)
     main_router.include_router(text.router)
 

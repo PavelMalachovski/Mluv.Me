@@ -539,3 +539,72 @@ class APIClient:
                 error=str(e),
             )
             return None
+
+    # ──────────── Star Shop ────────────
+
+    async def get_star_shop(
+        self, telegram_id: int
+    ) -> Optional[dict[str, Any]]:
+        """Get the star shop catalog for users."""
+        session = await self._get_session()
+        try:
+            async with session.get(
+                f"{self.base_url}/api/v1/star-shop/catalog",
+                params={"telegram_id": telegram_id},
+                timeout=10,
+            ) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                return None
+        except Exception as e:
+            logger.error("star_shop_catalog_error", error=str(e))
+            return None
+
+    async def buy_streak_shield(
+        self, telegram_id: int
+    ) -> Optional[dict[str, Any]]:
+        """Buy a streak shield (100 stars)."""
+        session = await self._get_session()
+        try:
+            async with session.post(
+                f"{self.base_url}/api/v1/star-shop/streak-shield",
+                params={"telegram_id": telegram_id},
+                timeout=10,
+            ) as resp:
+                return await resp.json()
+        except Exception as e:
+            logger.error("buy_streak_shield_error", error=str(e))
+            return None
+
+    async def buy_trial_premium(
+        self, telegram_id: int
+    ) -> Optional[dict[str, Any]]:
+        """Buy 1 day Pro access (500 stars)."""
+        session = await self._get_session()
+        try:
+            async with session.post(
+                f"{self.base_url}/api/v1/star-shop/trial-premium",
+                params={"telegram_id": telegram_id},
+                timeout=10,
+            ) as resp:
+                return await resp.json()
+        except Exception as e:
+            logger.error("buy_trial_premium_error", error=str(e))
+            return None
+
+    async def unlock_scenario(
+        self, telegram_id: int, scenario_id: str
+    ) -> Optional[dict[str, Any]]:
+        """Unlock a premium scenario with stars."""
+        session = await self._get_session()
+        try:
+            async with session.post(
+                f"{self.base_url}/api/v1/star-shop/unlock-scenario",
+                params={"telegram_id": telegram_id},
+                json={"scenario_id": scenario_id},
+                timeout=10,
+            ) as resp:
+                return await resp.json()
+        except Exception as e:
+            logger.error("unlock_scenario_error", error=str(e))
+            return None
