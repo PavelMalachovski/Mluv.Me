@@ -4,11 +4,13 @@
 Language Immersion: UI на чешском, выбираем только родной язык для объяснений.
 """
 
+import asyncio
 import time
+from pathlib import Path
 
 from aiogram import F, Router
 from aiogram.filters import CommandStart
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, FSInputFile, Message
 import structlog
 
 from bot.keyboards import get_native_language_keyboard, get_level_keyboard
@@ -17,6 +19,12 @@ from bot.services.api_client import APIClient
 
 router = Router()
 logger = structlog.get_logger()
+
+# ── Welcome video circles ──────────────────────────
+_VIDEOS_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "public" / "videos"
+_GREETING_VIDEOS = ["Greetings1.mp4", "Greetings2.mp4"]
+# Cache file_ids so we upload each video only once per bot lifetime
+_video_file_ids: dict[str, str] = {}
 
 # Временное хранилище данных онбординга (telegram_id -> data)
 onboarding_data: dict[int, dict] = {}
@@ -58,6 +66,26 @@ async def command_start_handler(message: Message, api_client: APIClient) -> None
         # Пользователь уже зарегистрирован (сообщение на чешском)
         await message.answer(get_text("already_registered"))
         return
+
+    # Отправляем приветственные видео-кружочки
+    for filename in _GREETING_VIDEOS:
+        try:
+            if filename in _video_file_ids:
+                # Reuse cached file_id (no re-upload)
+                await message.answer_video_note(video_note=_video_file_ids[filename])
+            else:
+                video_path = _VIDEOS_DIR / filename
+                if video_path.exists():
+                    result = await message.answer_video_note(
+                        video_note=FSInputFile(video_path),
+                    )
+                    # Cache file_id for future sends
+                    if result.video_note:
+                        _video_file_ids[filename] = result.video_note.file_id
+        except Exception as e:
+            logger.warning("greeting_video_send_failed", filename=filename, error=str(e))
+
+        await asyncio.sleep(0.3)
 
     # Начинаем онбординг
     _cleanup_onboarding()
