@@ -6,6 +6,7 @@ Gamification background tasks for Mluv.Me.
 - Обработки достижений
 """
 
+import asyncio
 from datetime import datetime, date, timedelta
 from typing import Dict, Any
 

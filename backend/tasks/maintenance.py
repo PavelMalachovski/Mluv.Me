@@ -7,6 +7,7 @@ Maintenance background tasks for Mluv.Me.
 - Оптимизации базы данных
 """
 
+import asyncio
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
