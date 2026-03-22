@@ -161,6 +161,28 @@ def AsyncSessionLocal() -> AsyncSession:
     return get_session_maker()()
 
 
+def reset_engine() -> None:
+    """
+    Reset global engine state (sync). Used by Celery tasks before asyncio.run()
+    to discard stale connections bound to a previously closed event loop.
+    """
+    global _engine, _async_session_maker
+    _engine = None
+    _async_session_maker = None
+
+
+async def dispose_engine() -> None:
+    """
+    Dispose engine and reset globals (async). Used by Celery tasks after work
+    is done to properly close all pool connections within the current event loop.
+    """
+    global _engine, _async_session_maker
+    if _engine is not None:
+        await _engine.dispose()
+    _engine = None
+    _async_session_maker = None
+
+
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency для получения database session в FastAPI.

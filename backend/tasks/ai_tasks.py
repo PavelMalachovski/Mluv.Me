@@ -24,7 +24,17 @@ from backend.tasks.celery_app import celery_app
 
 def _run_async(coro):
     """Run an async coroutine in a fresh event loop to avoid cross-loop asyncpg errors."""
-    return asyncio.run(coro)
+    from backend.db.database import reset_engine, dispose_engine
+
+    reset_engine()  # Discard stale connections from previous closed loop
+
+    async def _wrapper():
+        try:
+            return await coro
+        finally:
+            await dispose_engine()
+
+    return asyncio.run(_wrapper())
 
 
 @celery_app.task(

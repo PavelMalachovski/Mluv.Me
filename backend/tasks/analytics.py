@@ -29,7 +29,17 @@ class AsyncTask(Task):
 
     def __call__(self, *args, **kwargs):
         """Run async task in a fresh event loop to avoid cross-loop asyncpg errors."""
-        return asyncio.run(self.run(*args, **kwargs))
+        from backend.db.database import reset_engine, dispose_engine
+
+        reset_engine()  # Discard stale connections from previous closed loop
+
+        async def _wrapper():
+            try:
+                return await self.run(*args, **kwargs)
+            finally:
+                await dispose_engine()
+
+        return asyncio.run(_wrapper())
 
 
 @celery_app.task(bind=True, base=AsyncTask, max_retries=3)
