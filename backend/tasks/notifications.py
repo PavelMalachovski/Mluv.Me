@@ -13,9 +13,10 @@ Daily slang notification (19:00 CET = 18:00 UTC):
 
 import asyncio
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 from typing import Dict, Any
 
+import redis.asyncio as aioredis
 from celery import Task
 from sqlalchemy import select, func
 
@@ -28,6 +29,21 @@ from backend.data.slang_data import SLANG_ITEMS
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+async def _dedup_check(key: str, ttl: int = 86400) -> bool:
+    """Return True if this key was already set (duplicate). Uses SET NX."""
+    from backend.config import get_settings
+
+    settings = get_settings()
+    r = aioredis.from_url(settings.redis_url, decode_responses=True)
+    try:
+        was_set = await r.set(key, "1", nx=True, ex=ttl)
+        return not was_set  # True = already exists = duplicate
+    except Exception:
+        return False  # Redis failure → allow sending (fail open)
+    finally:
+        await r.aclose()
 
 
 class AsyncTask(Task):
@@ -62,6 +78,11 @@ class _SendGrammarReminderTask(AsyncTask):
 
     async def run_async(self, user_id: int) -> Dict[str, Any]:
         try:
+            dedup_key = f"notif:grammar:{user_id}:{date.today().isoformat()}"
+            if await _dedup_check(dedup_key):
+                logger.info("grammar_reminder_dedup", user_id=user_id)
+                return {"user_id": user_id, "sent": False, "reason": "already_sent_today"}
+
             async with AsyncSessionLocal() as db:
                 user_repo = UserRepository(db)
                 stats_repo = StatsRepository(db)
@@ -298,6 +319,11 @@ class _SendSlangReminderTask(AsyncTask):
 
     async def run_async(self, user_id: int) -> Dict[str, Any]:
         try:
+            dedup_key = f"notif:slang:{user_id}:{date.today().isoformat()}"
+            if await _dedup_check(dedup_key):
+                logger.info("slang_reminder_dedup", user_id=user_id)
+                return {"user_id": user_id, "sent": False, "reason": "already_sent_today"}
+
             async with AsyncSessionLocal() as db:
                 user_repo = UserRepository(db)
                 user = await user_repo.get_by_id(user_id)
