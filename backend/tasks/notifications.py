@@ -97,13 +97,23 @@ class _SendGrammarReminderTask(AsyncTask):
                     stars=total_stars,
                 )
 
+                if not message:
+                    return {
+                        "user_id": user_id,
+                        "sent": False,
+                        "reason": "no_grammar_rule",
+                    }
+
+                # get_notification_message returns {"message": str, "rule_id": int}
+                message_text = message["message"]
+
                 try:
                     from aiogram import Bot
                     from backend.config import get_settings
 
                     settings = get_settings()
                     bot = Bot(token=settings.telegram_bot_token)
-                    await bot.send_message(user.telegram_id, message, parse_mode="HTML")
+                    await bot.send_message(user.telegram_id, message_text, parse_mode="HTML")
                     await bot.session.close()
 
                     logger.info(
