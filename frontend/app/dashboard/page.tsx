@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense } from "react"
+import { Suspense, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
 import { StatsTab } from "@/components/features/StatsTab"
