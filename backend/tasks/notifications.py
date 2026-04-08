@@ -337,7 +337,7 @@ class _SendSlangReminderTask(AsyncTask):
                 phrase, meaning, example = _get_daily_slang()
 
                 message = (
-                    f"🗣️ <b>Slovo dne</b>\n\n"
+                    f"🗣️ <b>Fráze dne</b>\n\n"
                     f"Ahoj! Věděl(a) jsi, že <b>{phrase}</b> znamená "
                     f"<i>{meaning}</i>?\n\n"
                     f"📝 <b>Příklad:</b> {example}\n\n"
