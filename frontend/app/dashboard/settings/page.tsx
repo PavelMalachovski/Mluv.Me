@@ -23,6 +23,9 @@ import {
   Sun,
   Globe,
   Search,
+  Crown,
+  MessageCircle,
+  Mic,
 } from "lucide-react"
 
 // ---------- Full language list ----------
@@ -554,6 +557,9 @@ export default function SettingsPage() {
 
             {/* Account Settings */}
             <TabsContent value="account" className="space-y-4">
+              {/* Subscription Card */}
+              <SubscriptionCard />
+
               <div className="illustrated-card p-6">
                 <div className="mb-6 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
@@ -640,6 +646,97 @@ export default function SettingsPage() {
         </div>
       </div>
     </>
+  )
+}
+
+// ---------- Subscription Card Component ----------
+
+function SubscriptionCard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["subscription"],
+    queryFn: () => apiClient.getSubscription(),
+    staleTime: 60_000,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="illustrated-card p-6 animate-pulse">
+        <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded mb-4" />
+        <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded" />
+      </div>
+    )
+  }
+
+  const isPro = data?.plan === "pro"
+  const expiresAt = data?.expires_at ? new Date(data.expires_at) : null
+  const textQuota = data?.text_quota
+  const voiceQuota = data?.voice_quota
+
+  return (
+    <div className={`illustrated-card p-6 ${isPro ? "border-2 border-yellow-300 dark:border-yellow-600" : ""}`}>
+      <div className="mb-4 flex items-center gap-3">
+        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
+          isPro ? "bg-yellow-100 dark:bg-yellow-900/30" : "bg-purple-100 dark:bg-purple-900/30"
+        }`}>
+          <Crown className={`h-5 w-5 ${isPro ? "text-yellow-600" : "text-purple-600"}`} />
+        </div>
+        <div>
+          <h3 className="font-semibold text-foreground">
+            {isPro ? "Pro přístup ⭐" : "Free plán"}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {isPro && expiresAt
+              ? `Platí do ${expiresAt.toLocaleDateString("cs-CZ")}`
+              : "Odemkni neomezený přístup přes bota"
+            }
+          </p>
+        </div>
+      </div>
+
+      {!isPro && textQuota && voiceQuota && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 text-muted-foreground">
+              <MessageCircle className="h-4 w-4" /> Textové zprávy
+            </span>
+            <span className="font-medium">
+              {textQuota.used} / {textQuota.limit} dnes
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div
+              className="bg-purple-500 h-2 rounded-full transition-all"
+              style={{ width: `${Math.min(100, (textQuota.used / textQuota.limit) * 100)}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 text-muted-foreground">
+              <Mic className="h-4 w-4" /> Hlasové zprávy
+            </span>
+            <span className="font-medium">
+              {voiceQuota.used} / {voiceQuota.limit} dnes
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div
+              className="bg-purple-500 h-2 rounded-full transition-all"
+              style={{ width: `${Math.min(100, (voiceQuota.used / voiceQuota.limit) * 100)}%` }}
+            />
+          </div>
+
+          <p className="text-xs text-muted-foreground mt-2">
+            Pro neomezený přístup napiš <b>/subscribe</b> Honzíkovi v chatu&nbsp;💬
+          </p>
+        </div>
+      )}
+
+      {isPro && (
+        <div className="text-sm text-muted-foreground">
+          ✅ Neomezené textové i hlasové zprávy
+        </div>
+      )}
+    </div>
   )
 }
 
