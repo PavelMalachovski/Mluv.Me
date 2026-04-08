@@ -1,14 +1,9 @@
 "use client"
 
-import { Suspense, useEffect, useState } from "react"
+import { Suspense } from "react"
 import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/lib/auth-store"
 import { StatsTab } from "@/components/features/StatsTab"
-import {
-  HonzikVideoAvatar,
-  hasSeenWelcomeVideo,
-  preloadVideoImages,
-} from "@/components/features/HonzikVideoAvatar"
 
 /**
  * Get user initials for avatar
@@ -45,17 +40,6 @@ function getAvatarColor(name: string): string {
  */
 function DashboardContent() {
   const user = useAuthStore((state) => state.user)
-  const [showWelcomeVideo, setShowWelcomeVideo] = useState(false)
-
-  // Check if this is first visit — show welcome video
-  useEffect(() => {
-    if (user && !hasSeenWelcomeVideo()) {
-      preloadVideoImages("welcome")
-      // Small delay to let dashboard render first
-      const timer = setTimeout(() => setShowWelcomeVideo(true), 500)
-      return () => clearTimeout(timer)
-    }
-  }, [user])
 
   if (!user) {
     return null
@@ -66,16 +50,6 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen cream-bg landscape-bg pb-24">
-      {/* Honzík Welcome Video — shows on first visit */}
-      {showWelcomeVideo && (
-        <HonzikVideoAvatar
-          type="welcome"
-          language={user.native_language === "ru" ? "ru" : "cs"}
-          onComplete={() => setShowWelcomeVideo(false)}
-          onDismiss={() => setShowWelcomeVideo(false)}
-        />
-      )}
-
       {/* Custom Header with Avatar */}
       <div className="illustrated-header relative pb-8">
         <h1 className="illustrated-header-title">Statistiky</h1>
