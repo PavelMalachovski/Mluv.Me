@@ -106,6 +106,7 @@ class ActivateStarsRequest(BaseModel):
     telegram_id: int
     product_id: str
     telegram_payment_charge_id: str
+    provider: str = "telegram_stars"
 
 
 @router.post("/activate-stars")
@@ -114,7 +115,7 @@ async def activate_stars(
     db: AsyncSession = Depends(get_session),
 ):
     """
-    Record a Telegram Stars payment and activate/extend Pro subscription.
+    Record a Telegram payment (Stars or Tribute) and activate/extend Pro subscription.
     Called by the bot's successful_payment handler.
     """
     # Resolve user by telegram_id
@@ -128,6 +129,8 @@ async def activate_stars(
         sub = await svc.process_stars_purchase(
             user_id=user.id,
             product_id=request.product_id,
+            telegram_payment_charge_id=request.telegram_payment_charge_id,
+            provider=request.provider,
             telegram_payment_charge_id=request.telegram_payment_charge_id,
         )
     except ValueError as e:

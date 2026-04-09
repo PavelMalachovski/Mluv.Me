@@ -57,7 +57,7 @@ class Subscription(Base):
         String(30),
         nullable=False,
         default="telegram_stars",
-        comment="Payment source: telegram_stars, stripe, admin",
+        comment="Payment source: telegram_stars, tribute, stripe, admin",
     )
 
     starts_at: Mapped[datetime] = mapped_column(
@@ -118,7 +118,7 @@ class Payment(Base):
     provider: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
-        comment="Payment provider: telegram_stars, stripe",
+        comment="Payment provider: telegram_stars, tribute, stripe",
     )
 
     amount: Mapped[int] = mapped_column(

@@ -1,12 +1,13 @@
 """
-Telegram Stars payment handlers.
+Telegram Stars & Tribute (card) payment handlers.
 
-Full flow:
-  1. User hits daily limit → inline keyboard with Star products
-  2. User taps product → bot sends invoice (sendInvoice)
-  3. Telegram sends pre_checkout_query → we confirm
-  4. Telegram processes payment → successful_payment callback
-  5. We record payment + activate/extend Pro subscription
+Stars flow (XTR):
+  1. User taps Stars product → bot sends invoice with currency=XTR
+  2. Telegram processes → pre_checkout → successful_payment
+
+Tribute flow (CZK via card):
+  1. User taps Card product → bot sends invoice with provider_token + currency=CZK
+  2. Tribute processes card → pre_checkout → successful_payment
 """
 
 import structlog
@@ -20,6 +21,7 @@ from aiogram.types import (
     InlineKeyboardMarkup,
 )
 
+from bot.config import config
 from bot.services.api_client import APIClient
 
 logger = structlog.get_logger(__name__)
@@ -32,20 +34,41 @@ PRODUCTS = {
         "label": "⭐ Pro na 7 dní",
         "description": "7 dní neomezeného přístupu ke všem funkcím Mluv.Me",
         "stars": 150,
+        "czk": 79,
         "days": 7,
     },
     "pro_30d": {
         "label": "💎 Pro na 30 dní",
         "description": "30 dní neomezeného přístupu ke všem funkcím Mluv.Me",
         "stars": 500,
+        "czk": 249,
         "days": 30,
     },
 }
 
 
+def _tribute_available() -> bool:
+    """Check if Tribute provider token is configured."""
+    return bool(config.tribute_api_key)
+
+
 def get_subscription_keyboard() -> InlineKeyboardMarkup:
     """Inline keyboard with available subscription products."""
     buttons = []
+
+    # Card payments via Tribute (if configured)
+    if _tribute_available():
+        for product_id, product in PRODUCTS.items():
+            buttons.append(
+                [
+                    InlineKeyboardButton(
+                        text=f"💳 {product['label']} — {product['czk']} Kč",
+                        callback_data=f"buy_card:{product_id}",
+                    )
+                ]
+            )
+
+    # Stars payments (always available)
     for product_id, product in PRODUCTS.items():
         buttons.append(
             [
@@ -55,6 +78,7 @@ def get_subscription_keyboard() -> InlineKeyboardMarkup:
                 )
             ]
         )
+
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
@@ -102,10 +126,53 @@ async def handle_buy(callback: CallbackQuery) -> None:
     )
 
     logger.info(
-        "invoice_sent",
+        "stars_invoice_sent",
         user_id=callback.from_user.id,
         product=product_id,
         stars=product["stars"],
+    )
+
+
+# ──────────── Buy via Tribute (card payment) ────────────
+
+
+@router.callback_query(F.data.startswith("buy_card:"))
+async def handle_buy_card(callback: CallbackQuery) -> None:
+    """
+    User tapped a card product button → send invoice via Tribute provider.
+    """
+    product_id = callback.data.split(":", 1)[1]
+    product = PRODUCTS.get(product_id)
+
+    if not product:
+        await callback.answer("Produkt nenalezen", show_alert=True)
+        return
+
+    if not _tribute_available():
+        await callback.answer("Platba kartou není dostupná", show_alert=True)
+        return
+
+    await callback.answer()
+
+    # Amount in smallest unit: CZK → haléře (× 100)
+    amount_cents = product["czk"] * 100
+
+    await callback.message.answer_invoice(
+        title=product["label"],
+        description=product["description"],
+        payload=f"card:{product_id}",
+        provider_token=config.tribute_api_key,
+        currency="CZK",
+        prices=[
+            LabeledPrice(label=product["label"], amount=amount_cents),
+        ],
+    )
+
+    logger.info(
+        "card_invoice_sent",
+        user_id=callback.from_user.id,
+        product=product_id,
+        czk=product["czk"],
     )
 
 
@@ -116,9 +183,11 @@ async def handle_buy(callback: CallbackQuery) -> None:
 async def handle_pre_checkout(pre_checkout: PreCheckoutQuery) -> None:
     """
     Telegram asks us to confirm the payment before processing.
-    We always confirm (product was already validated when sending invoice).
+    Works for both Stars (XTR) and Tribute (card) payments.
     """
-    product_id = pre_checkout.invoice_payload
+    raw_payload = pre_checkout.invoice_payload
+    # Card payments use "card:pro_7d" format, Stars use "pro_7d"
+    product_id = raw_payload.split(":", 1)[1] if raw_payload.startswith("card:") else raw_payload
     product = PRODUCTS.get(product_id)
 
     if not product:
@@ -130,6 +199,7 @@ async def handle_pre_checkout(pre_checkout: PreCheckoutQuery) -> None:
         "pre_checkout_confirmed",
         user_id=pre_checkout.from_user.id,
         product=product_id,
+        currency=pre_checkout.currency,
     )
 
 
@@ -140,17 +210,24 @@ async def handle_pre_checkout(pre_checkout: PreCheckoutQuery) -> None:
 async def handle_successful_payment(message: Message, api_client: APIClient) -> None:
     """
     Payment completed! Activate/extend Pro subscription.
+    Works for both Stars (XTR) and Tribute (card) payments.
     """
     payment = message.successful_payment
-    product_id = payment.invoice_payload
-    product = PRODUCTS.get(product_id)
+    raw_payload = payment.invoice_payload
     telegram_id = message.from_user.id
     charge_id = payment.telegram_payment_charge_id
+
+    # Determine provider and product_id from payload
+    is_card = raw_payload.startswith("card:")
+    product_id = raw_payload.split(":", 1)[1] if is_card else raw_payload
+    product = PRODUCTS.get(product_id)
+    provider = "tribute" if is_card else "telegram_stars"
 
     logger.info(
         "payment_successful",
         user_id=telegram_id,
         product=product_id,
+        provider=provider,
         charge_id=charge_id,
         total_amount=payment.total_amount,
         currency=payment.currency,
@@ -162,6 +239,7 @@ async def handle_successful_payment(message: Message, api_client: APIClient) -> 
             telegram_id=telegram_id,
             product_id=product_id,
             charge_id=charge_id,
+            provider=provider,
         )
 
         if result and result.get("success"):
@@ -205,13 +283,15 @@ async def handle_successful_payment(message: Message, api_client: APIClient) -> 
 @router.message(F.text == "/subscribe")
 async def handle_subscribe_command(message: Message) -> None:
     """Show subscription options."""
+    card_note = "\n💳 Platba kartou • ⭐ Telegram Stars\n" if _tribute_available() else ""
     await message.answer(
         "🌟 <b>Mluv.Me Pro</b>\n\n"
         "Neomezené textové i hlasové zprávy\n"
-        "Všechny scénáře a mini-hry\n"
+        "Všechny scénáře\n"
         "Oba konverzační partneři (Honzík & paní Nováková)\n"
         "Podrobné opravy a gramatika\n"
         "Spaced repetition pro slovíčka\n\n"
+        f"{card_note}"
         "Vyber si plán:",
         parse_mode="HTML",
         reply_markup=get_subscription_keyboard(),

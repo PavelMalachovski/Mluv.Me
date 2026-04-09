@@ -26,6 +26,9 @@ class BotConfig(BaseSettings):
     # Logging
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
 
+    # Tribute payment provider token
+    tribute_api_key: str = os.getenv("TRIBUTE_API_KEY", "")
+
     # Webhook settings (для Railway)
     webhook_url: Optional[str] = os.getenv("WEBHOOK_URL", None)
     webhook_path: str = "/webhook/bot"

@@ -464,14 +464,16 @@ class APIClient:
         telegram_id: int,
         product_id: str,
         charge_id: str,
+        provider: str = "telegram_stars",
     ) -> Optional[dict[str, Any]]:
         """
-        Activate Pro subscription after successful Telegram Stars payment.
+        Activate Pro subscription after successful payment.
 
         Args:
             telegram_id: Telegram user ID
             product_id: Product ID (pro_7d, pro_30d)
             charge_id: Telegram payment charge ID
+            provider: Payment provider (telegram_stars, tribute)
 
         Returns:
             Result dict with success flag and expiry date
@@ -482,6 +484,7 @@ class APIClient:
                 "telegram_id": telegram_id,
                 "product_id": product_id,
                 "telegram_payment_charge_id": charge_id,
+                "provider": provider,
             }
             async with session.post(
                 f"{self.base_url}/api/v1/subscription/activate-stars",

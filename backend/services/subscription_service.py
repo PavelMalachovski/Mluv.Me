@@ -34,12 +34,13 @@ PLAN_LIMITS: dict[str, dict[str, int]] = {
     },
 }
 
-# ──────────────────── Products (Telegram Stars) ──────
+# ──────────────────── Products ──────
 STAR_PRODUCTS = {
     "pro_7d": {
         "label": "Pro na 7 dní",
         "description": "7 dní neomezeného přístupu ke všem funkcím Mluv.Me",
         "stars": 150,
+        "czk": 79,
         "days": 7,
         "plan": "pro",
     },
@@ -47,6 +48,7 @@ STAR_PRODUCTS = {
         "label": "Pro na 30 dní",
         "description": "30 dní neomezeného přístupu ke všem funkcím Mluv.Me",
         "stars": 500,
+        "czk": 249,
         "days": 30,
         "plan": "pro",
     },
@@ -237,9 +239,10 @@ class SubscriptionService:
         user_id: int,
         product_id: str,
         telegram_payment_charge_id: str,
+        provider: str = "telegram_stars",
     ) -> Subscription:
         """
-        Full flow after successful Telegram Stars payment:
+        Full flow after successful Telegram payment (Stars or Tribute):
         1. Record payment
         2. Activate/extend Pro subscription
         """
@@ -247,12 +250,20 @@ class SubscriptionService:
         if not product:
             raise ValueError(f"Unknown product: {product_id}")
 
+        # Determine amount and currency based on provider
+        if provider == "tribute":
+            amount = product["czk"] * 100  # haéře
+            currency = "CZK"
+        else:
+            amount = product["stars"]
+            currency = "XTR"
+
         # Record payment
         await self.record_payment(
             user_id=user_id,
-            provider="telegram_stars",
-            amount=product["stars"],
-            currency="XTR",
+            provider=provider,
+            amount=amount,
+            currency=currency,
             description=product["description"],
             product=product_id,
             telegram_payment_charge_id=telegram_payment_charge_id,
@@ -262,7 +273,7 @@ class SubscriptionService:
         sub = await self.activate_pro(
             user_id=user_id,
             days=product["days"],
-            source="telegram_stars",
+            source=provider,
         )
 
         await self.db.commit()
