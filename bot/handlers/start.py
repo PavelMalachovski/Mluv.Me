@@ -5,6 +5,7 @@ Language Immersion: UI на чешском, выбираем только род
 """
 
 import asyncio
+import subprocess
 import time
 from pathlib import Path
 
@@ -22,9 +23,35 @@ logger = structlog.get_logger()
 
 # ── Welcome video circles ──────────────────────────
 _VIDEOS_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "public" / "videos"
+_CONVERTED_DIR = _VIDEOS_DIR / "_circles"
 _GREETING_VIDEOS = ["Greetings1.mp4", "Greetings2.mp4"]
 # Cache file_ids so we upload each video only once per bot lifetime
 _video_file_ids: dict[str, str] = {}
+
+
+def _ensure_square_video(src: Path) -> Path:
+    """Convert video to square 1:1 format suitable for Telegram video notes."""
+    _CONVERTED_DIR.mkdir(parents=True, exist_ok=True)
+    dest = _CONVERTED_DIR / src.name
+    if dest.exists():
+        return dest
+    try:
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", str(src),
+                "-vf", "crop=min(iw\,ih):min(iw\,ih),scale=384:384",
+                "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+                "-an",  # video notes have no audio
+                "-t", "60",  # max 1 minute
+                str(dest),
+            ],
+            check=True, capture_output=True, timeout=30,
+        )
+        logger.info("video_converted_to_circle", src=src.name)
+        return dest
+    except Exception as e:
+        logger.warning("video_conversion_failed", src=src.name, error=str(e))
+        return src  # fallback to original
 
 # Временное хранилище данных онбординга (telegram_id -> data)
 onboarding_data: dict[int, dict] = {}
@@ -76,8 +103,9 @@ async def command_start_handler(message: Message, api_client: APIClient) -> None
             else:
                 video_path = _VIDEOS_DIR / filename
                 if video_path.exists():
+                    circle_path = _ensure_square_video(video_path)
                     result = await message.answer_video_note(
-                        video_note=FSInputFile(video_path),
+                        video_note=FSInputFile(circle_path),
                     )
                     # Cache file_id for future sends
                     if result.video_note:
