@@ -421,8 +421,8 @@ async def native_language_changed(
     native_language = callback.data.split(":")[1]
     lang_name = get_native_language_name(native_language)
 
-    # Обновляем настройки
-    await api_client.update_user_settings(telegram_id, native_language=native_language)
+    # Обновляем native_language в профиле пользователя (не в settings!)
+    await api_client.update_user(user["id"], native_language=native_language)
 
     await callback.message.edit_text(
         get_text("settings_native_changed", language=lang_name), parse_mode="HTML"

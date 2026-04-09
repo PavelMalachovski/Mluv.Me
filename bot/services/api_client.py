@@ -121,6 +121,38 @@ class APIClient:
             logger.error("create_user_error", telegram_id=telegram_id, error=str(e))
             return None
 
+    async def update_user(
+        self, user_id: int, **fields
+    ) -> Optional[dict[str, Any]]:
+        """
+        Обновить профиль пользователя (native_language, level, etc.).
+
+        Args:
+            user_id: Internal user ID
+            **fields: Поля для обновления
+
+        Returns:
+            Обновленный пользователь или None
+        """
+        session = await self._get_session()
+        try:
+            async with session.patch(
+                f"{self.base_url}/api/v1/users/{user_id}",
+                json=fields,
+            ) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    logger.error(
+                        "update_user_failed",
+                        user_id=user_id,
+                        status=resp.status,
+                    )
+                    return None
+        except Exception as e:
+            logger.error("update_user_error", user_id=user_id, error=str(e))
+            return None
+
     async def update_user_settings(
         self, telegram_id: int, **settings
     ) -> Optional[dict[str, Any]]:
