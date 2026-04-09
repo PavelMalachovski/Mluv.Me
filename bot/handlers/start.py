@@ -32,7 +32,7 @@ _video_file_ids: dict[str, str] = {}
 def _ensure_square_video(src: Path) -> Path:
     """Convert video to square 1:1 format suitable for Telegram video notes."""
     _CONVERTED_DIR.mkdir(parents=True, exist_ok=True)
-    dest = _CONVERTED_DIR / src.name
+    dest = _CONVERTED_DIR / f"v2_{src.name}"
     if dest.exists():
         return dest
     try:
@@ -41,7 +41,7 @@ def _ensure_square_video(src: Path) -> Path:
                 "ffmpeg", "-y", "-i", str(src),
                 "-vf", "crop=min(iw\,ih):min(iw\,ih),scale=384:384",
                 "-c:v", "libx264", "-preset", "fast", "-crf", "23",
-                "-an",  # video notes have no audio
+                "-c:a", "aac", "-b:a", "128k",
                 "-t", "60",  # max 1 minute
                 str(dest),
             ],
