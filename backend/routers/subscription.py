@@ -131,7 +131,6 @@ async def activate_stars(
             product_id=request.product_id,
             telegram_payment_charge_id=request.telegram_payment_charge_id,
             provider=request.provider,
-            telegram_payment_charge_id=request.telegram_payment_charge_id,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
