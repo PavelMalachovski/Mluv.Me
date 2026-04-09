@@ -41,6 +41,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy Python application code
+# v2: Tribute payment support
 COPY backend/ ./backend/
 COPY bot/ ./bot/
 COPY alembic/ ./alembic/
