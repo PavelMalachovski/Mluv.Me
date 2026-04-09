@@ -216,7 +216,9 @@ export default function SettingsPage() {
         </div>
 
         <div className="mx-auto max-w-2xl px-4 pt-6">
-          <Tabs defaultValue="learning" className="space-y-6">
+          <SubscriptionCard />
+
+          <Tabs defaultValue="learning" className="space-y-6 mt-4">
             <TabsList className="w-full grid grid-cols-4 bg-white dark:bg-gray-800 rounded-xl p-1 shadow-sm">
               <TabsTrigger value="learning" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
                 Učení
@@ -557,8 +559,6 @@ export default function SettingsPage() {
 
             {/* Account Settings */}
             <TabsContent value="account" className="space-y-4">
-              {/* Subscription Card */}
-              <SubscriptionCard />
 
               <div className="illustrated-card p-6">
                 <div className="mb-6 flex items-center gap-3">
