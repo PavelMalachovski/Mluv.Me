@@ -66,7 +66,7 @@ celery_app.conf.update(
         },
         "cleanup-old-data": {
             "task": "backend.tasks.maintenance.cleanup_old_data",
-            "schedule": crontab(hour=2, minute=0, day_of_week=1),  # Monday 02:00
+            "schedule": crontab(hour=3, minute=0),  # Daily at 03:00 UTC
         },
         "refresh-materialized-views": {
             "task": "backend.tasks.maintenance.refresh_materialized_views",

@@ -8,11 +8,11 @@ Maintenance background tasks for Mluv.Me.
 """
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
 
 from celery import Task
-from sqlalchemy import text, delete
+from sqlalchemy import text, delete, select, and_
 
 from backend.tasks.celery_app import celery_app
 from backend.db.database import AsyncSessionLocal
@@ -44,12 +44,12 @@ async def cleanup_old_data(self) -> Dict[str, Any]:
     """
     Очистка старых данных из базы.
 
-    Вызывается каждый понедельник в 02:00 UTC.
+    Вызывается ежедневно в 03:00 UTC.
 
     Удаляет:
-    - Сообщения старше 90 дней (опционально, для GDPR)
-    - Устаревшие кеш записи
-    - Неиспользуемые временные данные
+    - Сообщения free-пользователей старше 7 дней
+    - PRO-пользователи: сообщения НЕ удаляются (хранится вся история)
+    - Устаревшие daily_stats старше 1 года
 
     Returns:
         dict: Статистика очистки
@@ -62,9 +62,36 @@ async def cleanup_old_data(self) -> Dict[str, Any]:
                 "old_stats_deleted": 0,
             }
 
+            from backend.models.message import Message
+            from backend.models.subscription import Subscription
+
+            now = datetime.now(timezone.utc)
+            seven_days_ago = now - timedelta(days=7)
+
+            # Находим user_id всех активных PRO-подписчиков
+            pro_result = await db.execute(
+                select(Subscription.user_id).where(
+                    and_(
+                        Subscription.plan == "pro",
+                        Subscription.status == "active",
+                        Subscription.expires_at > now,
+                    )
+                )
+            )
+            pro_user_ids = {row[0] for row in pro_result.fetchall()}
+
+            # Удаляем сообщения старше 7 дней у НЕ-PRO пользователей
+            delete_messages_query = delete(Message).where(
+                and_(
+                    Message.created_at < seven_days_ago,
+                    ~Message.user_id.in_(pro_user_ids) if pro_user_ids else True,
+                )
+            )
+            result = await db.execute(delete_messages_query)
+            stats["messages_deleted"] = result.rowcount
+
             # Удаляем старые daily_stats (старше 1 года)
-            # Оставляем только за последний год для производительности
-            year_ago = datetime.now() - timedelta(days=365)
+            year_ago = now - timedelta(days=365)
 
             from backend.models.stats import DailyStats
 
@@ -77,7 +104,11 @@ async def cleanup_old_data(self) -> Dict[str, Any]:
 
             await db.commit()
 
-            logger.info("cleanup_completed", **stats)
+            logger.info(
+                "cleanup_completed",
+                pro_users_preserved=len(pro_user_ids),
+                **stats,
+            )
 
             return stats
 
