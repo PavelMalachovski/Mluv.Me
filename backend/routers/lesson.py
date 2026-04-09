@@ -675,6 +675,7 @@ async def process_text_message(
                 corrections_level=_s(user, "corrections_level"),
                 native_language=user.native_language,
                 conversation_history=conversation_history,
+                character=_s(user, "character"),
             )
 
         log.info(
@@ -704,7 +705,7 @@ async def process_text_message(
 
             voice_speed = openai_client.get_voice_speed_mapping(_s(user, "voice_speed"))
             text = processed["honzik_response"]
-            voice = settings.tts_voice
+            voice = HonzikPersonality.get_tts_voice(_s(user, "character"))
             speed = voice_speed
 
             # Проверяем кеш сначала
