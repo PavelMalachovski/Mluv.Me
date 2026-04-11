@@ -46,7 +46,8 @@ TEXTS_CS = {
     "/stats - Statistiky učení\n"
     "/saved - Uložená slova\n\n"
     "🌟 <b>Předplatné:</b>\n"
-    "/subscribe - Pro přístup (neomezené zprávy)\n\n"
+    "/subscribe - Pro přístup (neomezené zprávy)\n"
+    "/plan - Zobrazit aktuální plán a zrušit předplatné\n\n"
     "🔄 <b>Ostatní:</b>\n"
     "/reset - Začít novou konverzaci\n"
     "/help - Zobrazit tuto nápovědu",

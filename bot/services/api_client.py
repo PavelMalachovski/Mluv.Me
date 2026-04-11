@@ -611,6 +611,48 @@ class APIClient:
             )
             return None
 
+    async def get_plan_info(
+        self, telegram_id: int
+    ) -> Optional[dict[str, Any]]:
+        """
+        Get full subscription info for the /plan command.
+
+        Returns:
+            Dict with plan, expires_at, text_quota, voice_quota.
+        """
+        session = await self._get_session()
+        try:
+            async with session.get(
+                f"{self.base_url}/api/v1/subscription/plan/{telegram_id}",
+                timeout=10,
+            ) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                return None
+        except Exception as e:
+            logger.error("get_plan_info_error", telegram_id=telegram_id, error=str(e))
+            return None
+
+    async def cancel_subscription(
+        self, telegram_id: int
+    ) -> Optional[dict[str, Any]]:
+        """
+        Cancel active Pro subscription.
+
+        Returns:
+            Dict with {success: bool}.
+        """
+        session = await self._get_session()
+        try:
+            async with session.post(
+                f"{self.base_url}/api/v1/subscription/cancel/{telegram_id}",
+                timeout=10,
+            ) as resp:
+                return await resp.json()
+        except Exception as e:
+            logger.error("cancel_subscription_error", telegram_id=telegram_id, error=str(e))
+            return None
+
     # ──────────── Star Shop ────────────
 
     async def get_star_shop(

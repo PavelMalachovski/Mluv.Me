@@ -196,6 +196,17 @@ class SubscriptionService:
         )
         return sub
 
+    async def cancel_subscription(self, user_id: int) -> bool:
+        """Cancel the active Pro subscription (expire immediately)."""
+        sub = await self.get_active_subscription(user_id)
+        if not sub:
+            return False
+        sub.status = "cancelled"
+        sub.expires_at = datetime.now(timezone.utc)
+        await self.db.commit()
+        logger.info("subscription_cancelled", user_id=user_id)
+        return True
+
     # ─────────── Payment recording ───────────
 
     async def record_payment(
@@ -251,8 +262,8 @@ class SubscriptionService:
             raise ValueError(f"Unknown product: {product_id}")
 
         # Determine amount and currency based on provider
-        if provider == "tribute":
-            amount = product["czk"] * 100  # haéře
+        if provider in ("tribute", "stripe"):
+            amount = product["czk"] * 100  # haléře
             currency = "CZK"
         else:
             amount = product["stars"]

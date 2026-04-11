@@ -13,6 +13,7 @@ Stripe flow (CZK via card):
 
 import structlog
 from aiogram import Router, F
+from aiogram.filters import Command
 from aiogram.types import (
     CallbackQuery,
     LabeledPrice,
@@ -452,4 +453,128 @@ async def handle_subscribe_command(message: Message, api_client: APIClient) -> N
         "Vyber si plán:",
         parse_mode="HTML",
         reply_markup=get_subscription_keyboard(available_stars),
+    )
+
+
+# ──────────── /plan command ────────────
+
+
+@router.message(Command("plan"))
+async def handle_plan_command(message: Message, api_client: APIClient) -> None:
+    """Show current subscription status and option to cancel."""
+    telegram_id = message.from_user.id
+    info = await api_client.get_plan_info(telegram_id)
+
+    if not info or info.get("plan") == "free":
+        text_q = info.get("text_quota") if info else None
+        voice_q = info.get("voice_quota") if info else None
+
+        usage_text = ""
+        if text_q and voice_q:
+            usage_text = (
+                f"\n📊 <b>Dnešní využití:</b>\n"
+                f"  Textové zprávy: {text_q['used']}/{text_q['limit']}\n"
+                f"  Hlasové zprávy: {voice_q['used']}/{voice_q['limit']}\n"
+            )
+
+        await message.answer(
+            "📋 <b>Tvůj plán: Free</b>\n"
+            f"{usage_text}\n"
+            "Pro neomezený přístup použij /subscribe",
+            parse_mode="HTML",
+        )
+        return
+
+    expires_at = info.get("expires_at", "")
+    # Format date nicely
+    expires_display = expires_at[:10] if expires_at else "?"
+    text_q = info.get("text_quota", {})
+    voice_q = info.get("voice_quota", {})
+
+    await message.answer(
+        "📋 <b>Tvůj plán: Pro</b> 🌟\n\n"
+        f"📅 Platnost do: <b>{expires_display}</b>\n\n"
+        "✅ Neomezené textové zprávy\n"
+        "✅ Neomezené hlasové zprávy\n"
+        "✅ Všechny funkce odemčeny\n\n"
+        "Pro prodloužení plánu: /subscribe",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="❌ Zrušit předplatné",
+                        callback_data="cancel_subscription",
+                    )
+                ]
+            ]
+        ),
+    )
+
+
+# ──────────── Cancel subscription ────────────
+
+
+@router.callback_query(F.data == "cancel_subscription")
+async def handle_cancel_subscription(
+    callback: CallbackQuery, api_client: APIClient
+) -> None:
+    """Ask user to confirm cancellation."""
+    await callback.answer()
+    await callback.message.edit_text(
+        "⚠️ <b>Opravdu chceš zrušit předplatné?</b>\n\n"
+        "Přijdeš o neomezený přístup a vrátíš se na plán Free "
+        "(6 textových + 5 hlasových zpráv denně).\n\n"
+        "Peníze za nevyužité dny se nevracejí.",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="✅ Ano, zrušit",
+                        callback_data="confirm_cancel_sub",
+                    ),
+                    InlineKeyboardButton(
+                        text="↩️ Ne, ponechat",
+                        callback_data="keep_subscription",
+                    ),
+                ]
+            ]
+        ),
+    )
+
+
+@router.callback_query(F.data == "confirm_cancel_sub")
+async def handle_confirm_cancel(
+    callback: CallbackQuery, api_client: APIClient
+) -> None:
+    """Actually cancel the subscription."""
+    await callback.answer()
+    telegram_id = callback.from_user.id
+
+    result = await api_client.cancel_subscription(telegram_id)
+
+    if result and result.get("success"):
+        await callback.message.edit_text(
+            "✅ <b>Předplatné zrušeno.</b>\n\n"
+            "Tvůj plán je teď Free.\n"
+            "Kdykoli můžeš znovu předplatit: /subscribe",
+            parse_mode="HTML",
+        )
+        logger.info("subscription_cancelled_by_user", user_id=telegram_id)
+    else:
+        await callback.message.edit_text(
+            "ℹ️ Nemáš aktivní předplatné.",
+            parse_mode="HTML",
+        )
+
+
+@router.callback_query(F.data == "keep_subscription")
+async def handle_keep_subscription(callback: CallbackQuery) -> None:
+    """User decided not to cancel."""
+    await callback.answer("👍 Předplatné zůstává aktivní")
+    await callback.message.edit_text(
+        "👍 <b>Předplatné zůstává aktivní.</b>\n\n"
+        "Užívej si neomezený přístup! 🌟",
+        parse_mode="HTML",
     )

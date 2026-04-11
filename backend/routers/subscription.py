@@ -7,6 +7,8 @@ Endpoints:
   POST /api/v1/subscription/webhook   — Stripe webhook
   POST /api/v1/subscription/activate-stars — activate after Telegram Stars payment
   GET  /api/v1/subscription/quota/{telegram_id} — quota check for bot
+  GET  /api/v1/subscription/plan/{telegram_id}  — full plan info for bot
+  POST /api/v1/subscription/cancel/{telegram_id} — cancel subscription
 """
 
 import stripe
@@ -263,3 +265,51 @@ async def check_quota_by_telegram_id(
 
     svc = SubscriptionService(db)
     return await svc.check_quota(user.id, msg_type)
+
+
+# ──────────── GET /subscription/plan/{telegram_id} ───────────
+# Full plan info for the bot's /plan command.
+
+
+@router.get("/plan/{telegram_id}")
+async def get_plan_by_telegram_id(
+    telegram_id: int,
+    db: AsyncSession = Depends(get_session),
+):
+    """
+    Return full subscription info for a user (by telegram_id).
+    Used by the bot /plan command.
+    """
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_telegram_id(telegram_id)
+    if not user:
+        return {"plan": "free", "expires_at": None, "text_quota": None, "voice_quota": None}
+
+    svc = SubscriptionService(db)
+    return await svc.get_subscription_info(user.id)
+
+
+# ──────────── POST /subscription/cancel/{telegram_id} ────────
+
+
+@router.post("/cancel/{telegram_id}")
+async def cancel_subscription(
+    telegram_id: int,
+    db: AsyncSession = Depends(get_session),
+):
+    """
+    Cancel active Pro subscription for a user (expire immediately).
+    Used by the bot /plan → cancel button.
+    """
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_telegram_id(telegram_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    svc = SubscriptionService(db)
+    cancelled = await svc.cancel_subscription(user.id)
+
+    if not cancelled:
+        return {"success": False, "detail": "No active subscription"}
+
+    return {"success": True}
