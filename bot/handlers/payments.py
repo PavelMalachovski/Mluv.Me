@@ -46,15 +46,29 @@ PRODUCTS = {
     },
 }
 
+STAR_DISCOUNT_COST = 500   # earned stars needed
+STAR_DISCOUNT_CZK = 50     # CZK discount amount
+
 
 def _tribute_available() -> bool:
     """Check if Tribute provider token is configured."""
     return bool(config.tribute_api_key)
 
 
-def get_subscription_keyboard() -> InlineKeyboardMarkup:
+def get_subscription_keyboard(available_stars: int = 0) -> InlineKeyboardMarkup:
     """Inline keyboard with available subscription products."""
     buttons = []
+
+    # Star discount button (if user has enough earned stars)
+    if available_stars >= STAR_DISCOUNT_COST:
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    text=f"🎁 Použij {STAR_DISCOUNT_COST}⭐ → sleva {STAR_DISCOUNT_CZK} Kč",
+                    callback_data="redeem_discount",
+                )
+            ]
+        )
 
     # Card payments via Tribute (if configured)
     if _tribute_available():
@@ -176,6 +190,125 @@ async def handle_buy_card(callback: CallbackQuery) -> None:
     )
 
 
+# ──────────── Redeem star discount ────────────
+
+
+@router.callback_query(F.data == "redeem_discount")
+async def handle_redeem_discount(
+    callback: CallbackQuery, api_client: APIClient
+) -> None:
+    """
+    User tapped 'Use 500⭐ for 50 Kč discount' → redeem stars, show discounted prices.
+    """
+    telegram_id = callback.from_user.id
+    result = await api_client.redeem_star_discount(telegram_id)
+
+    if not result or not result.get("success"):
+        error = result.get("error", "unknown") if result else "unknown"
+        if error == "insufficient_stars":
+            await callback.answer(
+                f"Nemáš dostatek hvězdiček (potřebuješ {STAR_DISCOUNT_COST}⭐)",
+                show_alert=True,
+            )
+        elif error == "already_active":
+            await callback.answer(
+                "Sleva je už aktivní — vyber si plán do 15 minut!",
+                show_alert=True,
+            )
+        else:
+            await callback.answer("Chyba při uplatňování slevy", show_alert=True)
+        return
+
+    await callback.answer()
+
+    remaining = result.get("remaining_stars", 0)
+
+    # Build discounted keyboard (only card payments — Stars prices are fixed by Telegram)
+    buttons = []
+    if _tribute_available():
+        for product_id, product in PRODUCTS.items():
+            discounted = product["czk"] - STAR_DISCOUNT_CZK
+            buttons.append(
+                [
+                    InlineKeyboardButton(
+                        text=f"💳 {product['label']} — {discounted} Kč (sleva {STAR_DISCOUNT_CZK} Kč)",
+                        callback_data=f"buy_card_disc:{product_id}",
+                    )
+                ]
+            )
+
+    # Keep regular Stars option
+    for product_id, product in PRODUCTS.items():
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    text=f"{product['label']} — {product['stars']}⭐",
+                    callback_data=f"buy:{product_id}",
+                )
+            ]
+        )
+
+    await callback.message.edit_text(
+        f"🎁 <b>Sleva {STAR_DISCOUNT_CZK} Kč aktivována!</b>\n\n"
+        f"Utratil jsi {STAR_DISCOUNT_COST}⭐ (zbývá {remaining}⭐)\n"
+        f"Vyber si plán se slevou do 15 minut:",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+    )
+
+    logger.info(
+        "star_discount_redeemed",
+        user_id=telegram_id,
+        remaining_stars=remaining,
+    )
+
+
+# ──────────── Buy with discount (card) ────────────
+
+
+@router.callback_query(F.data.startswith("buy_card_disc:"))
+async def handle_buy_card_discounted(callback: CallbackQuery) -> None:
+    """
+    Send a Tribute invoice with the discounted CZK price.
+    Discount was already deducted from stars in redeem_discount.
+    """
+    product_id = callback.data.split(":", 1)[1]
+    product = PRODUCTS.get(product_id)
+
+    if not product:
+        await callback.answer("Produkt nenalezen", show_alert=True)
+        return
+
+    if not _tribute_available():
+        await callback.answer("Platba kartou není dostupná", show_alert=True)
+        return
+
+    await callback.answer()
+
+    discounted_czk = product["czk"] - STAR_DISCOUNT_CZK
+    amount_cents = discounted_czk * 100
+
+    await callback.message.answer_invoice(
+        title=product["label"],
+        description=f"{product['description']} (sleva {STAR_DISCOUNT_CZK} Kč za ⭐)",
+        payload=f"card:{product_id}",
+        provider_token=config.tribute_api_key,
+        currency="CZK",
+        prices=[
+            LabeledPrice(label=product["label"], amount=product["czk"] * 100),
+            LabeledPrice(label=f"Sleva za {STAR_DISCOUNT_COST}⭐", amount=-STAR_DISCOUNT_CZK * 100),
+        ],
+    )
+
+    logger.info(
+        "discounted_card_invoice_sent",
+        user_id=callback.from_user.id,
+        product=product_id,
+        original_czk=product["czk"],
+        discounted_czk=discounted_czk,
+    )
+
+
 # ──────────── Pre-checkout (Telegram asks: "confirm?") ────────────
 
 
@@ -281,8 +414,20 @@ async def handle_successful_payment(message: Message, api_client: APIClient) -> 
 
 
 @router.message(F.text == "/subscribe")
-async def handle_subscribe_command(message: Message) -> None:
+async def handle_subscribe_command(message: Message, api_client: APIClient) -> None:
     """Show subscription options."""
+    telegram_id = message.from_user.id
+
+    # Check user's star balance for discount eligibility
+    available_stars = 0
+    shop_data = await api_client.get_star_shop(telegram_id)
+    if shop_data:
+        available_stars = shop_data.get("available_stars", 0)
+
+    star_note = ""
+    if available_stars >= STAR_DISCOUNT_COST:
+        star_note = f"\n🎁 Máš {available_stars}⭐ — můžeš získat slevu {STAR_DISCOUNT_CZK} Kč!\n"
+
     card_note = "\n💳 Platba kartou • ⭐ Telegram Stars\n" if _tribute_available() else ""
     await message.answer(
         "🌟 <b>Mluv.Me Pro</b>\n\n"
@@ -291,8 +436,9 @@ async def handle_subscribe_command(message: Message) -> None:
         "Oba konverzační partneři (Honzík & paní Nováková)\n"
         "Podrobné opravy a gramatika\n"
         "Spaced repetition pro slovíčka\n\n"
+        f"{star_note}"
         f"{card_note}"
         "Vyber si plán:",
         parse_mode="HTML",
-        reply_markup=get_subscription_keyboard(),
+        reply_markup=get_subscription_keyboard(available_stars),
     )

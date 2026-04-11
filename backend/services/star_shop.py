@@ -22,6 +22,10 @@ logger = structlog.get_logger(__name__)
 STREAK_SHIELD_COST = 100
 TRIAL_PREMIUM_COST = 500
 TRIAL_PREMIUM_DAYS = 1
+DISCOUNT_COST = 500       # 500 earned stars → 50 CZK discount on subscription
+DISCOUNT_CZK = 50
+_DISCOUNT_KEY = "star_discount:{user_id}"
+_DISCOUNT_TTL = 60 * 15   # 15 minutes to use the discount
 
 # Scenarios that require star-unlock (intermediate+ scenarios)
 # key = scenario_id, value = unlock cost in stars
@@ -290,6 +294,69 @@ class StarShopService:
 
     # ── Shop catalog ────────────────────────────────
 
+    async def redeem_discount(self, user_id: int) -> dict:
+        """
+        Spend 500 earned stars to get a 50 CZK discount on the next subscription.
+
+        Sets a Redis flag valid for 15 minutes.
+        Returns dict with success status.
+        """
+        # Check if already has an active discount
+        if await self.has_discount(user_id):
+            return {
+                "success": False,
+                "error": "already_active",
+                "message": "Discount already active — use it within 15 minutes",
+            }
+
+        # Spend stars
+        result = await self.stats_repo.spend_user_stars(user_id, DISCOUNT_COST)
+        if result is None:
+            stars = await self.stats_repo.get_user_stars(user_id)
+            return {
+                "success": False,
+                "error": "insufficient_stars",
+                "cost": DISCOUNT_COST,
+                "available": stars.available if stars else 0,
+            }
+
+        await redis_client.set(
+            _DISCOUNT_KEY.format(user_id=user_id),
+            {"activated_at": datetime.now(timezone.utc).isoformat(), "czk": DISCOUNT_CZK},
+            ttl=_DISCOUNT_TTL,
+        )
+
+        await self.db.commit()
+
+        logger.info(
+            "star_discount_redeemed",
+            user_id=user_id,
+            cost=DISCOUNT_COST,
+            discount_czk=DISCOUNT_CZK,
+            remaining_stars=result["available"],
+        )
+
+        return {
+            "success": True,
+            "cost": DISCOUNT_COST,
+            "discount_czk": DISCOUNT_CZK,
+            "remaining_stars": result["available"],
+            "total_stars": result["total"],
+        }
+
+    async def has_discount(self, user_id: int) -> bool:
+        """Check if user has an active star discount."""
+        return await redis_client.get(_DISCOUNT_KEY.format(user_id=user_id)) is not None
+
+    async def consume_discount(self, user_id: int) -> int | None:
+        """Consume discount and return CZK amount. None if no discount."""
+        key = _DISCOUNT_KEY.format(user_id=user_id)
+        data = await redis_client.get(key)
+        if data:
+            await redis_client.delete(key)
+            return data.get("czk", DISCOUNT_CZK)
+        return None
+
     async def get_shop_items(self, user_id: int) -> dict:
         """Return the full star shop catalog with user-specific state."""
         stars = await self.stats_repo.get_user_stars(user_id)
@@ -326,6 +393,13 @@ class StarShopService:
                     "already_pro": plan == "pro",
                     "can_afford": available >= TRIAL_PREMIUM_COST,
                     "description": f"{TRIAL_PREMIUM_DAYS}-day Pro access",
+                },
+                "discount": {
+                    "cost": DISCOUNT_COST,
+                    "discount_czk": DISCOUNT_CZK,
+                    "active": await self.has_discount(user_id),
+                    "can_afford": available >= DISCOUNT_COST,
+                    "description": f"Spend {DISCOUNT_COST} ⭐ for {DISCOUNT_CZK} Kč off subscription",
                 },
                 "scenario_unlocks": scenarios,
             },

@@ -134,3 +134,18 @@ async def buy_trial_premium(
 
     shop = StarShopService(db)
     return await shop.buy_trial_premium(user.id)
+
+
+@router.post("/redeem-discount", response_model=PurchaseResponse)
+async def redeem_discount(
+    telegram_id: int = Query(...),
+    db: AsyncSession = Depends(get_session),
+):
+    """Spend 500 ⭐ to get a 50 Kč discount on subscription (15 min to use)."""
+    user_repo = UserRepository(db)
+    user = await user_repo.get_by_telegram_id(telegram_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    shop = StarShopService(db)
+    return await shop.redeem_discount(user.id)

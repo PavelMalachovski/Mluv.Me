@@ -627,6 +627,22 @@ class APIClient:
             logger.error("buy_trial_premium_error", error=str(e))
             return None
 
+    async def redeem_star_discount(
+        self, telegram_id: int
+    ) -> Optional[dict[str, Any]]:
+        """Spend 500 stars for a 50 Kč discount on subscription."""
+        session = await self._get_session()
+        try:
+            async with session.post(
+                f"{self.base_url}/api/v1/star-shop/redeem-discount",
+                params={"telegram_id": telegram_id},
+                timeout=10,
+            ) as resp:
+                return await resp.json()
+        except Exception as e:
+            logger.error("redeem_star_discount_error", error=str(e))
+            return None
+
     async def unlock_scenario(
         self, telegram_id: int, scenario_id: str
     ) -> Optional[dict[str, Any]]:
