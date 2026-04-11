@@ -133,7 +133,7 @@ function LearnContent() {
       {/* Header */}
       <div className="illustrated-header relative pb-6">
         <h1 className="illustrated-header-title">Procvičování</h1>
-        <p className="text-center text-sm text-white/80 mt-1">Hry, gramatika a výzvy</p>
+        <p className="text-center text-sm text-white/80 mt-1">Slang, gramatika a výzvy</p>
       </div>
 
       <div className="mx-auto max-w-2xl px-4 pt-4">

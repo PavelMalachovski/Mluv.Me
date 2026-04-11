@@ -63,7 +63,7 @@ export function QuotaBanner() {
         <span className="font-semibold">Denní limit vyčerpán</span>
       </div>
       <p className="text-xs text-red-300/70">
-        Free plán: 10 textových + 5 hlasových zpráv denně.
+        Free plán: 6 textových + 5 hlasových zpráv denně.
         Přejdi na Pro pro neomezený přístup — přes Telegram bota /subscribe
       </p>
     </div>

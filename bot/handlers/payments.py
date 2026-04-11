@@ -33,15 +33,15 @@ PRODUCTS = {
     "pro_7d": {
         "label": "⭐ Pro na 7 dní",
         "description": "7 dní neomezeného přístupu ke všem funkcím Mluv.Me",
-        "stars": 100,
-        "czk": 49,
+        "stars": 120,
+        "czk": 59,
         "days": 7,
     },
     "pro_30d": {
         "label": "💎 Pro na 30 dní",
         "description": "30 dní neomezeného přístupu ke všem funkcím Mluv.Me",
-        "stars": 350,
-        "czk": 159,
+        "stars": 400,
+        "czk": 199,
         "days": 30,
     },
 }

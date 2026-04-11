@@ -160,7 +160,7 @@ async def check_quota_by_telegram_id(
     user = await user_repo.get_by_telegram_id(telegram_id)
     if not user:
         # Unknown user → allow (they'll create account on first message)
-        return {"allowed": True, "plan": "free", "used": 0, "limit": 10, "remaining": 10}
+        return {"allowed": True, "plan": "free", "used": 0, "limit": 6, "remaining": 6}
 
     svc = SubscriptionService(db)
     return await svc.check_quota(user.id, msg_type)
