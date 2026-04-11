@@ -20,6 +20,8 @@ from backend.schemas.translation import (
 )
 from backend.services.translation_service import TranslationService
 from backend.services.spaced_repetition_service import SpacedRepetitionService
+from backend.services.openai_client import OpenAIClient
+from backend.config import Settings, get_settings
 from backend.models.word import SavedWord
 from backend.routers.web_auth import get_authenticated_user
 
@@ -31,6 +33,42 @@ router = APIRouter(prefix="/api/v1/words", tags=["words"])
 def get_translation_service() -> TranslationService:
     """Dependency для сервиса перевода."""
     return TranslationService()
+
+
+_openai_client: OpenAIClient | None = None
+
+
+def get_openai_client(settings: Settings = Depends(get_settings)) -> OpenAIClient:
+    global _openai_client
+    if _openai_client is None:
+        _openai_client = OpenAIClient(settings)
+    return _openai_client
+
+
+async def _generate_context_sentence(openai: OpenAIClient, word_czech: str) -> str | None:
+    """Generate a simple Czech example sentence for a word using GPT."""
+    try:
+        result = await openai.generate_chat_completion(
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Jsi pomocník pro učení češtiny. "
+                        "Vygeneruj jedno krátké, jednoduché příkladové věty v češtině "
+                        "s daným slovem. Odpověz POUZE větou, nic jiného."
+                    ),
+                },
+                {"role": "user", "content": word_czech},
+            ],
+            model="gpt-4o-mini",
+            temperature=0.7,
+            max_tokens=80,
+        )
+        sentence = result.strip().strip('"').strip()
+        return sentence if sentence else None
+    except Exception as e:
+        logger.warning("context_sentence_generation_failed", word=word_czech, error=str(e))
+        return None
 
 
 @router.get(
@@ -131,19 +169,11 @@ async def reset_conversation(
 async def save_word(
     request: SaveWordRequest,
     session: AsyncSession = Depends(get_session),
+    openai: OpenAIClient = Depends(get_openai_client),
 ):
     """
     Сохранить слово в словарь пользователя.
-
-    Args:
-        request: Запрос с данными слова
-        session: Database session
-
-    Returns:
-        Сохраненное слово
-
-    Raises:
-        HTTPException: Если пользователь не найден
+    Если context_sentence не указан, генерирует автоматически через GPT.
     """
     user_repo = UserRepository(session)
     user = await user_repo.get_by_id(request.user_id)
@@ -155,12 +185,16 @@ async def save_word(
             detail=f"User with id {request.user_id} not found",
         )
 
+    context_sentence = request.context_sentence
+    if not context_sentence:
+        context_sentence = await _generate_context_sentence(openai, request.word_czech)
+
     word_repo = SavedWordRepository(session)
     saved_word = await word_repo.create(
         user_id=request.user_id,
         word_czech=request.word_czech,
         translation=request.translation,
-        context_sentence=request.context_sentence,
+        context_sentence=context_sentence,
         phonetics=request.phonetics,
     )
 
@@ -183,6 +217,56 @@ async def save_word(
         if saved_word.created_at
         else None,
     }
+
+
+@router.post(
+    "/{telegram_id}/backfill-examples",
+    summary="Generate missing example sentences",
+    description="Fill in context_sentence for saved words that don't have one",
+)
+async def backfill_examples(
+    telegram_id: int,
+    session: AsyncSession = Depends(get_session),
+    openai: OpenAIClient = Depends(get_openai_client),
+):
+    """Generate example sentences for all saved words missing context_sentence."""
+    user_repo = UserRepository(session)
+    user = await user_repo.get_by_telegram_id(telegram_id)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with telegram_id {telegram_id} not found",
+        )
+
+    result = await session.execute(
+        select(SavedWord).where(
+            SavedWord.user_id == user.id,
+            (SavedWord.context_sentence == None) | (SavedWord.context_sentence == ""),
+        )
+    )
+    words = list(result.scalars().all())
+
+    if not words:
+        return {"status": "success", "updated": 0, "total": 0}
+
+    updated = 0
+    for word in words:
+        sentence = await _generate_context_sentence(openai, word.word_czech)
+        if sentence:
+            word.context_sentence = sentence
+            updated += 1
+
+    await session.commit()
+
+    logger.info(
+        "backfill_examples_done",
+        telegram_id=telegram_id,
+        total=len(words),
+        updated=updated,
+    )
+
+    return {"status": "success", "updated": updated, "total": len(words)}
 
 
 @router.delete(

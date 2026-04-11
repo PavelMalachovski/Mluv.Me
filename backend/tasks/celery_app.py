@@ -58,7 +58,7 @@ celery_app.conf.update(
         },
         "send-daily-slang": {
             "task": "backend.tasks.notifications.send_evening_slang_notifications",
-            "schedule": crontab(hour=18, minute=0),  # 18:00 UTC = 19:00 CET
+            "schedule": crontab(hour=17, minute=0),  # 17:00 UTC = 19:00 CEST
         },
         "aggregate-metrics": {
             "task": "backend.tasks.analytics.aggregate_platform_metrics",
