@@ -2,12 +2,12 @@
 Subscription & quota management service.
 
 Plans:
-  - free:  5 text + 4 voice messages per day
-  - pro:   unlimited (200 CZK/month ≈ 500 Telegram Stars / 30 days)
+  - free:  10 text + 5 voice messages per day
+  - pro:   unlimited (159 CZK/month ≈ 350 Telegram Stars / 30 days)
 
 Products (Telegram Stars):
-  - pro_7d:  150 Stars → 7 days Pro
-  - pro_30d: 500 Stars → 30 days Pro
+  - pro_7d:  100 Stars → 7 days Pro
+  - pro_30d: 350 Stars → 30 days Pro
 """
 
 from datetime import datetime, timedelta, timezone
@@ -25,8 +25,8 @@ logger = structlog.get_logger(__name__)
 # ──────────────────── Plan limits ────────────────────
 PLAN_LIMITS: dict[str, dict[str, int]] = {
     "free": {
-        "text_per_day": 5,
-        "voice_per_day": 4,
+        "text_per_day": 10,
+        "voice_per_day": 5,
     },
     "pro": {
         "text_per_day": 999_999,  # effectively unlimited
@@ -39,16 +39,16 @@ STAR_PRODUCTS = {
     "pro_7d": {
         "label": "Pro na 7 dní",
         "description": "7 dní neomezeného přístupu ke všem funkcím Mluv.Me",
-        "stars": 150,
-        "czk": 79,
+        "stars": 100,
+        "czk": 49,
         "days": 7,
         "plan": "pro",
     },
     "pro_30d": {
         "label": "Pro na 30 dní",
         "description": "30 dní neomezeného přístupu ke všem funkcím Mluv.Me",
-        "stars": 500,
-        "czk": 249,
+        "stars": 350,
+        "czk": 159,
         "days": 30,
         "plan": "pro",
     },

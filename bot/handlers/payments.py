@@ -33,15 +33,15 @@ PRODUCTS = {
     "pro_7d": {
         "label": "⭐ Pro na 7 dní",
         "description": "7 dní neomezeného přístupu ke všem funkcím Mluv.Me",
-        "stars": 150,
-        "czk": 79,
+        "stars": 100,
+        "czk": 49,
         "days": 7,
     },
     "pro_30d": {
         "label": "💎 Pro na 30 dní",
         "description": "30 dní neomezeného přístupu ke všem funkcím Mluv.Me",
-        "stars": 500,
-        "czk": 249,
+        "stars": 350,
+        "czk": 159,
         "days": 30,
     },
 }
@@ -101,12 +101,12 @@ def get_limit_reached_text(msg_type: str = "text") -> str:
     if msg_type == "voice":
         return (
             "⚠️ <b>Denní limit hlasových zpráv vyčerpán</b>\n\n"
-            "S plánem Free máš 4 hlasové zprávy denně.\n\n"
+            "S plánem Free máš 5 hlasových zpráv denně.\n\n"
             "🌟 Odemkni <b>Pro</b> pro neomezený přístup:"
         )
     return (
         "⚠️ <b>Denní limit textových zpráv vyčerpán</b>\n\n"
-        "S plánem Free máš 5 textových zpráv denně.\n\n"
+        "S plánem Free máš 10 textových zpráv denně.\n\n"
         "🌟 Odemkni <b>Pro</b> pro neomezený přístup:"
     )
 
