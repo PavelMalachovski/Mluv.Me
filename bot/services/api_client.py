@@ -505,7 +505,7 @@ class APIClient:
             telegram_id: Telegram user ID
             product_id: Product ID (pro_7d, pro_30d)
             charge_id: Telegram payment charge ID
-            provider: Payment provider (telegram_stars, tribute)
+            provider: Payment provider (telegram_stars, stripe)
 
         Returns:
             Result dict with success flag and expiry date
@@ -537,6 +537,42 @@ class APIClient:
         except Exception as e:
             logger.error(
                 "activate_subscription_error",
+                telegram_id=telegram_id,
+                error=str(e),
+            )
+            return None
+
+    async def create_checkout_session(
+        self,
+        telegram_id: int,
+        product_id: str,
+    ) -> Optional[dict[str, Any]]:
+        """
+        Create a Stripe Checkout Session via backend.
+
+        Returns:
+            Dict with 'url' and 'session_id', or None on error.
+        """
+        session = await self._get_session()
+        try:
+            async with session.post(
+                f"{self.base_url}/api/v1/subscription/checkout",
+                json={"telegram_id": telegram_id, "product_id": product_id},
+                timeout=15,
+            ) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                error_body = await resp.text()
+                logger.error(
+                    "create_checkout_error",
+                    telegram_id=telegram_id,
+                    status=resp.status,
+                    body=error_body[:200],
+                )
+                return None
+        except Exception as e:
+            logger.error(
+                "create_checkout_error",
                 telegram_id=telegram_id,
                 error=str(e),
             )

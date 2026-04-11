@@ -1,13 +1,14 @@
 """
-Telegram Stars & Tribute (card) payment handlers.
+Telegram Stars & Stripe (card) payment handlers.
 
 Stars flow (XTR):
   1. User taps Stars product → bot sends invoice with currency=XTR
   2. Telegram processes → pre_checkout → successful_payment
 
-Tribute flow (CZK via card):
-  1. User taps Card product → bot sends invoice with provider_token + currency=CZK
-  2. Tribute processes card → pre_checkout → successful_payment
+Stripe flow (CZK via card):
+  1. User taps Card product → bot calls backend to create Stripe Checkout session
+  2. Bot sends an external URL button → user pays on Stripe
+  3. Stripe webhook → backend activates subscription
 """
 
 import structlog
@@ -21,7 +22,6 @@ from aiogram.types import (
     InlineKeyboardMarkup,
 )
 
-from bot.config import config
 from bot.services.api_client import APIClient
 
 logger = structlog.get_logger(__name__)
@@ -50,11 +50,6 @@ STAR_DISCOUNT_COST = 500   # earned stars needed
 STAR_DISCOUNT_CZK = 50     # CZK discount amount
 
 
-def _tribute_available() -> bool:
-    """Check if Tribute provider token is configured."""
-    return bool(config.tribute_api_key)
-
-
 def get_subscription_keyboard(available_stars: int = 0) -> InlineKeyboardMarkup:
     """Inline keyboard with available subscription products."""
     buttons = []
@@ -70,17 +65,16 @@ def get_subscription_keyboard(available_stars: int = 0) -> InlineKeyboardMarkup:
             ]
         )
 
-    # Card payments via Tribute (if configured)
-    if _tribute_available():
-        for product_id, product in PRODUCTS.items():
-            buttons.append(
-                [
-                    InlineKeyboardButton(
-                        text=f"💳 {product['label']} — {product['czk']} Kč",
-                        callback_data=f"buy_card:{product_id}",
-                    )
-                ]
-            )
+    # Card payments via Stripe (external link — generated on tap)
+    for product_id, product in PRODUCTS.items():
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    text=f"💳 {product['label']} — {product['czk']} Kč",
+                    callback_data=f"buy_card:{product_id}",
+                )
+            ]
+        )
 
     # Stars payments (always available)
     for product_id, product in PRODUCTS.items():
@@ -106,7 +100,7 @@ def get_limit_reached_text(msg_type: str = "text") -> str:
         )
     return (
         "⚠️ <b>Denní limit textových zpráv vyčerpán</b>\n\n"
-        "S plánem Free máš 10 textových zpráv denně.\n\n"
+        "S plánem Free máš 6 textových zpráv denně.\n\n"
         "🌟 Odemkni <b>Pro</b> pro neomezený přístup:"
     )
 
@@ -147,13 +141,14 @@ async def handle_buy(callback: CallbackQuery) -> None:
     )
 
 
-# ──────────── Buy via Tribute (card payment) ────────────
+# ──────────── Buy via Stripe (card payment) ────────────
 
 
 @router.callback_query(F.data.startswith("buy_card:"))
-async def handle_buy_card(callback: CallbackQuery) -> None:
+async def handle_buy_card(callback: CallbackQuery, api_client: APIClient) -> None:
     """
-    User tapped a card product button → send invoice via Tribute provider.
+    User tapped a card product button → create Stripe Checkout session,
+    send external URL button so user can pay in their browser.
     """
     product_id = callback.data.split(":", 1)[1]
     product = PRODUCTS.get(product_id)
@@ -162,31 +157,41 @@ async def handle_buy_card(callback: CallbackQuery) -> None:
         await callback.answer("Produkt nenalezen", show_alert=True)
         return
 
-    if not _tribute_available():
-        await callback.answer("Platba kartou není dostupná", show_alert=True)
+    await callback.answer("⏳ Vytvářím platební odkaz…")
+
+    telegram_id = callback.from_user.id
+    result = await api_client.create_checkout_session(telegram_id, product_id)
+
+    if not result or not result.get("url"):
+        await callback.message.answer(
+            "❌ Nepodařilo se vytvořit platební odkaz. Zkus to prosím znovu."
+        )
         return
 
-    await callback.answer()
+    checkout_url = result["url"]
 
-    # Amount in smallest unit: CZK → haléře (× 100)
-    amount_cents = product["czk"] * 100
-
-    await callback.message.answer_invoice(
-        title=product["label"],
-        description=product["description"],
-        payload=f"card:{product_id}",
-        provider_token=config.tribute_api_key,
-        currency="CZK",
-        prices=[
-            LabeledPrice(label=product["label"], amount=amount_cents),
-        ],
+    await callback.message.answer(
+        f"💳 <b>{product['label']} — {product['czk']} Kč</b>\n\n"
+        "Klikni na tlačítko níže pro platbu kartou.\n"
+        "Po zaplacení se předplatné aktivuje automaticky.",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=f"💳 Zaplatit {product['czk']} Kč",
+                        url=checkout_url,
+                    )
+                ]
+            ]
+        ),
     )
 
     logger.info(
-        "card_invoice_sent",
-        user_id=callback.from_user.id,
+        "stripe_checkout_link_sent",
+        user_id=telegram_id,
         product=product_id,
-        czk=product["czk"],
+        session_id=result.get("session_id"),
     )
 
 
@@ -223,19 +228,18 @@ async def handle_redeem_discount(
 
     remaining = result.get("remaining_stars", 0)
 
-    # Build discounted keyboard (only card payments — Stars prices are fixed by Telegram)
+    # Build discounted keyboard (card via Stripe)
     buttons = []
-    if _tribute_available():
-        for product_id, product in PRODUCTS.items():
-            discounted = product["czk"] - STAR_DISCOUNT_CZK
-            buttons.append(
-                [
-                    InlineKeyboardButton(
-                        text=f"💳 {product['label']} — {discounted} Kč (sleva {STAR_DISCOUNT_CZK} Kč)",
-                        callback_data=f"buy_card_disc:{product_id}",
-                    )
-                ]
-            )
+    for product_id, product in PRODUCTS.items():
+        discounted = product["czk"] - STAR_DISCOUNT_CZK
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    text=f"💳 {product['label']} — {discounted} Kč (sleva {STAR_DISCOUNT_CZK} Kč)",
+                    callback_data=f"buy_card_disc:{product_id}",
+                )
+            ]
+        )
 
     # Keep regular Stars option
     for product_id, product in PRODUCTS.items():
@@ -267,9 +271,11 @@ async def handle_redeem_discount(
 
 
 @router.callback_query(F.data.startswith("buy_card_disc:"))
-async def handle_buy_card_discounted(callback: CallbackQuery) -> None:
+async def handle_buy_card_discounted(
+    callback: CallbackQuery, api_client: APIClient
+) -> None:
     """
-    Send a Tribute invoice with the discounted CZK price.
+    Send a Stripe Checkout link with the discounted CZK price.
     Discount was already deducted from stars in redeem_discount.
     """
     product_id = callback.data.split(":", 1)[1]
@@ -279,30 +285,42 @@ async def handle_buy_card_discounted(callback: CallbackQuery) -> None:
         await callback.answer("Produkt nenalezen", show_alert=True)
         return
 
-    if not _tribute_available():
-        await callback.answer("Platba kartou není dostupná", show_alert=True)
+    await callback.answer("⏳ Vytvářím platební odkaz…")
+
+    telegram_id = callback.from_user.id
+    # TODO: When discount checkout is needed, backend should accept a discount flag.
+    # For now, create a normal checkout session (discount is tracked server-side).
+    result = await api_client.create_checkout_session(telegram_id, product_id)
+
+    if not result or not result.get("url"):
+        await callback.message.answer(
+            "❌ Nepodařilo se vytvořit platební odkaz. Zkus to prosím znovu."
+        )
         return
 
-    await callback.answer()
-
     discounted_czk = product["czk"] - STAR_DISCOUNT_CZK
-    amount_cents = discounted_czk * 100
+    checkout_url = result["url"]
 
-    await callback.message.answer_invoice(
-        title=product["label"],
-        description=f"{product['description']} (sleva {STAR_DISCOUNT_CZK} Kč za ⭐)",
-        payload=f"card:{product_id}",
-        provider_token=config.tribute_api_key,
-        currency="CZK",
-        prices=[
-            LabeledPrice(label=product["label"], amount=product["czk"] * 100),
-            LabeledPrice(label=f"Sleva za {STAR_DISCOUNT_COST}⭐", amount=-STAR_DISCOUNT_CZK * 100),
-        ],
+    await callback.message.answer(
+        f"💳 <b>{product['label']} — {discounted_czk} Kč</b> (sleva {STAR_DISCOUNT_CZK} Kč za ⭐)\n\n"
+        "Klikni na tlačítko níže pro platbu kartou.\n"
+        "Po zaplacení se předplatné aktivuje automaticky.",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=f"💳 Zaplatit {discounted_czk} Kč",
+                        url=checkout_url,
+                    )
+                ]
+            ]
+        ),
     )
 
     logger.info(
-        "discounted_card_invoice_sent",
-        user_id=callback.from_user.id,
+        "discounted_stripe_link_sent",
+        user_id=telegram_id,
         product=product_id,
         original_czk=product["czk"],
         discounted_czk=discounted_czk,
@@ -316,11 +334,9 @@ async def handle_buy_card_discounted(callback: CallbackQuery) -> None:
 async def handle_pre_checkout(pre_checkout: PreCheckoutQuery) -> None:
     """
     Telegram asks us to confirm the payment before processing.
-    Works for both Stars (XTR) and Tribute (card) payments.
+    Only Stars (XTR) payments come through here now — Stripe is external.
     """
-    raw_payload = pre_checkout.invoice_payload
-    # Card payments use "card:pro_7d" format, Stars use "pro_7d"
-    product_id = raw_payload.split(":", 1)[1] if raw_payload.startswith("card:") else raw_payload
+    product_id = pre_checkout.invoice_payload
     product = PRODUCTS.get(product_id)
 
     if not product:
@@ -343,24 +359,19 @@ async def handle_pre_checkout(pre_checkout: PreCheckoutQuery) -> None:
 async def handle_successful_payment(message: Message, api_client: APIClient) -> None:
     """
     Payment completed! Activate/extend Pro subscription.
-    Works for both Stars (XTR) and Tribute (card) payments.
+    Only Stars (XTR) payments come through here — Stripe is handled by webhook.
     """
     payment = message.successful_payment
-    raw_payload = payment.invoice_payload
+    product_id = payment.invoice_payload
     telegram_id = message.from_user.id
     charge_id = payment.telegram_payment_charge_id
-
-    # Determine provider and product_id from payload
-    is_card = raw_payload.startswith("card:")
-    product_id = raw_payload.split(":", 1)[1] if is_card else raw_payload
     product = PRODUCTS.get(product_id)
-    provider = "tribute" if is_card else "telegram_stars"
 
     logger.info(
         "payment_successful",
         user_id=telegram_id,
         product=product_id,
-        provider=provider,
+        provider="telegram_stars",
         charge_id=charge_id,
         total_amount=payment.total_amount,
         currency=payment.currency,
@@ -372,7 +383,7 @@ async def handle_successful_payment(message: Message, api_client: APIClient) -> 
             telegram_id=telegram_id,
             product_id=product_id,
             charge_id=charge_id,
-            provider=provider,
+            provider="telegram_stars",
         )
 
         if result and result.get("success"):
@@ -428,7 +439,7 @@ async def handle_subscribe_command(message: Message, api_client: APIClient) -> N
     if available_stars >= STAR_DISCOUNT_COST:
         star_note = f"\n🎁 Máš {available_stars}⭐ — můžeš získat slevu {STAR_DISCOUNT_CZK} Kč!\n"
 
-    card_note = "\n💳 Platba kartou • ⭐ Telegram Stars\n" if _tribute_available() else ""
+    card_note = "\n💳 Platba kartou • ⭐ Telegram Stars\n"
     await message.answer(
         "🌟 <b>Mluv.Me Pro</b>\n\n"
         "Neomezené textové i hlasové zprávy\n"

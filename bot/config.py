@@ -26,8 +26,8 @@ class BotConfig(BaseSettings):
     # Logging
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
 
-    # Tribute payment provider token
-    tribute_api_key: str = os.getenv("TRIBUTE_API_KEY", "")
+    # Stripe checkout (bot gets link from backend)
+    # No Stripe key needed in bot — backend handles it
 
     # Webhook settings (для Railway)
     webhook_url: Optional[str] = os.getenv("WEBHOOK_URL", None)

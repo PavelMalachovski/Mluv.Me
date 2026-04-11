@@ -30,6 +30,9 @@ aiogram==3.14.0
 aiohttp==3.10.10
 aiofiles==24.1.0
 
+# Payments
+stripe==12.1.0
+
 # Logging
 structlog==24.4.0
 

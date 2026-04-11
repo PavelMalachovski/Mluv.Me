@@ -73,6 +73,16 @@ class Settings(BaseSettings):
         description="Sentry DSN for error monitoring (leave empty to disable)",
     )
 
+    # Stripe Payments
+    stripe_secret_key: str = Field(
+        default="",
+        description="Stripe Secret Key for checkout sessions",
+    )
+    stripe_webhook_secret: str = Field(
+        default="",
+        description="Stripe webhook signing secret",
+    )
+
     redis_cache_ttl_default: int = Field(
         default=3600, description="Default cache TTL in seconds (1 hour)"
     )
