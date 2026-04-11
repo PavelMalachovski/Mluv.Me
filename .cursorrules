@@ -5,7 +5,7 @@
 версия: 1.0.0
 минимальная_версия_python: 3.11
 хостинг: Railway.com
-telegram_bot_token: 7471812936:AAFoji4k74oAo347ahNaa1K1WAPtiSQ_ox8
+telegram_bot_token: <set via TELEGRAM_BOT_TOKEN env var>
 
 # === КОНЦЕПЦИЯ ===
 
@@ -614,7 +614,7 @@ CMD uvicorn backend.main:app --host 0.0.0.0 --port ${PORT} & python bot/main.py
 ```
 DATABASE_URL=${DATABASE_URL}  # Автоматически от Railway PostgreSQL
 OPENAI_API_KEY=sk-...
-TELEGRAM_BOT_TOKEN=7471812936:AAFoji4k74oAo347ahNaa1K1WAPtiSQ_ox8
+TELEGRAM_BOT_TOKEN=<set via Railway env vars>
 PORT=${PORT}  # Автоматически от Railway
 LOG_LEVEL=INFO
 ENVIRONMENT=production
@@ -1008,6 +1008,6 @@ ai_guidance:
 - 🗣️ Только чешский язык для обучения
 - 🌍 Только русский и украинский интерфейс
 - 🚂 Хостинг на Railway.com
-- 🤖 Telegram Bot API: 7471812936:AAFoji4k74oAo347ahNaa1K1WAPtiSQ_ox8
+- 🤖 Telegram Bot API: <set via TELEGRAM_BOT_TOKEN env var>
 
 Удачи в разработке! Na zdraví! 🍺

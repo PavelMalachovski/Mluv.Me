@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - ✅ Backend deployed on Railway
-- ✅ Telegram Bot Token: `7471812936:AAFoji4k74oAo347ahNaa1K1WAPtiSQ_ox8`
+- ✅ Telegram Bot Token: set via `TELEGRAM_BOT_TOKEN` env var
 - ✅ GitHub repository
 - ✅ Vercel account
 

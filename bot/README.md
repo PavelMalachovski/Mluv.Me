@@ -114,7 +114,7 @@ python bot/main.py
 ### Переменные окружения
 
 ```env
-TELEGRAM_BOT_TOKEN=7471812936:AAFoji4k74oAo347ahNaa1K1WAPtiSQ_ox8
+TELEGRAM_BOT_TOKEN=your-telegram-bot-token-here
 BACKEND_API_URL=http://localhost:8000
 ENVIRONMENT=development
 LOG_LEVEL=INFO
