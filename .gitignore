@@ -64,5 +64,7 @@ Thumbs.db
 temp/
 tmp/
 
+# Local git worktrees
+.worktrees/
 
 
