@@ -417,14 +417,14 @@ Rodný jazyk studenta: {native_lang_name} – vysvětlení piš jednoduše česk
 SLOVÍČKA: V odpovědi použij 1-3 zajímavá/užitečná česká slova vhodná pro úroveň studenta. Zahrň je do pole new_words s překladem do {native_lang_name}.
 
 ODPOVĚZ POUZE PLATNÝM JSON:
-{{{{
+{{
   "honzik_response": "tvá odpověď v češtině",
   "corrected_text": "opravený text studenta",
-  "mistakes": [{{{{"original":"chyba","corrected":"správně","explanation_cs":"vysvětlení max 15 slov"}}}}],
+  "mistakes": [{{"original":"chyba","corrected":"správně","explanation_cs":"vysvětlení max 15 slov"}}],
   "correctness_score": 85,
   "suggestion": "krátký tip česky",
-  "new_words": [{{{{"word_czech":"české slovo","translation":"překlad do {native_lang_name}","context_sentence":"příkladová věta"}}}}]
-}}}}"""
+  "new_words": [{{"word_czech":"české slovo","translation":"překlad do {native_lang_name}","context_sentence":"příkladová věta"}}]
+}}"""
 
 
 def _build_novakova_prompt(
@@ -475,11 +475,11 @@ Opravujte zejména: hovorové tvary → spisovné, tykání → vykání, nespis
 SLOVÍČKA: V odpovědi použijte 1-3 zajímavá/užitečná česká slova vhodná pro úroveň studenta. Zahrňte je do pole new_words s překladem do {native_lang_name}.
 
 ODPOVĚZTE POUZE PLATNÝM JSON:
-{{{{
+{{
   "honzik_response": "Vaše odpověď ve spisovné češtině (vykání)",
   "corrected_text": "opravený text studenta",
-  "mistakes": [{{{{"original":"chyba","corrected":"správně","explanation_cs":"vysvětlení max 15 slov"}}}}],
+  "mistakes": [{{"original":"chyba","corrected":"správně","explanation_cs":"vysvětlení max 15 slov"}}],
   "correctness_score": 85,
   "suggestion": "krátký tip ve spisovné češtině",
-  "new_words": [{{{{"word_czech":"české slovo","translation":"překlad do {native_lang_name}","context_sentence":"příkladová věta"}}}}]
-}}}}"""
+  "new_words": [{{"word_czech":"české slovo","translation":"překlad do {native_lang_name}","context_sentence":"příkladová věta"}}]
+}}"""
