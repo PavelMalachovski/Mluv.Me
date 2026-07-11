@@ -23,12 +23,10 @@ pydantic-settings==2.6.1
 
 # OpenAI
 openai==1.54.4
-tiktoken==0.7.0
 
 # Telegram Bot
 aiogram==3.14.0
 aiohttp==3.10.10
-aiofiles==24.1.0
 
 # Payments
 stripe==12.1.0

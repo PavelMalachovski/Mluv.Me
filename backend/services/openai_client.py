@@ -3,7 +3,7 @@ OpenAI Client для интеграции с GPT-4o, Whisper (STT) и TTS API.
 
 Реализует:
 - Speech-to-Text (Whisper) для чешского языка
-- Text-to-Speech (TTS) с мужским голосом
+- Text-to-Speech (TTS) с кешированием фраз
 - LLM интеграция (GPT-4o) с JSON mode
 - Exponential backoff при ошибках
 - Rate limiting
@@ -11,7 +11,6 @@ OpenAI Client для интеграции с GPT-4o, Whisper (STT) и TTS API.
 
 import asyncio
 import io
-import tiktoken
 from typing import Any, BinaryIO
 
 import structlog
@@ -43,20 +42,6 @@ class OpenAIClient:
         self.client = AsyncOpenAI(api_key=settings.openai_api_key)
         self.settings = settings
         self.logger = logger.bind(service="openai_client")
-
-        # Lazy load tokenizer (initialized on first use)
-        self._encoding = None
-
-    @property
-    def encoding(self):
-        """Lazy load tiktoken encoder."""
-        if self._encoding is None:
-            try:
-                self._encoding = tiktoken.encoding_for_model(self.settings.openai_model)
-            except KeyError:
-                # Fallback to cl100k_base if model not found
-                self._encoding = tiktoken.get_encoding("cl100k_base")
-        return self._encoding
 
     async def _call_with_retry(
         self,
@@ -180,85 +165,6 @@ class OpenAIClient:
         except Exception as e:
             self.logger.error(
                 "transcription_failed",
-                error=str(e),
-            )
-            raise
-
-    async def transcribe_audio_with_detection(
-        self,
-        audio_file: BinaryIO | bytes,
-    ) -> dict[str, str]:
-        """
-        Транскрибировать аудио с автоопределением языка.
-
-        Используется для определения, говорит ли пользователь на чешском
-        или на другом языке (русский, украинский, английский и т.д.)
-
-        Args:
-            audio_file: Аудио файл (file-like объект или байты)
-
-        Returns:
-            dict: {"text": str, "language": str}
-                - text: транскрибированный текст
-                - language: определённый язык ("cs", "ru", "uk", "en" и т.д.)
-
-        Raises:
-            APIError: При ошибке API OpenAI
-        """
-        self.logger.info(
-            "transcribing_audio_with_language_detection",
-            model=self.settings.whisper_model,
-        )
-
-        # Конвертация в bytes для возможности retry
-        if hasattr(audio_file, "read"):
-            audio_bytes = audio_file.read()
-            if hasattr(audio_file, "seek"):
-                audio_file.seek(0)
-        else:
-            audio_bytes = audio_file
-
-        async def _transcribe():
-            # Создаём новый BytesIO для каждой попытки (важно для retry!)
-            file_obj = io.BytesIO(audio_bytes)
-            file_obj.name = "audio.ogg"
-
-            # Без параметра language - Whisper автоматически определит язык
-            # verbose_json возвращает дополнительную информацию включая язык
-            transcript = await self.client.audio.transcriptions.create(
-                model=self.settings.whisper_model,
-                file=file_obj,
-                response_format="verbose_json",  # Включает detected language
-            )
-
-            # Обработка разных форматов ответа
-            if hasattr(transcript, "text"):
-                text = transcript.text
-                language = getattr(transcript, "language", "cs") or "cs"
-            elif isinstance(transcript, dict):
-                text = transcript.get("text", "")
-                language = transcript.get("language", "cs") or "cs"
-            else:
-                text = str(transcript)
-                language = "cs"
-
-            return {
-                "text": text,
-                "language": language,
-            }
-
-        try:
-            async with openai_limiter.acquire("stt"):
-                result = await self._call_with_retry(_transcribe)
-            self.logger.info(
-                "transcription_with_detection_success",
-                text_length=len(result["text"]),
-                detected_language=result["language"],
-            )
-            return result
-        except Exception as e:
-            self.logger.error(
-                "transcription_with_detection_failed",
                 error=str(e),
             )
             raise
@@ -441,162 +347,3 @@ class OpenAIClient:
             "native": 1.2,  # Быстрее для продвинутых (было 1.1)
         }
         return speed_map.get(speed_setting, 1.0)
-
-    def estimate_tokens(self, text: str) -> int:
-        """
-        Оценить количество токенов в тексте.
-
-        Args:
-            text: Текст для оценки
-
-        Returns:
-            int: Приблизительное количество токенов
-        """
-        try:
-            return len(self.encoding.encode(text))
-        except Exception as e:
-            self.logger.warning("token_estimation_failed", error=str(e))
-            # Fallback: примерно 4 символа на токен
-            return len(text) // 4
-
-    def estimate_messages_tokens(self, messages: list[dict[str, str]]) -> int:
-        """
-        Оценить количество токенов в списке сообщений.
-
-        Args:
-            messages: Список сообщений OpenAI формата
-
-        Returns:
-            int: Приблизительное количество токенов
-        """
-        total_tokens = 0
-        for message in messages:
-            # 4 токена на сообщение (метаданные)
-            total_tokens += 4
-            for key, value in message.items():
-                total_tokens += self.estimate_tokens(str(value))
-        return total_tokens
-
-    def optimize_conversation_history(
-        self,
-        messages: list[dict[str, str]],
-        max_tokens: int = 1500,
-    ) -> list[dict[str, str]]:
-        """
-        Оптимизировать историю разговора для уменьшения использования токенов.
-
-        Стратегия:
-        - Всегда сохранять системный промпт
-        - Всегда сохранять последние 3 сообщения
-        - Если превышен лимит, обрезать более старые сообщения
-
-        Args:
-            messages: Список сообщений
-            max_tokens: Максимальное количество токенов
-
-        Returns:
-            list: Оптимизированный список сообщений
-        """
-        if not messages:
-            return messages
-
-        current_tokens = self.estimate_messages_tokens(messages)
-
-        if current_tokens <= max_tokens:
-            return messages
-
-        self.logger.info(
-            "optimizing_conversation_history",
-            original_tokens=current_tokens,
-            max_tokens=max_tokens,
-            messages_count=len(messages),
-        )
-
-        # Разделяем сообщения
-        system_messages = [m for m in messages if m.get("role") == "system"]
-        conversation = [m for m in messages if m.get("role") != "system"]
-
-        # Всегда сохраняем последние 3 сообщения
-        recent_messages = conversation[-3:] if len(conversation) >= 3 else conversation
-        older_messages = conversation[:-3] if len(conversation) > 3 else []
-
-        # Собираем оптимизированный список
-        optimized = system_messages + recent_messages
-
-        # Если все еще превышаем лимит, добавляем старые сообщения по одному
-        if older_messages:
-            for msg in reversed(older_messages):
-                test_messages = system_messages + [msg] + recent_messages
-                if self.estimate_messages_tokens(test_messages) <= max_tokens:
-                    optimized = test_messages
-                else:
-                    break
-
-        optimized_tokens = self.estimate_messages_tokens(optimized)
-
-        self.logger.info(
-            "conversation_history_optimized",
-            original_tokens=current_tokens,
-            optimized_tokens=optimized_tokens,
-            reduction_percent=round((1 - optimized_tokens / current_tokens) * 100, 1),
-            original_messages=len(messages),
-            optimized_messages=len(optimized),
-        )
-
-        return optimized
-
-    async def summarize_older_messages(
-        self,
-        messages: list[dict[str, str]],
-    ) -> dict[str, str]:
-        """
-        Суммировать старые сообщения используя GPT-3.5-turbo для экономии.
-
-        Args:
-            messages: Список сообщений для суммаризации
-
-        Returns:
-            dict: Системное сообщение с суммарией
-        """
-        if not messages:
-            return {"role": "system", "content": "Žádná předchozí historie."}
-
-        # Форматируем сообщения для суммаризации
-        formatted = []
-        for msg in messages:
-            role = "Student" if msg.get("role") == "user" else "Honzík"
-            formatted.append(f"{role}: {msg.get('content', '')}")
-
-        history_text = "\n".join(formatted)
-
-        summary_prompt = f"""Shrň následující konverzaci mezi studentem češtiny a Honzíkem ve 2-3 větách.
-Zaměř se na hlavní témata a chyby studenta:
-
-{history_text}
-
-Shrnutí:"""
-
-        try:
-            # Используем GPT-3.5-turbo для суммаризации (дешевле)
-            summary = await self.generate_chat_completion(
-                messages=[{"role": "user", "content": summary_prompt}],
-                temperature=0.3,
-                model=self.settings.openai_model_simple,
-            )
-
-            self.logger.info(
-                "messages_summarized",
-                original_messages=len(messages),
-                summary_length=len(summary),
-            )
-
-            return {
-                "role": "system",
-                "content": f"Předchozí konverzace (shrnutí): {summary}",
-            }
-        except Exception as e:
-            self.logger.error("summarization_failed", error=str(e))
-            return {
-                "role": "system",
-                "content": "Předchozí konverzace nebyla dostupná.",
-            }

@@ -158,14 +158,14 @@ function ResponsePageContent() {
 
     if (!text) {
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+            <div className="min-h-screen cream-bg flex items-center justify-center">
                 <p className="text-gray-600 dark:text-gray-400">Načítání...</p>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-16">
+        <div className="min-h-screen cream-bg pb-16">
             <div className="container mx-auto max-w-4xl p-6">
                 {/* Header */}
                 <div className="mb-6 flex items-center justify-between">
@@ -204,13 +204,6 @@ function ResponsePageContent() {
                             {text}
                         </p>
                     )}
-                </div>
-
-                {/* Tips */}
-                <div className="mt-4 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        💡 Klepni na jakékoliv slovo pro zobrazení překladu
-                    </p>
                 </div>
             </div>
 
@@ -251,7 +244,7 @@ function ResponsePageContent() {
 export default function ResponsePage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+            <div className="min-h-screen cream-bg flex items-center justify-center">
                 <p className="text-gray-600 dark:text-gray-400">Načítání...</p>
             </div>
         }>

@@ -113,19 +113,6 @@ class Settings(BaseSettings):
         default="gpt-4o", description="OpenAI model for Honzik personality"
     )
 
-    openai_model_simple: str = Field(
-        default="gpt-3.5-turbo", description="Simpler/cheaper model for beginners"
-    )
-
-    openai_model_fast: str = Field(
-        default="gpt-4o-mini",
-        description="Fast model for quick responses (2x faster than gpt-4o)",
-    )
-
-    use_adaptive_model_selection: bool = Field(
-        default=True, description="Use cheaper models for beginners (A1, A2 levels)"
-    )
-
     openai_temperature: float = Field(
         default=0.8,
         description="Temperature for GPT responses (higher = more creative)",
