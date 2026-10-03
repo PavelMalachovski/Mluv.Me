@@ -56,8 +56,8 @@ ap.add_argument('--model', default='large-v3-turbo',
                      'downloaded automatically, or the path to a ggml-*.bin file')
 ap.add_argument('--min-sil', type=float, default=0.22,
                 help='a silence this long (s) separates two islands and is cut (0.22)')
-ap.add_argument('--noise', type=float, default=32,
-                help='silence threshold in dB below 0 (32; lower to 25 in a noisy room)')
+ap.add_argument('--noise', type=float, default=None,
+                help='silence threshold in dB below 0 (auto: 32, deeper for a quiet phone recording; 25 in a noisy room)')
 ap.add_argument('--pad', type=float, default=0.05,
                 help='air kept before each island, in s (0.05; after: pad + 0.02)')
 ap.add_argument('--protect', nargs='*', default=[], metavar='A:B',
@@ -136,12 +136,18 @@ for st in ('v:0', 'a:0'):          # the shorter stream sets the end: no tail of
         dur = min(dur, float(probe(merged, 'stream=duration', st)))
     except ValueError:
         pass
-num, den = (probe(merged, 'stream=r_frame_rate', 'v:0').split('/') + ['1'])[:2]
+rate = re.split(r'[,\s]', probe(merged, 'stream=r_frame_rate', 'v:0'))[0]   # phones add rotation side data after a comma
+num, den = (rate.split('/') + ['1'])[:2]
 FRAME = float(den) / float(num)          # one frame's duration
 say(f'joined footage: {dur:.1f}s, {len(args.rushes)} clip(s), {float(num)/float(den):.2f} fps')
 
 WAV = f'{work}/full.wav'                 # 16 kHz mono: what whisper and the detector read
 run([FF, '-y', '-i', merged, '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', WAV])
+if args.noise is None:                    # a quiet recording (phone at arm's length) needs a deeper threshold
+    vd = subprocess.run([FF, '-hide_banner', '-i', WAV, '-af', 'volumedetect', '-f', 'null', '-'],
+                        capture_output=True, text=True).stderr
+    m = re.search(r'max_volume: (-?[\d.]+)', vd)
+    args.noise = max(32.0, round(20 - float(m.group(1)))) if m else 32.0
 
 
 # 2. islands of sound ------------------------------------------------------------
@@ -579,14 +585,19 @@ def to_out(t):
 
 # 6. render ----------------------------------------------------------------------
 F = 0.01                                                    # 10 ms fade: no click at the joins
-v = ''.join(f'[0:v]trim={a:.6f}:{b:.6f},setpts=PTS-STARTPTS[v{i}];' for i, (a, b) in enumerate(segs))
-a_ = ''.join(f'[0:a]atrim={a:.6f}:{b:.6f},asetpts=PTS-STARTPTS,afade=t=in:d={F},'
-             f'afade=t=out:st={max(0, b - a - F):.6f}:d={F}[a{i}];' for i, (a, b) in enumerate(segs))
-pairs = ''.join(f'[v{i}][a{i}]' for i in range(len(segs)))
-fg = f'{work}/fg.txt'
-open(fg, 'w', encoding='utf-8').write(v + a_ + f'{pairs}concat=n={len(segs)}:v=1:a=1[v][a]')
-run([FF, '-y', '-i', merged, '-filter_complex_script', fg, '-map', '[v]', '-map', '[a]',
-     '-c:v', 'libx264', '-crf', '20', '-preset', 'veryfast', '-pix_fmt', 'yuv420p',
+# One segment at a time (a single trim/concat graph holds every pending frame in memory and
+# gets killed on long or 1080p+ phone footage), PCM audio in between so the joins stay exact.
+parts = []
+for i, (a, b) in enumerate(segs):
+    pf = f'{work}/seg{i:04d}.mov'
+    run([FF, '-y', '-ss', f'{a:.6f}', '-i', merged, '-t', f'{b - a:.6f}', '-map', '0:v:0', '-map', '0:a:0',
+         '-af', f'afade=t=in:d={F},afade=t=out:st={max(0, b - a - F):.6f}:d={F}',
+         '-c:v', 'libx264', '-crf', '20', '-preset', 'veryfast', '-pix_fmt', 'yuv420p',
+         '-c:a', 'pcm_s16le', '-ar', '48000', pf])
+    parts.append(pf)
+lst = f'{work}/segs.txt'
+open(lst, 'w', encoding='utf-8').write(''.join(f"file '{p.replace(chr(92), '/')}'\n" for p in parts))
+run([FF, '-y', '-f', 'concat', '-safe', '0', '-i', lst, '-c:v', 'copy',
      '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', out])
 say(f'-> {out}')
 

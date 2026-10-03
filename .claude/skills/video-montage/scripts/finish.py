@@ -18,6 +18,7 @@ ap.add_argument('--subs', required=True, help='subs.json (transcribe.py), тек
 ap.add_argument('-o', '--out', default='final.mp4')
 ap.add_argument('--title', help='заголовок в плашке вверху')
 ap.add_argument('--title2', help='вторая строка под заголовком')
+ap.add_argument('--title-until', type=float, help='убрать заголовок на этой секунде (по умолчанию — весь ролик)')
 ap.add_argument('--overlay', help='папка с кадрами вставок f0000.png… (30 fps, 1080x1920, с прозрачностью)')
 ap.add_argument('--hold', type=float, default=0.0, help='стоп-кадр в конце, с')
 ap.add_argument('--words', type=int, default=3, help='слов в субтитре одновременно')
@@ -50,6 +51,8 @@ def probe():
 
 w, h, SRC_DUR = probe()
 DUR = SRC_DUR + args.hold
+T_END = min(DUR, args.title_until) if args.title_until else DUR
+T_FAD = 400 if args.title_until else 0
 vertical = abs(w / h - W / H) < 0.03
 if vertical:
     fg_h, fg_y = H, 0
@@ -112,9 +115,9 @@ Style: Title2,Montserrat Bold,50,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"""]
 if args.title:
-    ass.append(f'Dialogue: 1,{ts(0)},{ts(DUR)},Title,,0,0,0,,{{\\fad(250,0)}}{args.title}')
+    ass.append(f'Dialogue: 1,{ts(0)},{ts(T_END)},Title,,0,0,0,,{{\\fad(250,{T_FAD})}}{args.title}')
 if args.title2:
-    ass.append(f'Dialogue: 1,{ts(0.3)},{ts(DUR)},Title2,,0,0,0,,{{\\fad(300,0)}}{args.title2}')
+    ass.append(f'Dialogue: 1,{ts(0.3)},{ts(T_END)},Title2,,0,0,0,,{{\\fad(300,{T_FAD})}}{args.title2}')
 for a, b, kara in events:
     ass.append(f'Dialogue: 0,{ts(a)},{ts(b)},Sub,,0,0,0,,{{\\fscx85\\fscy85\\t(0,80,\\fscx100\\fscy100)}}{kara}')
 ass_path = os.path.join(S, 'subs.ass')
